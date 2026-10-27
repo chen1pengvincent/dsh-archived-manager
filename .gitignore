@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+INSTALL-STATE.md
+*.bak-*
+*.log
+*.tgz
