@@ -187,7 +187,7 @@ test('client survives a shell without a settings domain', async () => {
   assert.doesNotThrow(() => client.apply(ctx));
 });
 
-test('the empty page renders stats, a toolbar and an empty card', async () => {
+test('the empty page keeps a compact overview inside the workbench', async () => {
   const values = ['archived', [], [], 'ready', null, [], null, false, null];
   const client = await loadClient(makeReact(values));
   let component;
@@ -203,11 +203,44 @@ test('the empty page renders stats, a toolbar and an empty card', async () => {
   };
   client.apply(ctx);
   const tree = component();
-  assert.equal(findByClass(tree, 'am-stats-grid'), undefined);
-  assert.equal(findAll(tree, (node) => node.props && node.props.className === 'am-stat').length, 0);
+  assert.notEqual(findByClass(tree, 'am-workbench'), undefined);
+  assert.notEqual(findByClass(tree, 'am-stats-grid'), undefined);
+  assert.equal(findAll(tree, (node) => node.props && node.props.className === 'am-stat').length, 4);
   assert.equal(findByClass(tree, 'am-toolbar'), undefined);
+  assert.equal(findByClass(tree, 'am-controls'), undefined);
   assert.notEqual(findByClass(tree, 'am-empty-card'), undefined);
+  assert.notEqual(findByClass(tree, 'am-scope'), undefined);
+  const head = findByClass(tree, 'am-head');
+  assert.notEqual(head, undefined);
+  assert.equal(findByClass(head, 'am-refresh'), undefined);
+  const viewbar = findByClass(tree, 'am-viewbar');
+  assert.notEqual(viewbar, undefined);
+  assert.notEqual(findByClass(viewbar, 'am-refresh'), undefined);
   assert.ok(textOf(tree).includes('暂无已归档会话'));
+});
+
+test('loading and initial failure do not show fake zero-value scope data', async () => {
+  for (const phase of ['loading', 'failed']) {
+    const client = await loadClient(makeReact(['archived', [], [], phase, null, [], null, false, null]));
+    let component;
+    client.apply({
+      inject(names, callback) {
+        callback({
+          slots: {
+            inject(name, factory) { factory(); },
+            register(spec, rendered) { component = rendered; return () => {}; },
+          },
+        });
+      },
+    });
+    const tree = component();
+    assert.equal(findByClass(tree, 'am-stats-grid'), undefined);
+    assert.equal(findByClass(tree, 'am-scope'), undefined);
+    const viewbar = findByClass(tree, 'am-viewbar');
+    assert.notEqual(viewbar, undefined);
+    assert.notEqual(findByClass(viewbar, 'am-refresh'), undefined);
+    if (phase === 'loading') assert.equal(findByClass(viewbar, 'am-refresh').props.disabled, true);
+  }
 });
 
 test('the confirm flow renders as a modal with release summary', async () => {

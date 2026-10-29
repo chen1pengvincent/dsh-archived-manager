@@ -464,6 +464,12 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-head-text{flex:1 1 auto;min-width:0}",
 		".am-title{font-size:16px;line-height:1.35;font-weight:600}",
 		".am-sub{font-size:12px;line-height:1.75;color:var(--dsw-alias-label-secondary,#8a93a6);margin-top:6px;max-width:720px}",
+		".am-workbench{position:relative;display:flex;flex-direction:column;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.2));border-radius:14px;background:var(--dsw-alias-bg-overlay,#1c2030)}",
+		".am-viewbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.14))}",
+		".am-viewbar .am-tabs{flex:0 0 auto}",
+		".am-viewbar .am-refresh{margin-left:auto}",
+		".am-refresh-icon{width:14px;height:14px;flex:none}",
+		".am-refresh-icon.spinning{animation:am-spin .8s linear infinite}",
 		".am-btn{height:30px;padding:0 13px;border-radius:8px;border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.32));background:transparent;color:var(--dsw-alias-label-primary,#e8ecff);font-size:12px;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;justify-content:center;gap:6px}",
 		".am-btn{transition:background .12s ease,border-color .12s ease,color .12s ease}",
 		".am-btn:hover:not(:disabled){background:var(--dsw-alias-bg-l1,rgba(127,127,127,.08))}",
@@ -479,17 +485,17 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-tab{height:30px;padding:0 16px;border-radius:7px;border:none;background:transparent;color:var(--dsw-alias-label-secondary,#8a93a6);font-size:12px;cursor:pointer}",
 		".am-tab:hover{color:var(--dsw-alias-label-primary,#e8ecff)}",
 		".am-tab.active{background:var(--dsw-alias-bg-l2,rgba(127,127,127,.16));color:var(--dsw-alias-label-primary,#e8ecff);font-weight:600}",
-		".am-stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}",
-		".am-stat{padding:12px 14px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18));border-radius:10px;background:var(--dsw-alias-bg-l1,rgba(127,127,127,.04));min-width:0}",
+		".am-stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--dsw-alias-border-l1,rgba(127,127,127,.14));border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.14));border-radius:13px 13px 0 0;overflow:hidden}",
+		".am-stat{padding:13px 16px;background:var(--dsw-alias-bg-overlay,#1c2030);min-width:0}",
 		".am-stat-label{font-size:11px;line-height:1.4;color:var(--dsw-alias-label-secondary,#8a93a6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-		".am-stat-value{font-size:18px;line-height:1.3;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}",
+		".am-stat-value{font-size:18px;line-height:1.3;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}",
 		".am-stat-hint{font-size:10px;line-height:1.4;margin-top:3px;color:var(--dsw-alias-label-secondary,#8a93a6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-		".am-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18));border-radius:10px;background:var(--dsw-alias-bg-l1,rgba(127,127,127,.03))}",
+		".am-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));background:transparent}",
 		".am-toolbar-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
-		".am-toolbar.active{border-color:rgba(59,130,246,.45);background:rgba(59,130,246,.05)}",
+		".am-toolbar.active{background:rgba(59,130,246,.06);box-shadow:inset 0 0 0 1px rgba(59,130,246,.32)}",
 		".am-spacer{flex:1 1 auto}",
 		".am-stats{font-size:11px;line-height:1.5;color:var(--dsw-alias-label-secondary,#8a93a6)}",
-		".am-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}",
+		".am-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12))}",
 		".am-search{display:flex;align-items:center;gap:8px;flex:1 1 260px;min-width:200px;height:32px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.28));border-radius:8px;background:transparent;color:var(--dsw-alias-label-primary,#e8ecff)}",
 		".am-search:focus-within{border-color:var(--dsw-alias-button-info-fill,#3b82f6);box-shadow:0 0 0 2px rgba(59,130,246,.15)}",
 		".am-search input{flex:1 1 auto;min-width:0;border:0;outline:0;background:transparent;color:inherit;font-size:12px;appearance:none}",
@@ -518,20 +524,20 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-select-option:focus-visible{outline:2px solid rgba(59,130,246,.45);outline-offset:-2px}",
 		".am-select-option.selected,.am-select-option.selected:hover,.am-select-option.selected:focus-visible{background:rgba(59,130,246,.14);color:var(--dsw-alias-button-info-fill,#3b82f6);font-weight:600}",
 		".am-select-check{font-size:11px;line-height:1}",
-		".am-scope{font-size:11px;line-height:1.65;color:var(--dsw-alias-label-secondary,#8a93a6);padding:0 2px}",
+		".am-scope{font-size:11px;line-height:1.65;color:var(--dsw-alias-label-secondary,#8a93a6);padding:11px 14px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));border-radius:0 0 13px 13px;background:var(--dsw-alias-bg-l1,rgba(127,127,127,.025))}",
 		".am-meta-label{text-decoration:underline dotted;text-underline-offset:2px;cursor:help}",
-		".am-report{display:flex;flex-direction:column;gap:7px;padding:10px 12px;border:1px solid rgba(232,178,91,.35);border-radius:10px;background:rgba(232,178,91,.06)}",
+		".am-report{display:flex;flex-direction:column;gap:7px;padding:12px 14px;border-bottom:1px solid rgba(232,178,91,.3);background:rgba(232,178,91,.06)}",
 		".am-report-title{font-size:12px;font-weight:600;color:var(--dsw-alias-state-warning-primary,#d97706)}",
 		".am-report-list{display:flex;flex-direction:column;gap:3px;font-size:11px;line-height:1.55;color:var(--dsw-alias-label-secondary,#8a93a6)}",
 		".am-report-item{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
 		".am-report-actions{display:flex;justify-content:flex-end}",
-		".am-retention{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18));border-radius:10px;background:var(--dsw-alias-bg-l1,rgba(127,127,127,.03));font-size:11px;line-height:1.6;color:var(--dsw-alias-label-secondary,#8a93a6)}",
+		".am-retention{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));background:var(--dsw-alias-bg-l1,rgba(127,127,127,.035));font-size:11px;line-height:1.6;color:var(--dsw-alias-label-secondary,#8a93a6)}",
 		".am-retention-label{font-weight:600;color:var(--dsw-alias-label-primary,#e8ecff)}",
 		".am-retention-hint{flex:1 1 300px;min-width:220px}",
 		".am-retention-warn{color:var(--dsw-alias-state-warning-primary,#d97706);font-weight:500}",
 		".am-empty-actions{display:flex;gap:8px;margin-top:2px}",
-		".am-list{display:flex;flex-direction:column;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18));border-radius:12px;overflow:hidden}",
-		".am-row{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));background:transparent}",
+		".am-list{display:flex;flex-direction:column;overflow:hidden}",
+		".am-row{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));background:transparent}",
 		".am-row:last-child{border-bottom:none}",
 		".am-row{transition:background .12s ease}",
 		".am-row:hover{background:var(--dsw-alias-bg-l1,rgba(127,127,127,.05))}",
@@ -553,8 +559,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-check{width:16px;height:16px;flex:none;accent-color:var(--dsw-alias-button-info-fill,#3b82f6);cursor:pointer}",
 		".am-check:disabled{cursor:not-allowed;opacity:.5}",
 		".am-checkline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dsw-alias-label-primary,#e8ecff);cursor:pointer}",
-		".am-empty-card{display:flex;flex-direction:column;align-items:center;gap:8px;padding:52px 20px;border:1px dashed var(--dsw-alias-border-l2,rgba(127,127,127,.32));border-radius:12px;text-align:center}",
-		".am-empty-icon{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--dsw-alias-bg-l2,rgba(127,127,127,.12));color:var(--dsw-alias-label-secondary,#8a93a6)}",
+		".am-empty-card{display:flex;flex-direction:column;align-items:center;gap:9px;padding:44px 20px;text-align:center;background:var(--dsw-alias-bg-l1,rgba(127,127,127,.025))}",
+		".am-empty-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--dsw-alias-bg-l2,rgba(127,127,127,.12));color:var(--dsw-alias-label-secondary,#8a93a6)}",
 		".am-empty-title{font-size:13px;font-weight:600}",
 		".am-empty-hint{font-size:11px;line-height:1.7;color:var(--dsw-alias-label-secondary,#8a93a6);max-width:420px}",
 		".am-empty{font-size:12px;line-height:1.7;color:var(--dsw-alias-label-secondary,#8a93a6);padding:18px 12px;text-align:center}",
@@ -572,14 +578,14 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-error-card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 20px;border:1px solid rgba(217,45,32,.22);border-radius:12px;background:rgba(217,45,32,.04);text-align:center}",
 		".am-error-icon{display:flex;color:var(--dsw-alias-state-error-primary,#d92d20)}",
 		".am-error-text{font-size:12px;line-height:1.7;color:var(--dsw-alias-state-error-primary,#d92d20);max-width:560px}",
-		".am-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:64px 0;font-size:12px;color:var(--dsw-alias-label-secondary,#8a93a6)}",
+		".am-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:48px 0;font-size:12px;color:var(--dsw-alias-label-secondary,#8a93a6)}",
 		".am-spinner{width:16px;height:16px;border-radius:50%;border:2px solid var(--dsw-alias-border-l2,rgba(127,127,127,.28));border-top-color:var(--dsw-alias-button-info-fill,#3b82f6);animation:am-spin .8s linear infinite}",
 		"@keyframes am-spin{to{transform:rotate(360deg)}}",
 		"@keyframes am-fade{from{opacity:0}to{opacity:1}}",
 		"@keyframes am-pop{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}",
 		"@keyframes am-menu{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}",
-		"@media (prefers-reduced-motion:reduce){.am-modal,.am-modal-backdrop,.am-spinner,.am-select-menu{animation:none}}",
-		"@media (max-width:980px){.am-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}",
+		"@media (prefers-reduced-motion:reduce){.am-modal,.am-modal-backdrop,.am-spinner,.am-select-menu,.am-refresh-icon.spinning{animation:none}}",
+		"@media (max-width:760px){.am-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}",
 		"@media (max-width:420px){.am-stats-grid{grid-template-columns:minmax(0,1fr)}}",
 		"@media (max-width:860px){.am-row{grid-template-columns:24px minmax(0,1fr)}.am-row-actions{grid-column:2;justify-self:start;padding-top:6px}.am-row-plain{grid-template-columns:minmax(0,1fr)}.am-row-plain .am-row-actions{grid-column:1}}",
 		"@media (max-width:720px){.am-search{flex-basis:100%}.am-sort{margin-left:auto}}",
@@ -1250,6 +1256,34 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			]);
 		}
 
+		function refreshButton() {
+			return h("button", {
+				key: "refresh",
+				type: "button",
+				className: "am-btn am-refresh",
+				disabled: busy || phase === "loading",
+				title: tr("refresh"),
+				"aria-label": tr("refresh"),
+				onClick: function () { void load(); }
+			}, [
+				h("svg", {
+					key: "icon",
+					className: phase === "loading" ? "am-refresh-icon spinning" : "am-refresh-icon",
+					viewBox: "0 0 24 24",
+					fill: "none",
+					stroke: "currentColor",
+					strokeWidth: 1.8,
+					strokeLinecap: "round",
+					strokeLinejoin: "round",
+					"aria-hidden": "true"
+				}, [
+					h("path", { key: "a", d: "M20 11a8.1 8.1 0 0 0-15.5 2m-.5-4v4h4" }),
+					h("path", { key: "b", d: "M4 13a8.1 8.1 0 0 0 15.5-2m.5 4v-4h-4" })
+				]),
+				h("span", { key: "text" }, tr("refresh"))
+			]);
+		}
+
 		function emptyCard(key, title, hint, action) {
 			return h("div", { key: key, className: "am-empty-card" }, [
 				h("div", { key: "icon", className: "am-empty-icon", "aria-hidden": "true" },
@@ -1551,18 +1585,12 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		var children = [];
+		var workspace = [];
 		children.push(h("div", { key: "head", className: "am-head" }, [
 			h("div", { key: "text", className: "am-head-text" }, [
 				h("div", { key: "title", className: "am-title" }, tr("title")),
 				h("div", { key: "sub", className: "am-sub" }, tr("subtitle"))
-			]),
-			h("button", {
-				key: "refresh",
-				type: "button",
-				className: "am-btn",
-				disabled: busy || phase === "loading",
-				onClick: function () { void load(); }
-			}, tr("refresh"))
+			])
 		]));
 
 		if (toast !== null) {
@@ -1574,32 +1602,45 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			}, toast.text));
 		}
 
-		children.push(h("div", { key: "tabs", className: "am-tabs", role: "tablist", "aria-label": tr("title") }, [
-			h("button", {
-				key: "archived",
-				type: "button",
-				role: "tab",
-				"aria-selected": tab === "archived",
-				className: "am-tab" + (tab === "archived" ? " active" : ""),
-				onClick: function () { setTab("archived"); setConfirm(null); setReport(null); }
-			}, tr("tabArchived") + " (" + items.length + ")"),
-			h("button", {
-				key: "removed",
-				type: "button",
-				role: "tab",
-				"aria-selected": tab === "removed",
-				className: "am-tab" + (tab === "removed" ? " active" : ""),
-				onClick: function () { setTab("removed"); setConfirm(null); setReport(null); }
-			}, tr("tabRemoved") + " (" + removed.length + ")")
+		if (phase === "ready") {
+			workspace.push(h("div", { key: "stats-grid", className: "am-stats-grid" }, [
+				statCard("archived", tr("statArchived"), String(items.length), tr("statArchivedHint")),
+				statCard("releasable", tr("statReleasable"), fmtSize(archivedBytes), tr("statReleasableHint")),
+				statCard("missing", tr("statMissing"), String(missingCount), tr("statMissingHint")),
+				statCard("trash", tr("statTrash"), String(removed.length), tr("statTrashHint", { size: fmtSize(removedBytes) }))
+			]));
+		}
+
+		workspace.push(h("div", { key: "viewbar", className: "am-viewbar" }, [
+			h("div", { key: "tabs", className: "am-tabs", role: "tablist", "aria-label": tr("title") }, [
+				h("button", {
+					key: "archived",
+					type: "button",
+					role: "tab",
+					"aria-selected": tab === "archived",
+					className: "am-tab" + (tab === "archived" ? " active" : ""),
+					onClick: function () { setTab("archived"); setConfirm(null); setReport(null); }
+				}, tr("tabArchived") + " (" + items.length + ")"),
+				h("button", {
+					key: "removed",
+					type: "button",
+					role: "tab",
+					"aria-selected": tab === "removed",
+					className: "am-tab" + (tab === "removed" ? " active" : ""),
+					onClick: function () { setTab("removed"); setConfirm(null); setReport(null); }
+				}, tr("tabRemoved") + " (" + removed.length + ")")
+			]),
+			h("div", { key: "space", className: "am-spacer" }),
+			refreshButton()
 		]));
 
 		if (phase === "loading") {
-			children.push(h("div", { key: "loading", className: "am-loading" }, [
+			workspace.push(h("div", { key: "loading", className: "am-loading" }, [
 				h("span", { key: "spinner", className: "am-spinner" }),
 				h("span", { key: "text" }, tr("loading"))
 			]));
 		} else if (phase === "failed") {
-			children.push(h("div", { key: "error", className: "am-error-card" }, [
+			workspace.push(h("div", { key: "error", className: "am-error-card" }, [
 				h("div", { key: "icon", className: "am-error-icon", "aria-hidden": "true" },
 					h("svg", {
 						width: 24,
@@ -1625,22 +1666,11 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				}, tr("retry"))
 			]));
 		} else {
-			if (items.length > 0 || removed.length > 0) {
-				children.push(h("div", { key: "stats-grid", className: "am-stats-grid" }, [
-					statCard("archived", tr("statArchived"), String(items.length), tr("statArchivedHint")),
-					statCard("releasable", tr("statReleasable"), fmtSize(archivedBytes), tr("statReleasableHint")),
-					statCard("missing", tr("statMissing"), String(missingCount), tr("statMissingHint")),
-					statCard("trash", tr("statTrash"), String(removed.length), tr("statTrashHint", { size: fmtSize(removedBytes) }))
-				]));
-				children.push(h("div", { key: "scope", className: "am-scope" },
-					tr("scopeNote", { size: fmtSize(attachments.bytes), files: attachments.files })
-				));
-			}
 			if (tab === "archived") {
 				if (items.length === 0) {
-					children.push(emptyCard("empty", tr("emptyTitle"), tr("emptyHint")));
+					workspace.push(emptyCard("empty", tr("emptyTitle"), tr("emptyHint")));
 				} else {
-					children.push(h("div", { key: "controls", className: "am-controls" }, [
+					workspace.push(h("div", { key: "controls", className: "am-controls" }, [
 						h("div", { key: "search", className: "am-search" }, [
 							searchGlyph(),
 							h("input", {
@@ -1676,7 +1706,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 						query !== "" || filter !== "all" ? h("span", { key: "showing", className: "am-stats" },
 							tr("showing", { shown: sortedItems.length, total: items.length })) : null
 					]));
-					if (sortedItems.length > 0) children.push(h("div", { key: "toolbar", className: "am-toolbar" + (selected.length > 0 ? " active" : "") }, [
+					if (sortedItems.length > 0) workspace.push(h("div", { key: "toolbar", className: "am-toolbar" + (selected.length > 0 ? " active" : "") }, [
 						h("div", { key: "left", className: "am-toolbar-group" }, [
 							h("label", { key: "all", className: "am-checkline" }, [
 								h("input", {
@@ -1759,7 +1789,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 						])
 					]));
 					if (report !== null) {
-						children.push(h("div", { key: "report", className: "am-report" }, [
+						workspace.push(h("div", { key: "report", className: "am-report" }, [
 							h("div", { key: "title", className: "am-report-title" }, report.title),
 							h("div", { key: "list", className: "am-report-list" }, report.failures.map(function (failure, index) {
 								return h("div", { key: index, className: "am-report-item", title: failure.title + " · " + failure.reason },
@@ -1775,7 +1805,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 							)
 						]));
 					}
-					children.push(sortedItems.length === 0
+					workspace.push(sortedItems.length === 0
 						? emptyCard("filtered", tr("filteredEmpty"), tr("filteredEmptyHint"),
 							h("button", {
 								key: "clear",
@@ -1787,7 +1817,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				}
 			} else {
 				if (removed.length > 0) {
-					children.push(h("div", { key: "controls", className: "am-controls" }, [
+					workspace.push(h("div", { key: "controls", className: "am-controls" }, [
 						h("div", { key: "search", className: "am-search" }, [
 							searchGlyph(),
 							h("input", {
@@ -1817,7 +1847,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 						removedQuery !== "" ? h("span", { key: "showing", className: "am-stats" },
 							tr("showing", { shown: sortedRemoved.length, total: removed.length })) : null
 					]));
-					if (sortedRemoved.length > 0) children.push(h("div", { key: "toolbar", className: "am-toolbar" + (removedSelected.length > 0 ? " active" : "") }, [
+					if (sortedRemoved.length > 0) workspace.push(h("div", { key: "toolbar", className: "am-toolbar" + (removedSelected.length > 0 ? " active" : "") }, [
 						h("div", { key: "left", className: "am-toolbar-group" }, [
 							h("label", { key: "all", className: "am-checkline" }, [
 								h("input", {
@@ -1869,7 +1899,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 						])
 					]));
 				}
-				children.push(h("div", { key: "retention", className: "am-retention" }, [
+				workspace.push(h("div", { key: "retention", className: "am-retention" }, [
 					h("span", { key: "label", className: "am-retention-label" }, tr("retentionTitle")),
 					h("div", { key: "select", className: "am-sort" }, [
 						h("span", { key: "text" }, tr("retentionLabel")),
@@ -1886,7 +1916,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 						: null
 				]));
 				if (report !== null) {
-					children.push(h("div", { key: "report", className: "am-report" }, [
+					workspace.push(h("div", { key: "report", className: "am-report" }, [
 						h("div", { key: "title", className: "am-report-title" }, report.title),
 						h("div", { key: "list", className: "am-report-list" }, report.failures.map(function (failure, index) {
 							return h("div", { key: index, className: "am-report-item", title: failure.title + " · " + failure.reason },
@@ -1902,7 +1932,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 						)
 					]));
 				}
-				children.push(removed.length === 0
+				workspace.push(removed.length === 0
 					? emptyCard("empty", tr("emptyRemovedTitle"), tr("emptyRemovedHint"))
 					: sortedRemoved.length === 0
 						? emptyCard("filtered", tr("removedEmptyFilter"), tr("filteredEmptyHint"),
@@ -1916,6 +1946,12 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			}
 		}
 
+		workspace.push(confirmPanel());		if (phase === "ready") {
+			workspace.push(h("div", { key: "scope", className: "am-scope" },
+				tr("scopeNote", { size: fmtSize(attachments.bytes), files: attachments.files })
+			));
+		}
+		children.push(h("section", { key: "workbench", className: "am-workbench", role: "region", "aria-label": tr("title") }, workspace));
 		children.push(confirmPanel());
 		return h("div", { className: "am-page", "aria-busy": busy === true }, children);
 	}
