@@ -26,7 +26,7 @@
 
 1. 打开 **设置 → 插件 → 安装**，填入 GitHub spec：
    ```
-   github:chen1pengvincent/dsh-archived-manager#v0.2.3
+   github:chen1pengvincent/dsh-archived-manager#v0.2.4
    ```
 2. 安装完成后**完全退出并重开 DSH**（⌘Q），再 `Cmd+Shift+R` 硬刷新页面。
 3. 入口在「设置 → 归档会话」。
@@ -80,6 +80,14 @@
 - 响应式：<760px 指标 2×2，<860px 行操作移到下一行，<720px 搜索独占一行，<420px 指标单列；时间在窄屏自动换行，不截断。
 - 确认统一为模态弹窗（遮罩 / ESC / 焦点圈定），危险动作红底白字。
 
+## 可访问性与配色
+
+- 工作台、指标与下拉菜单使用 DSH 内容表面 `bg-layer-1`，不再把弹层 `overlay` 的灰色当正文背景；弹窗仍保留 overlay 语义。
+- 文字分为主文字、次级文字、三级提示三层；日间弱化色与强调色全部达到 WCAG AA，夜间次级文字/三级提示/选中蓝/危险红额外以约 7:1 以上为目标。
+- 禁用按钮使用可读的三级提示色与弱边框，不再用“语义色 + 低透明度”掩盖文字。
+- 字体沿用 DSH 系统字体：标题 18px、正文 12–13px、指标 22px、会话标题 14px、元信息 12px，兼顾中文与英文/数字。
+- 详细调研、令牌和对比度见 [可访问性、配色与排版](docs/accessibility.md)；`test/theme.test.mjs` 会计算实际对比度并禁止 overlay 回潮。
+
 ## 安全设计
 
 | 风险 | 对策 |
@@ -132,7 +140,7 @@
 npm test
 ```
 
-53 项测试，覆盖：列表/标题/体积、附件统计、移入隔离区与 manifest、运行中拒绝、非归档拒绝、彻底删除确认、取消归档、隔离区单条删除、保留策略与过期清理、定时提醒停止、恢复与路径校验（含 manifest 穿越）、悬空 id、清空隔离区、路由鉴权（回环/同源/自定义头/405/唯一路径）、客户端设置页注册/搜索/筛选/隔离区/保留策略/模态渲染。
+55 项测试，覆盖：列表/标题/体积、附件统计、移入隔离区与 manifest、运行中拒绝、非归档拒绝、彻底删除确认、取消归档、隔离区单条删除、保留策略与过期清理、定时提醒停止、恢复与路径校验（含 manifest 穿越）、悬空 id、清空隔离区、路由鉴权（回环/同源/自定义头/405/唯一路径）、客户端设置页注册/搜索/筛选/隔离区/保留策略/模态渲染、日夜主题与 WCAG 对比度。
 
 ## 已知限制
 
@@ -159,7 +167,7 @@ All operations run locally in the DSH Host. There is no telemetry and no externa
 
 1. Open **DSH → Settings → Plugins → Install** and enter:
    ```
-   github:chen1pengvincent/dsh-archived-manager#v0.2.3
+   github:chen1pengvincent/dsh-archived-manager#v0.2.4
    ```
 2. Fully quit DSH (⌘Q), reopen it, then hard-refresh the page (`Cmd+Shift+R`).
 3. Open **Settings → Archived Sessions**.
