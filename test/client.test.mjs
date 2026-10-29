@@ -16,7 +16,7 @@ function makeReact(values) {
   };
 }
 
-async function loadClient(react) {
+async function loadClient(react, language = 'zh-CN') {
   const code = await readFile(new URL('../client/index.js', import.meta.url), 'utf8');
   let captured;
   const fakeRequire = (name) => {
@@ -29,7 +29,7 @@ async function loadClient(react) {
       createElement: () => ({ setAttribute() {}, textContent: '' }),
       head: { appendChild() {} },
     },
-    navigator: { language: 'zh-CN' },
+    navigator: { language },
     Symbol, Object, Array, Date, JSON, Math, RegExp, String, Number, isFinite, Error, console,
   };
   vm.createContext(sandbox);
@@ -107,7 +107,7 @@ function pageValues(overrides) {
 test('client bundle exports a plugin and registers the settings section', async () => {
   const client = await loadClient(makeReact([]));
   assert.equal(client.name, 'archived-manager');
-  assert.deepEqual([...client.inject], ['slots']);
+  assert.deepEqual([...client.inject], ['slots', 'locale']);
   assert.equal(typeof client.apply, 'function');
   const registered = [];
   const ctx = {
@@ -132,6 +132,53 @@ test('client bundle exports a plugin and registers the settings section', async 
   assert.equal(tree.type, 'div');
   assert.equal(tree.props.className, 'am-page');
   assert.ok(tree.children.length >= 3);
+});
+
+test('the page follows the DSH locale service even when navigator is en-US', async () => {
+  const client = await loadClient(makeReact(pageValues({ 1: [ITEM] })), 'en-US');
+  const dictionaries = {};
+  const locale = {
+    register(ns, dictionary) {
+      dictionaries[ns] = dictionary;
+      return () => {};
+    },
+    bind(ns) {
+      return (key, vars) => {
+        const dictionary = dictionaries[ns] && dictionaries[ns].zh;
+        let text = dictionary && dictionary[key];
+        if (typeof text !== 'string') return key;
+        if (vars) {
+          for (const [name, value] of Object.entries(vars)) text = text.replaceAll('{' + name + '}', String(value));
+        }
+        return text;
+      };
+    },
+  };
+  let registered;
+  const ctx = {
+    locale,
+    effect(factory) { return factory(); },
+    inject(names, callback) {
+      assert.deepEqual([...names], ['slots']);
+      callback({
+        slots: {
+          inject(name, factory) { assert.equal(name, 'settings.section'); factory(); },
+          register(spec, component) { registered = { spec, component }; return () => {}; },
+        },
+      });
+    },
+  };
+  client.apply(ctx);
+  assert.ok(dictionaries.archivedManager, 'dictionary registered');
+  assert.deepEqual(
+    Object.keys(dictionaries.archivedManager.zh).sort(),
+    Object.keys(dictionaries.archivedManager.en).sort(),
+  );
+  assert.equal(registered.spec.locale, 'archivedManager');
+  assert.equal(registered.spec.label(), '归档会话');
+  const text = textOf(registered.component());
+  assert.ok(text.includes('归档会话管理'), text);
+  assert.ok(!text.includes('Archived session manager'), text);
 });
 
 test('client survives a shell without a settings domain', async () => {

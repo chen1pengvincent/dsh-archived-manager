@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Archived session manager",
+    "description": "Manage archived sessions: native unarchive, recoverable quarantine, permanent log purge, search/filter/sort, and retention."
+  }
+}

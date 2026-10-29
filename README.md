@@ -22,9 +22,11 @@
 
 **要求**：DSH Desktop 2.0.17+（内核 0.2.1-rc.2 实测），Node.js 20+。
 
+界面语言优先跟随 DSH 的 **设置 → 通用 → 语言**；仅在 locale 服务不可用的旧版回退 `navigator.language`。中文界面显示“归档会话管理”，英文界面显示“Archived session manager”。
+
 1. 打开 **设置 → 插件 → 安装**，填入 GitHub spec：
    ```
-   github:chen1pengvincent/dsh-archived-manager#v0.2.1
+   github:chen1pengvincent/dsh-archived-manager#v0.2.2
    ```
 2. 安装完成后**完全退出并重开 DSH**（⌘Q），再 `Cmd+Shift+R` 硬刷新页面。
 3. 入口在「设置 → 归档会话」。
@@ -124,7 +126,7 @@
 npm test
 ```
 
-50 项测试，覆盖：列表/标题/体积、附件统计、移入隔离区与 manifest、运行中拒绝、非归档拒绝、彻底删除确认、取消归档、隔离区单条删除、保留策略与过期清理、定时提醒停止、恢复与路径校验（含 manifest 穿越）、悬空 id、清空隔离区、路由鉴权（回环/同源/自定义头/405/唯一路径）、客户端设置页注册/搜索/筛选/隔离区/保留策略/模态渲染。
+52 项测试，覆盖：列表/标题/体积、附件统计、移入隔离区与 manifest、运行中拒绝、非归档拒绝、彻底删除确认、取消归档、隔离区单条删除、保留策略与过期清理、定时提醒停止、恢复与路径校验（含 manifest 穿越）、悬空 id、清空隔离区、路由鉴权（回环/同源/自定义头/405/唯一路径）、客户端设置页注册/搜索/筛选/隔离区/保留策略/模态渲染。
 
 ## 已知限制
 
@@ -151,10 +153,12 @@ All operations run locally in the DSH Host. There is no telemetry and no externa
 
 1. Open **DSH → Settings → Plugins → Install** and enter:
    ```
-   github:chen1pengvincent/dsh-archived-manager#v0.2.1
+   github:chen1pengvincent/dsh-archived-manager#v0.2.2
    ```
 2. Fully quit DSH (⌘Q), reopen it, then hard-refresh the page (`Cmd+Shift+R`).
 3. Open **Settings → Archived Sessions**.
+
+The UI follows DSH's **Settings → General → Language** selection and falls back to the browser locale only when the locale service is unavailable; Chinese DSH shows `归档会话管理`, English DSH shows `Archived session manager`.
 
 Tested with DSH Desktop 2.0.17 / core 0.2.1-rc.2, Node.js 20+.
 

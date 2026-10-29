@@ -1,6 +1,6 @@
 {
   "name": "dsh-archived-manager",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "description": "DSH (DeepSeek Harness) plugin to manage archived sessions: native unarchive, recoverable quarantine, permanent purge, search/filter/sort, and retention.",
   "type": "module",
   "main": "lib/index.js",
@@ -8,11 +8,14 @@
     ".": "./lib/index.js",
     "./client": "./client/index.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./locale/en.json": "./locale/en.json",
+    "./locale/zh.json": "./locale/zh.json"
   },
   "files": [
     "lib/",
     "client/",
+    "locale/",
     "cordis.patch.yml",
     "README.md",
     "LICENSE"

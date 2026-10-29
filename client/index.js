@@ -13,7 +13,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	var LANG = typeof navigator !== "undefined" && navigator.language ? String(navigator.language).toLowerCase() : "";
 	var ZH = LANG.indexOf("zh") === 0;
 
-	var STR = ZH ? {
+	var STR_ZH = {
 		section: "归档会话",
 		title: "归档会话管理",
 		subtitle: "先归档，再在这里批量管理。取消归档让会话回到侧栏；移入隔离区保留文件；彻底删除只清理会话日志。",
@@ -175,7 +175,9 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		errStorage: "文件操作失败",
 		errSchedule: "提醒停止失败",
 		errGeneric: "操作失败",
-	} : {
+	};
+
+	var STR_EN = {
 		section: "Archived sessions",
 		title: "Archived session manager",
 		subtitle: "Archive first, then manage in bulk. Unarchive returns a session to the sidebar; quarantine keeps the files; permanent deletion removes only the session logs.",
@@ -339,8 +341,21 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		errGeneric: "The operation failed",
 	};
 
+	var STR = ZH ? STR_ZH : STR_EN;
+	var LOCALE_NS = "archivedManager";
+	var translate = null;
+	var localeReady = false;
+
 	function tr(key, vars) {
-		var text = STR[key] || key;
+		var text;
+		if (translate) {
+			try {
+				text = translate(key, vars);
+			} catch (error) {
+				text = undefined;
+			}
+		}
+		if (typeof text !== "string" || text === key) text = STR[key] || key;
 		if (vars) {
 			Object.keys(vars).forEach(function (name) {
 				text = text.replace(new RegExp("\\{" + name + "\\}", "g"), String(vars[name]));
@@ -579,7 +594,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		style.textContent = CSS;
 		document.head.appendChild(style);
 	}
-	function Page() {
+	function Page(props) {
+		if (props && typeof props.t === "function") translate = props.t;
 		var tabState = useState("archived");
 		var tab = tabState[0];
 		var setTab = tabState[1];
@@ -1905,12 +1921,49 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	}
 
 	/**
+	 * Register the plugin-owned dictionaries with DSH's locale service. The
+	 * active UI language then follows Settings → General, not the Electron
+	 * renderer's navigator language.
+	 */
+	function setupLocale(ctx, locale) {
+		if (localeReady || !locale || typeof locale.register !== "function") return false;
+		try {
+			var register = function () {
+				return locale.register(LOCALE_NS, { zh: STR_ZH, en: STR_EN });
+			};
+			if (typeof ctx.effect === "function") ctx.effect(register, "archived-manager: dictionaries");
+			else register();
+			localeReady = true;
+			if (typeof locale.bind === "function") translate = locale.bind(LOCALE_NS);
+			return true;
+		} catch (error) {
+			/* A hot reload can race the old dictionary's teardown; bind the
+			 * existing namespace when possible and keep the fallback otherwise. */
+			try {
+				if (typeof locale.bind === "function") translate = locale.bind(LOCALE_NS);
+			} catch (bindError) {
+				translate = null;
+			}
+			return false;
+		}
+	}
+
+	/**
 	 * Register the settings page. slots is resolved through an optional
 	 * injection so a shell without the settings domain leaves the host routes
 	 * alone instead of failing the whole plugin.
 	 */
 	function install(ctx) {
 		injectStyles();
+		try {
+			var locale = ctx.locale;
+			if (!locale && typeof ctx.get === "function") {
+				try { locale = ctx.get("locale"); } catch (error) { locale = undefined; }
+			}
+			setupLocale(ctx, locale);
+		} catch (error) {
+			/* keep the navigator fallback on older shells */
+		}
 		try {
 			ctx.inject(["slots"], function (scope) {
 				if (scope === null || scope === undefined || scope.slots === undefined) return;
@@ -1920,6 +1973,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 							name: "settings.section",
 							id: "archived-manager",
 							order: 55,
+							locale: LOCALE_NS,
 							label: function () { return tr("section"); }
 						}, Page);
 					});
@@ -1933,7 +1987,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	}
 
 	exports.name = "archived-manager";
-	exports.inject = ["slots"];
+	exports.inject = ["slots", "locale"];
 	exports.apply = install;
 	return module.exports;
 }});
