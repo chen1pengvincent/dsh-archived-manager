@@ -7,6 +7,8 @@ import { Readable } from 'node:stream';
 
 import { createRoutes } from '../lib/host.js';
 
+const PACKAGE_VERSION = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
+
 const A = 'session-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 
 async function makeHome() {
@@ -73,6 +75,7 @@ test('GET list returns archived items for a loopback same-origin caller', async 
   assert.equal(result.json.ok, true);
   assert.equal(result.json.items.length, 1);
   assert.equal(result.json.items[0].id, A);
+  assert.equal(result.json.version, PACKAGE_VERSION);
 });
 
 test('POST without the custom header is refused', async () => {
@@ -131,12 +134,13 @@ test('purge without the confirmation body is refused', async () => {
   assert.equal(result.status, 409);
 });
 
-test('health reports the home directory', async () => {
+test('health reports the home directory and package version', async () => {
   const home = await makeHome();
   const routes = createRoutes(fakeCtx(home));
   const result = await call(route(routes, '/archived-manager/health'), { method: 'GET', headers: {} });
   assert.equal(result.status, 200);
   assert.equal(result.json.home, home);
+  assert.equal(result.json.version, PACKAGE_VERSION);
 });
 
 test('the settings routes read and save the quarantine retention window', async () => {

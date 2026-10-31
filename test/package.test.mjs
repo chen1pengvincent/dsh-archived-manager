@@ -8,12 +8,13 @@ test('package exposes localized plugin metadata and the DSH bundle contract', as
   const pkg = await readJson('../package.json');
   const en = await readJson('../locale/en.json');
   const zh = await readJson('../locale/zh.json');
-  assert.equal(pkg.version, '0.2.4');
+  assert.equal(pkg.version, '0.2.5');
   assert.deepEqual(pkg.dsh, {
     bundle: { patch: './cordis.patch.yml' },
     client: { platform: 'web' },
   });
   assert.ok(pkg.files.includes('locale/'));
+  assert.ok(pkg.files.includes('docs/'), 'README-linked docs must ship in the package');
   assert.equal(pkg.exports['./locale/en.json'], './locale/en.json');
   assert.equal(pkg.exports['./locale/zh.json'], './locale/zh.json');
   assert.equal(en.meta.title, 'Archived session manager');

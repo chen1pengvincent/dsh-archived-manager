@@ -5,14 +5,20 @@ import vm from 'node:vm';
 
 function makeReact(values) {
   let index = 0;
+  const state = values.slice();
   return {
     createElement: (type, props, ...children) => ({ type, props: props || {}, children: children.flat() }),
     useState: (initial) => {
-      const value = index < values.length ? values[index++] : initial;
-      return [value === undefined ? initial : value, () => {}];
+      const slot = index++;
+      if (slot >= state.length || state[slot] === undefined) state[slot] = initial;
+      return [state[slot], (next) => {
+        const current = state[slot] === undefined ? initial : state[slot];
+        state[slot] = typeof next === 'function' ? next(current) : next;
+      }];
     },
     useEffect: () => {},
     useRef: (initial) => ({ current: initial === undefined ? null : initial }),
+    reset() { index = 0; },
   };
 }
 
@@ -102,6 +108,42 @@ function pageValues(overrides) {
     { trashRetentionDays: 0 }, { bytes: 0, files: 0 }, null,
   ];
   return base.map((value, index) => Object.prototype.hasOwnProperty.call(overrides, index) ? overrides[index] : value);
+}
+
+async function pageRenderer(values) {
+  const react = makeReact(values);
+  const client = await loadClient(react);
+  let component;
+  client.apply({
+    inject(names, callback) {
+      callback({
+        slots: {
+          inject(name, factory) { factory(); },
+          register(spec, rendered) { component = rendered; return () => {}; },
+        },
+      });
+    },
+  });
+  return () => {
+    react.reset();
+    return component();
+  };
+}
+
+async function renderPage(values) {
+  const render = await pageRenderer(values);
+  return render();
+}
+
+function listRows(tree) {
+  return findAll(tree, (node) => node.props && node.props.role === 'listitem');
+}
+
+function assertRowSelection(row, expected, message) {
+  const classes = row.props.className.split(/\s+/);
+  const checkbox = findAll(row, (node) => node.type === 'input' && node.props.type === 'checkbox')[0];
+  assert.equal(classes.includes('selected'), expected, message + ': row highlight');
+  assert.equal(checkbox.props.checked, expected, message + ': checkbox');
 }
 
 test('client bundle exports a plugin and registers the settings section', async () => {
@@ -439,6 +481,113 @@ test('archived rows expose native unarchive before the quarantine action', async
   assert.ok(unarchiveButtons.length >= 2);
   assert.ok(unarchiveButtons.some((node) => node.props.disabled === false));
   assert.ok(textOf(tree).includes('移入隔离区'));
+});
+
+test('archived rows highlight exactly their own selection for all, single and none', async () => {
+  const other = { ...ITEM, id: 'session-cccccccc-cccc-4ccc-8ccc-cccccccccccc', title: '另一个会话' };
+  const cases = [
+    { name: 'select all', selected: [ITEM.id, other.id], expected: [true, true] },
+    { name: 'first only', selected: [ITEM.id], expected: [true, false] },
+    { name: 'second only', selected: [other.id], expected: [false, true] },
+    { name: 'none', selected: [], expected: [false, false] },
+  ];
+  for (const scenario of cases) {
+    const tree = await renderPage(pageValues({ 1: [ITEM, other], 5: scenario.selected }));
+    const rows = listRows(tree);
+    assert.equal(rows.length, 2, scenario.name);
+    rows.forEach((row, index) => assertRowSelection(row, scenario.expected[index], scenario.name + ' row ' + index));
+  }
+});
+
+test('quarantine rows use the same per-entry selection highlight contract', async () => {
+  const other = { ...REMOVED, id: 'session-dddddddd-dddd-4ddd-8ddd-dddddddddddd', title: '另一个隔离会话' };
+  const firstKey = REMOVED.batch + '/' + REMOVED.id;
+  const secondKey = other.batch + '/' + other.id;
+  const cases = [
+    { selected: [firstKey, secondKey], expected: [true, true] },
+    { selected: [firstKey], expected: [true, false] },
+    { selected: [secondKey], expected: [false, true] },
+    { selected: [], expected: [false, false] },
+  ];
+  for (const [index, scenario] of cases.entries()) {
+    const tree = await renderPage(pageValues({ 0: 'removed', 2: [REMOVED, other], 9: scenario.selected }));
+    const rows = listRows(tree);
+    assert.equal(rows.length, 2);
+    rows.forEach((row, rowIndex) => assertRowSelection(row, scenario.expected[rowIndex], 'quarantine case ' + index + ' row ' + rowIndex));
+  }
+});
+
+test('clicking select all and row checkboxes updates highlights after rerender', async () => {
+  const other = { ...ITEM, id: 'session-cccccccc-cccc-4ccc-8ccc-cccccccccccc', title: '另一个会话' };
+  const render = await pageRenderer(pageValues({ 1: [ITEM, other] }));
+  const checkbox = (node) => findAll(node, (child) => child.type === 'input' && child.props.type === 'checkbox')[0];
+
+  let tree = render();
+  let rows = listRows(tree);
+  checkbox(rows[0]).props.onChange();
+  tree = render();
+  rows = listRows(tree);
+  assertRowSelection(rows[0], true, 'single unselected row becomes selected');
+  assertRowSelection(rows[1], false, 'single selection leaves other row untouched');
+
+  checkbox(findByClass(tree, 'am-toolbar')).props.onChange();
+  tree = render();
+  rows = listRows(tree);
+  rows.forEach((row, index) => assertRowSelection(row, true, 'clicked select all row ' + index));
+
+  checkbox(rows[0]).props.onChange();
+  tree = render();
+  rows = listRows(tree);
+  assertRowSelection(rows[0], false, 'deselected first row');
+  assertRowSelection(rows[1], true, 'second row remains selected');
+  const mixedSelectAll = checkbox(findByClass(tree, 'am-toolbar'));
+  assert.equal(mixedSelectAll.props['aria-checked'], 'mixed');
+
+  checkbox(rows[1]).props.onChange();
+  tree = render();
+  rows = listRows(tree);
+  rows.forEach((row, index) => assertRowSelection(row, false, 'deselected all row ' + index));
+  assert.equal(findByClass(tree, 'am-toolbar').props.className.includes('active'), false);
+
+  const selectAllAgain = checkbox(findByClass(tree, 'am-toolbar'));
+  selectAllAgain.props.onChange();
+  tree = render();
+  listRows(tree).forEach((row, index) => assertRowSelection(row, true, 'reselected all row ' + index));
+  checkbox(findByClass(tree, 'am-toolbar')).props.onChange();
+  tree = render();
+  listRows(tree).forEach((row, index) => assertRowSelection(row, false, 'clicked select all off row ' + index));
+});
+
+test('quarantine select-all clicks also drive per-row highlights and partial selection', async () => {
+  const other = { ...REMOVED, id: 'session-dddddddd-dddd-4ddd-8ddd-dddddddddddd', title: '另一个隔离会话' };
+  const render = await pageRenderer(pageValues({ 0: 'removed', 2: [REMOVED, other] }));
+  const checkbox = (node) => findAll(node, (child) => child.type === 'input' && child.props.type === 'checkbox')[0];
+
+  let tree = render();
+  let rows = listRows(tree);
+  checkbox(rows[0]).props.onChange();
+  tree = render();
+  rows = listRows(tree);
+  assertRowSelection(rows[0], true, 'quarantine single unselected row becomes selected');
+  assertRowSelection(rows[1], false, 'quarantine single selection leaves other row untouched');
+
+  checkbox(findByClass(tree, 'am-toolbar')).props.onChange();
+  tree = render();
+  rows = listRows(tree);
+  rows.forEach((row, index) => assertRowSelection(row, true, 'quarantine clicked all row ' + index));
+
+  checkbox(rows[0]).props.onChange();
+  tree = render();
+  rows = listRows(tree);
+  assertRowSelection(rows[0], false, 'quarantine deselected first');
+  assertRowSelection(rows[1], true, 'quarantine second remains selected');
+
+  checkbox(findByClass(tree, 'am-toolbar')).props.onChange();
+  tree = render();
+  listRows(tree).forEach((row, index) => assertRowSelection(row, true, 'quarantine partial to all row ' + index));
+  checkbox(findByClass(tree, 'am-toolbar')).props.onChange();
+  tree = render();
+  listRows(tree).forEach((row, index) => assertRowSelection(row, false, 'quarantine clicked all off row ' + index));
 });
 
 test('a selected quarantine entry enables bulk restore and bulk delete', async () => {

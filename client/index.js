@@ -542,6 +542,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-row:last-child{border-bottom:none}",
 		".am-row{transition:background .12s ease}",
 		".am-row:hover{background:var(--dsw-alias-bg-l1,rgba(127,127,127,.05))}",
+		".am-row.selected,.am-row.selected:hover{background:var(--am-accent-soft);box-shadow:inset 0 0 0 1px var(--am-accent)}",
 		".am-row-plain{grid-template-columns:minmax(0,1fr) auto}",
 		".am-main{min-width:0;display:flex;flex-direction:column;gap:3px}",
 		".am-titleline{display:flex;align-items:center;gap:8px;min-width:0}",
@@ -1173,7 +1174,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 						onClick: function () { setConfirm({ kind: "purge", ids: [item.id], checked: false }); }
 					}, tr("purge"))
 				];
-			return h("div", { key: item.id, className: "am-row", role: "listitem" }, [
+			return h("div", { key: item.id, className: "am-row" + (checked ? " selected" : ""), role: "listitem" }, [
 				h("input", {
 					key: "check",
 					type: "checkbox",
@@ -1203,7 +1204,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			var checked = removedSelected.indexOf(key) >= 0;
 			var workspace = entry.workspace || "—";
 			var firstMeta = [workspace, fmtSize(entry.bytes)].join(" · ");
-			return h("div", { key: key, className: "am-row", role: "listitem" }, [
+			return h("div", { key: key, className: "am-row" + (checked ? " selected" : ""), role: "listitem" }, [
 				h("input", {
 					key: "check",
 					type: "checkbox",
