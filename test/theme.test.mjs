@@ -23,11 +23,12 @@ test('workbench uses the content surface, not the elevated overlay color', async
   assert.ok(source.includes('.am-btn:disabled,.am-btn.primary:disabled,.am-btn.danger:disabled,.am-btn.hazard:disabled{opacity:1;color:var(--am-text-tertiary)'));
 });
 
-test('selected rows keep a visible accent surface and outline even on hover', async () => {
+test('selected rows keep accent feedback while the toolbar stays neutral', async () => {
   const source = await readFile(new URL('../client/index.js', import.meta.url), 'utf8');
   const selectedRule = '.am-row.selected,.am-row.selected:hover{background:var(--am-accent-soft);box-shadow:inset 0 0 0 1px var(--am-accent)}';
-  assert.ok(source.includes(selectedRule), 'selected rows need the same accent language as the active toolbar');
+  assert.ok(source.includes(selectedRule), 'selected rows need a visible accent surface and outline');
   assert.ok(source.indexOf(selectedRule) > source.indexOf('.am-row:hover{'), 'selection must win over the hover background');
+  assert.ok(!source.includes('.am-toolbar.active'), 'the select-all toolbar must never take selection highlight');
 });
 
 test('day and night text and semantic colors meet the contrast targets', () => {

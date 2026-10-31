@@ -493,7 +493,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-stat-hint{font-size:11px;line-height:1.5;margin-top:4px;color:var(--am-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
 		".am-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));background:transparent}",
 		".am-toolbar-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
-		".am-toolbar.active{background:var(--am-accent-soft);box-shadow:inset 0 0 0 1px var(--am-accent)}",
 		".am-spacer{flex:1 1 auto}",
 		".am-stats{font-size:12px;line-height:1.5;color:var(--am-text-secondary)}",
 		".am-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12))}",
@@ -1708,7 +1707,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 						query !== "" || filter !== "all" ? h("span", { key: "showing", className: "am-stats" },
 							tr("showing", { shown: sortedItems.length, total: items.length })) : null
 					]));
-					if (sortedItems.length > 0) workspace.push(h("div", { key: "toolbar", className: "am-toolbar" + (selected.length > 0 ? " active" : "") }, [
+					if (sortedItems.length > 0) workspace.push(h("div", { key: "toolbar", className: "am-toolbar" }, [
 						h("div", { key: "left", className: "am-toolbar-group" }, [
 							h("label", { key: "all", className: "am-checkline" }, [
 								h("input", {
@@ -1849,7 +1848,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 						removedQuery !== "" ? h("span", { key: "showing", className: "am-stats" },
 							tr("showing", { shown: sortedRemoved.length, total: removed.length })) : null
 					]));
-					if (sortedRemoved.length > 0) workspace.push(h("div", { key: "toolbar", className: "am-toolbar" + (removedSelected.length > 0 ? " active" : "") }, [
+					if (sortedRemoved.length > 0) workspace.push(h("div", { key: "toolbar", className: "am-toolbar" }, [
 						h("div", { key: "left", className: "am-toolbar-group" }, [
 							h("label", { key: "all", className: "am-checkline" }, [
 								h("input", {

@@ -146,6 +146,12 @@ function assertRowSelection(row, expected, message) {
   assert.equal(checkbox.props.checked, expected, message + ': checkbox');
 }
 
+function assertToolbarNeutral(tree, message) {
+  const toolbar = findByClass(tree, 'am-toolbar');
+  assert.notEqual(toolbar, undefined, message + ': toolbar exists');
+  assert.equal(toolbar.props.className, 'am-toolbar', message + ': toolbar never takes selection highlight');
+}
+
 test('client bundle exports a plugin and registers the settings section', async () => {
   const client = await loadClient(makeReact([]));
   assert.equal(client.name, 'archived-manager');
@@ -496,6 +502,7 @@ test('archived rows highlight exactly their own selection for all, single and no
     const rows = listRows(tree);
     assert.equal(rows.length, 2, scenario.name);
     rows.forEach((row, index) => assertRowSelection(row, scenario.expected[index], scenario.name + ' row ' + index));
+    assertToolbarNeutral(tree, scenario.name);
   }
 });
 
@@ -514,6 +521,7 @@ test('quarantine rows use the same per-entry selection highlight contract', asyn
     const rows = listRows(tree);
     assert.equal(rows.length, 2);
     rows.forEach((row, rowIndex) => assertRowSelection(row, scenario.expected[rowIndex], 'quarantine case ' + index + ' row ' + rowIndex));
+    assertToolbarNeutral(tree, 'quarantine case ' + index);
   }
 });
 
@@ -529,11 +537,13 @@ test('clicking select all and row checkboxes updates highlights after rerender',
   rows = listRows(tree);
   assertRowSelection(rows[0], true, 'single unselected row becomes selected');
   assertRowSelection(rows[1], false, 'single selection leaves other row untouched');
+  assertToolbarNeutral(tree, 'archived single click');
 
   checkbox(findByClass(tree, 'am-toolbar')).props.onChange();
   tree = render();
   rows = listRows(tree);
   rows.forEach((row, index) => assertRowSelection(row, true, 'clicked select all row ' + index));
+  assertToolbarNeutral(tree, 'archived select-all click');
 
   checkbox(rows[0]).props.onChange();
   tree = render();

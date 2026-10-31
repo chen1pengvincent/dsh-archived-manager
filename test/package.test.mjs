@@ -8,7 +8,7 @@ test('package exposes localized plugin metadata and the DSH bundle contract', as
   const pkg = await readJson('../package.json');
   const en = await readJson('../locale/en.json');
   const zh = await readJson('../locale/zh.json');
-  assert.equal(pkg.version, '0.2.5');
+  assert.equal(pkg.version, '0.2.6');
   assert.deepEqual(pkg.dsh, {
     bundle: { patch: './cordis.patch.yml' },
     client: { platform: 'web' },

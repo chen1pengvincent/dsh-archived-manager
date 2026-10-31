@@ -24,7 +24,7 @@
 2. 输入以下 spec：
 
    ```text
-   github:chen1pengvincent/dsh-archived-manager#v0.2.5
+   github:chen1pengvincent/dsh-archived-manager#v0.2.6
    ```
 
 3. 安装后**完全退出并重新打开 DSH**，再硬刷新页面（macOS：`Cmd+Shift+R`）。
@@ -69,7 +69,7 @@ link:/absolute/path/to/dsh-archived-manager
 - **单选**：只有对应行高亮，其他行保持原样。
 - **取消选择**：该行高亮立即消退；全部取消后，列表不再保留选中高亮。
 - **隔离区**：使用同一套逐行高亮规则。
-- **工具条**：存在选中项时继续高亮，用于承载批量操作；它不是列表行高亮的替代品。
+- **工具条**：永远不参与选中高亮；只显示全选/半选状态、已选数量和批量操作可用性，不因单选或全选出现选中背景或描边。
 
 搜索和筛选会改变当前可见集合；“全选”只作用于当前可见结果，不会在后台选中其他结果。
 
@@ -159,14 +159,12 @@ npm pack
 
 测试覆盖 Host 文件操作、路径与路由安全、归档/隔离/恢复/删除、保留策略、Client 设置页注册、搜索筛选、模态框、选中行高亮（全选/单选/无选择）、隔离区高亮、深浅主题和 WCAG 对比度。GitHub Actions 对 push 和 pull request 自动运行测试。
 
-### v0.2.5 修复内容
+### v0.2.6 修复内容
 
-- 修复全选后只有批量工具条高亮、会话行没有高亮的问题。
-- 归档行与隔离行统一从各自的 `checked` 状态推导 `selected` 类。
-- 选中行使用强调色背景与内描边，hover 不覆盖选中反馈。
-- 新增全选、两种单选、无选择及隔离区的渲染回归测试，并模拟实际点击、状态更新与重渲染。
-- `/health` 与 `/list` 的版本号统一从 `package.json` 读取，避免发布版本与诊断版本不一致。
-- 发布包包含 README 引用的 `docs/` 文档与图片。
+- 修正工具条随单选或全选出现高亮的错误交互：全选工具条永不做选中高亮。
+- 删除归档区与隔离区工具条的 `active` 状态绑定及对应 CSS，不只调整触发条件。
+- 只有数据行根据自身 `checked` 状态显示或消退高亮；全选高亮全部可选数据行，单选只高亮对应数据行。
+- 新增工具条在无选择、单选、全选和实际点击重渲染后均保持普通样式的回归断言，同时保留数据行高亮测试。
 - 不改变归档、取消归档、隔离、恢复、删除或保留策略的数据操作行为。
 
 ## 已知限制
@@ -184,20 +182,20 @@ npm pack
 Open **DSH → Settings → Plugins → Install** and enter:
 
 ```text
-github:chen1pengvincent/dsh-archived-manager#v0.2.5
+github:chen1pengvincent/dsh-archived-manager#v0.2.6
 ```
 
 Fully restart DSH after installation, hard-refresh the Web UI, then open **Settings → Archived Sessions**. Node.js 20+ is needed only for development and tests.
 
 ### Selection feedback
 
-Every row derives its highlight from its own checked state. Select-all highlights every selectable row in the current filtered result; a single selection highlights only that row; deselecting removes the highlight. Quarantine rows follow the same contract. The batch toolbar remains highlighted while any selection exists.
+Every data row derives its highlight from its own checked state. Select-all highlights every selectable data row in the current filtered result; a single selection highlights only that row; deselecting removes the highlight. Quarantine rows follow the same contract. The select-all toolbar never takes selection highlight: it only shows checkbox state, selection count, and action availability.
 
 ### Safety and privacy
 
 Runtime operations are local. The plugin has no telemetry and does not initiate external network requests. Its loopback-only HTTP routes require same-origin requests and a custom header. Permanent deletion is scoped to session logs; project files and shared attachments are not deleted. Dangerous actions require explicit confirmation.
 
-See the Chinese sections above for the operation matrix, data paths, API table, security controls, development commands, and v0.2.5 release notes.
+See the Chinese sections above for the operation matrix, data paths, API table, security controls, development commands, and v0.2.6 release notes.
 
 ## License
 
