@@ -10,7 +10,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	var useEffect = React.useEffect;
 
 	var API = "/archived-manager";
-	var CLIENT_VERSION = "0.3.0";
+	var CLIENT_VERSION = "0.3.1";
 	var MAX_BATCH = 200;
 	var LANG = typeof navigator !== "undefined" && navigator.language ? String(navigator.language).toLowerCase() : "";
 	var ZH = LANG.indexOf("zh") === 0;
@@ -178,7 +178,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		errSchedule: "提醒停止失败",
 		errGeneric: "操作失败",
 		clearSelection: "取消选择",
-		more: "更多",
 		details: "详情",
 		files: "已记录的关联文件",
 		loadFiles: "查看关联文件",
@@ -414,7 +413,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		errSchedule: "Failed to stop reminders",
 		errGeneric: "The operation failed",
 		clearSelection: "Clear selection",
-		more: "More",
 		details: "Details",
 		files: "Recorded associated files",
 		loadFiles: "View associated files",
@@ -741,10 +739,10 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		"@media (max-width:860px){.am-row{grid-template-columns:24px minmax(0,1fr)}.am-row-actions{grid-column:2;justify-self:start;padding-top:6px}.am-row-plain{grid-template-columns:minmax(0,1fr)}.am-row-plain .am-row-actions{grid-column:1}}",
 		"@media (max-width:720px){.am-search{flex-basis:100%}.am-sort{margin-left:auto}}",
 		".am-page{gap:14px;min-width:0}.am-workbench{container-type:inline-size}",
-		".am-head{flex-wrap:wrap;gap:12px}.am-head-text{flex:1 1 270px}.am-version{flex:0 1 420px;min-width:0;font-size:12px;line-height:1.6}.am-version-line,.am-update-result{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.am-version-label{font-weight:600}.am-version-details{margin-top:4px}.am-version-details summary{cursor:pointer;width:max-content}.am-version a{color:var(--am-accent);text-decoration:underline}.am-update-result{margin-top:6px}.am-help{font-size:12px;line-height:1.6;color:var(--am-text-secondary)}",
+		".am-head{flex-wrap:wrap;gap:12px}.am-head-text{flex:1 1 270px}.am-version{flex:0 1 420px;min-width:0;font-size:12px;line-height:1.6}.am-version-line,.am-update-result{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.am-version-label{font-weight:600}.am-version-details{margin-top:8px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));border-radius:8px}.am-version a{color:var(--am-accent);text-decoration:underline}.am-update-result{margin-top:6px}.am-help{font-size:12px;line-height:1.6;color:var(--am-text-secondary)}",
 		".am-summary{display:flex;gap:14px;flex-wrap:wrap;padding:9px 14px;color:var(--am-text-secondary);font-size:12px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12))}.am-toolbar{gap:8px}.am-selected-count{font-size:12px;font-weight:700;color:var(--am-accent)}.am-batch-limit{flex-basis:100%;color:var(--am-warning);font-size:12px}.am-notice{padding:9px 14px;font-size:12px;color:var(--am-text-secondary);border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12))}",
 		".am-list{overflow:visible}.am-row{grid-template-columns:28px minmax(120px,1fr) minmax(64px,90px) auto;gap:12px;padding:14px}.am-row-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;overflow:hidden;overflow-wrap:anywhere;border:0;padding:0;background:transparent;color:var(--am-text-primary);text-align:left;cursor:pointer;font:inherit;font-size:14px;font-weight:500;line-height:1.5}.am-row-title:focus-visible,.am-page summary:focus-visible,.am-search-clear:focus-visible{outline:2px solid var(--am-accent);outline-offset:3px}.am-titleline{align-items:flex-start}.am-check-target{display:flex;width:28px;min-height:28px;align-items:center;justify-content:center;cursor:pointer}.am-check{margin:0}.am-log-size{display:flex;flex-direction:column;gap:2px;align-items:flex-end;font-size:12px;font-variant-numeric:tabular-nums}.am-log-size strong{font-weight:500}.am-badge{font-size:12px}.am-row-actions{gap:6px;max-width:100%}",
-		".am-more{position:relative;display:inline-flex}.am-action-menu{position:absolute;right:0;top:calc(100% + 5px);z-index:100;min-width:170px;max-width:min(300px,70vw);padding:4px;border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.3));border-radius:10px;background:var(--am-surface);box-shadow:0 8px 24px rgba(0,0,0,.2)}.am-action-menu .am-select-option{white-space:normal;overflow-wrap:anywhere}.am-danger-text{color:var(--am-danger)}.am-warning-text{color:var(--am-warning);overflow-wrap:anywhere}.am-select-option:disabled{color:var(--am-text-tertiary);cursor:not-allowed}.am-details{grid-column:2/-1;min-width:0;padding-top:10px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));font-size:12px;line-height:1.6}.am-path{overflow-wrap:anywhere;white-space:pre-wrap;user-select:text}.am-file-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}.am-file-list p{margin:0}.am-file{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:10px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));border-radius:8px;min-width:0}.am-file>div{max-width:100%}.am-report-item{white-space:normal;overflow-wrap:anywhere;overflow:visible}.am-report-actions{gap:8px;flex-wrap:wrap}.am-retention-settings{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-basis:100%}.am-retention-hint{min-width:0}.am-search{min-width:0}.am-modal{background:var(--am-surface)}.am-modal-actions{flex-wrap:wrap}.am-chip:disabled{cursor:not-allowed;color:var(--am-text-tertiary)}",
+		".am-warning-text{color:var(--am-warning);overflow-wrap:anywhere}.am-select-option:disabled{color:var(--am-text-tertiary);cursor:not-allowed}.am-details{grid-column:2/-1;min-width:0;padding-top:10px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));font-size:12px;line-height:1.6}.am-path{overflow-wrap:anywhere;white-space:pre-wrap;user-select:text}.am-file-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}.am-file-list p{margin:0}.am-file{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:10px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));border-radius:8px;min-width:0}.am-file>div{max-width:100%}.am-report-item{white-space:normal;overflow-wrap:anywhere;overflow:visible}.am-report-actions{gap:8px;flex-wrap:wrap}.am-retention-settings{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-basis:100%}.am-retention-hint{min-width:0}.am-search{min-width:0}.am-modal{background:var(--am-surface)}.am-modal-actions{flex-wrap:wrap}.am-chip:disabled{cursor:not-allowed;color:var(--am-text-tertiary)}",
 		"@container (max-width:820px){.am-row{grid-template-columns:28px minmax(0,1fr) auto}.am-row-actions{grid-column:2/-1;justify-self:start;justify-content:flex-start;padding-top:2px}.am-log-size{grid-column:3;grid-row:1}.am-details{grid-column:2/-1}.am-search{flex-basis:100%}.am-controls{align-items:flex-start}.am-sort{margin-left:0}}",
 		"@container (max-width:480px){.am-row{grid-template-columns:28px minmax(0,1fr);gap:8px}.am-log-size{grid-column:2;grid-row:auto;flex-direction:row;gap:8px;align-items:baseline}.am-row-actions{grid-column:2;flex-wrap:wrap}.am-btn{white-space:normal;height:auto;min-height:32px;padding:6px 10px;line-height:1.4}.am-row-title{-webkit-line-clamp:3}.am-filter{flex-wrap:wrap}.am-viewbar{gap:6px}.am-tab{padding:0 10px}.am-head{display:block}.am-version{margin-top:10px}.am-time{white-space:normal}.am-details{grid-column:1/-1}.am-modal-backdrop{padding:12px}}",
 	].join("\n");
@@ -838,6 +836,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		var updateError = updateErrorState[0], setUpdateError = updateErrorState[1];
 		var removedWarningsState = useState([]);
 		var removedWarnings = removedWarningsState[0], setRemovedWarnings = removedWarningsState[1];
+		var versionDetailsState = useState(false);
+		var versionDetails = versionDetailsState[0], setVersionDetails = versionDetailsState[1];
 		var locked = busy || Boolean(update && update.busy) || updatePhase === "preparing" || phase !== "ready";
 		var actionRef = React.useRef(false);
 		var updateRef = React.useRef(false);
@@ -923,7 +923,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		useEffect(function () {
 			if (menu === null || !menuRef.current) return;
 			var target = menuRef.current.querySelector('[aria-selected="true"]')
-				|| menuRef.current.querySelector('[role="option"]') || menuRef.current.querySelector('[role="menuitem"]:not(:disabled)');
+				|| menuRef.current.querySelector('[role="option"]');
 			if (target && typeof target.focus === "function") target.focus();
 		}, [menu]);
 
@@ -1358,7 +1358,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				setToast({ kind: "bad", text: tr("batchLimit") });
 				return;
 			}
-			returnFocusRef.current = menu && menuTriggerRef.current ? menuTriggerRef.current : document.activeElement;
+			returnFocusRef.current = document.activeElement;
 			setMenu(null);
 			setConfirm(value);
 		}
@@ -1369,29 +1369,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			} }, label);
 		}
 
-		function moreMenu(id, actions, label) {
-			var open = menu === id;
-			return h("div", { key: id, className: "am-more" }, [
-				h("button", { key: "trigger", type: "button", className: "am-btn", disabled: locked, "aria-haspopup": "menu", "aria-expanded": open,
-					onClick: function (event) { if (locked || actionRef.current) return; menuTriggerRef.current = event.currentTarget; setMenu(open ? null : id); },
-					onKeyDown: function (event) { if (event.key === "ArrowDown" && !locked) { event.preventDefault(); menuTriggerRef.current = event.currentTarget; setMenu(id); } }
-				}, label || tr("more")),
-				open ? h("div", { key: "menu", className: "am-action-menu", role: "menu", ref: menuRef, "aria-label": label || tr("more"), onKeyDown: function (event) {
-					if (!menuRef.current) return;
-					var nodes = Array.prototype.slice.call(menuRef.current.querySelectorAll('[role="menuitem"]:not(:disabled)'));
-					var current = nodes.indexOf(document.activeElement), next;
-					if (event.key === "ArrowDown") next = (current + 1) % nodes.length;
-					else if (event.key === "ArrowUp") next = (current + nodes.length - 1) % nodes.length;
-					else if (event.key === "Home") next = 0;
-					else if (event.key === "End") next = nodes.length - 1;
-					if (next !== undefined && nodes[next]) { event.preventDefault(); nodes[next].focus(); }
-				} }, actions.map(function (action) {
-					return h("button", { key: action.key, type: "button", role: "menuitem", className: "am-select-option am-danger-text", disabled: locked || action.disabled,
-						onClick: function () { if (!locked && !action.disabled && !actionRef.current) action.run(); }
-					}, action.label);
-				})) : null
-			]);
-		}
 
 		function fileKey(item) { return item.batch ? keyOf(item) : item.id; }
 		function fileRequest(item) { return item.batch ? { id: item.id, batch: item.batch } : { id: item.id }; }
@@ -1492,7 +1469,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			var actions = item.running ? h("span", { className: "am-help" }, tr("runningLocked")) : item.missing
 				? button("cleanup", tr("cleanup"), function () { openConfirm({ kind: "cleanup", ids: [item.id], checked: true }); }, locked)
 				: [button("unarchive", tr("unarchive"), function () { runUnarchive([item.id]); }, locked), button("hide", tr("hide"), function () { openConfirm({ kind: "hide", ids: [item.id], checked: true }); }, locked),
-					moreMenu("more-" + item.id, [{ key: "purge", label: tr("purge"), run: function () { openConfirm({ kind: "purge", ids: [item.id], checked: false }); } }])];
+					button("purge", tr("purge"), function () { openConfirm({ kind: "purge", ids: [item.id], checked: false }); }, locked, true)];
 			return h("div", { key: item.id, className: "am-row" + (checked ? " selected" : ""), role: "listitem" }, [
 				h("label", { key: "check", className: "am-check-target" }, h("input", { type: "checkbox", className: "am-check", checked: checked, disabled: locked || Boolean(item.running), onChange: function () { if (!item.running) toggle(item.id); }, "aria-label": item.title || item.id })),
 				rowMain(item, false),
@@ -1507,7 +1484,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				rowMain(entry, true),
 				h("div", { key: "size", className: "am-log-size", title: entry.sizeWarning || entry.protectionReason }, [h("span", { key: "label", className: "am-help" }, tr("logSize")), h("strong", { key: "value" }, logSizeText(entry, true))]),
 				h("div", { key: "actions", className: "am-row-actions" }, [button("restore", tr("restore"), function () { runRestore([{ batch: entry.batch, id: entry.id }]); }, locked),
-					moreMenu("more-" + key, [{ key: "discard", label: tr("purge"), run: function () { openConfirm({ kind: "discard", items: [{ batch: entry.batch, id: entry.id }], checked: false }); } }])]),
+					button("discard", tr("purge"), function () { openConfirm({ kind: "discard", items: [{ batch: entry.batch, id: entry.id }], checked: false }); }, locked, true)]),
 				details(entry, true)
 			]);
 		}
@@ -1557,15 +1534,16 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			return h("div", { key: "version", className: "am-version" }, [
 				h("div", { key: "line", className: "am-version-line" }, [
 					h("span", { key: "version", className: "am-version-label" }, mismatch ? tr("pendingUpdate") : confirmed ? "v" + CLIENT_VERSION : tr("versionChecking", { version: CLIENT_VERSION })),
+					h("button", { key: "details-toggle", type: "button", className: "am-btn am-version-toggle", "aria-expanded": versionDetails, "aria-controls": "am-version-details", onClick: function () { setVersionDetails(!versionDetails); } }, tr("versionDetails")),
 					source === "link" ? h("span", { key: "source", className: "am-badge muted" }, tr("localSource")) : null,
 					button("check", updatePhase === "checking" ? tr("checkingUpdate") : tr("checkUpdate"), checkUpdate, updatePhase !== "" || Boolean(update && update.busy))
 				]),
-				h("details", { key: "details", className: "am-version-details" }, [h("summary", { key: "summary" }, tr("versionDetails")),
+				versionDetails ? h("div", { key: "details", id: "am-version-details", className: "am-version-details" }, [
 					h("div", { key: "page" }, tr("pageVersion") + "：v" + CLIENT_VERSION),
 					h("div", { key: "runtime" }, tr("serviceVersion") + "：" + (update && update.runtimeVersion || tr("notProvided"))),
 					h("div", { key: "installed" }, tr("installedVersion") + "：" + (update && update.installedVersion || tr("notProvided"))),
 					h("div", { key: "source" }, tr("source") + "：" + sourceText)
-				]),
+				]) : null,
 				updateError ? h("div", { key: "error", className: "am-warning-text", role: "status" }, updateError) : null,
 				update && update.busy ? h("div", { key: "busy", role: "status" }, tr("updateBusy")) : null,
 				release ? h("div", { key: "release", className: "am-update-result" }, [
@@ -1924,14 +1902,14 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				actions.push(button("clear", tr("clearSelection"), function () { if (actionRef.current) return; if (isRemoved) setRemovedSelected([]); else setSelected([]); }, locked));
 				if (isRemoved) {
 					actions.push(button("restore", tr("restore") + " (" + targets.length + ")", function () { runRestore(targets); }, locked || targets.length > MAX_BATCH));
-					actions.push(moreMenu("removed-batch", [{ key: "discard", label: tr("purge") + " (" + targets.length + ")", disabled: targets.length > MAX_BATCH, run: function () { openConfirm({ kind: "discard", items: targets, checked: false }); } }]));
+					actions.push(button("discard", tr("purge") + " (" + targets.length + ")", function () { openConfirm({ kind: "discard", items: targets, checked: false }); }, locked || targets.length > MAX_BATCH, true));
 				} else {
 					if (filesIds.length > 0) {
 						actions.push(button("unarchive", tr("unarchive") + " (" + filesIds.length + ")", function () { runUnarchive(filesIds, missingIds); }, locked || filesIds.length > MAX_BATCH));
 						actions.push(button("hide", tr("hide") + " (" + filesIds.length + ")", function () { openConfirm({ kind: "hide", ids: filesIds, ignored: missingIds.length, ignoredIds: missingIds, checked: true }); }, locked || filesIds.length > MAX_BATCH));
 					}
 					if (missingIds.length > 0) actions.push(button("cleanup", tr("cleanup") + " (" + missingIds.length + ")", function () { openConfirm({ kind: "cleanup", ids: missingIds, checked: true }); }, locked || missingIds.length > MAX_BATCH));
-					if (filesIds.length > 0) actions.push(moreMenu("archived-batch", [{ key: "purge", label: tr("purge") + " (" + filesIds.length + ")", disabled: filesIds.length > MAX_BATCH, run: function () { openConfirm({ kind: "purge", ids: filesIds, ignored: missingIds.length, ignoredIds: missingIds, checked: false }); } }]));
+					if (filesIds.length > 0) actions.push(button("purge", tr("purge") + " (" + filesIds.length + ")", function () { openConfirm({ kind: "purge", ids: filesIds, ignored: missingIds.length, ignoredIds: missingIds, checked: false }); }, locked || filesIds.length > MAX_BATCH, true));
 				}
 			}
 			return h("div", { key: "toolbar", className: "am-toolbar" }, [
@@ -1965,7 +1943,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			return h("div", { key: "retention", className: "am-retention" }, [
 				h("span", { key: "summary", className: "am-retention-label" }, tr("retentionSummary", { value: settings.unavailable ? tr("notProvided") : settings.trashRetentionDays > 0 ? tr("retentionAfter", { n: settings.trashRetentionDays }) : tr("retentionDisabled") })),
 				button("settings", tr("settings"), function () { setRetentionExpanded(!retentionExpanded); }, locked || settings.unavailable),
-				removed.length > 0 ? moreMenu("quarantine-global", [{ key: "empty", label: tr("emptyTrash") + " (" + removed.length + ")", run: function () { openConfirm({ kind: "empty", items: removedItems(removed), checked: false }); } }], tr("tabRemoved") + " · " + tr("more")) : null,
+				removed.length > 0 ? button("empty", tr("emptyTrash") + " (" + removed.length + ")", function () { openConfirm({ kind: "empty", items: removedItems(removed), checked: false }); }, locked, true) : null,
 				retentionExpanded ? h("div", { key: "settingsPanel", className: "am-retention-settings" }, [h("span", { key: "title" }, tr("retentionTitle")), dropdown("retention", String(settings.trashRetentionDays || 0), [{ value: "0", label: tr("retentionNever") }, { value: "7", label: tr("retentionDays", { n: 7 }) }, { value: "30", label: tr("retentionDays", { n: 30 }) }, { value: "90", label: tr("retentionDays", { n: 90 }) }], changeRetention, tr("retentionLabel"), false), h("span", { key: "hint", className: "am-retention-hint" }, tr("retentionHint"))]) : null
 			]);
 		}

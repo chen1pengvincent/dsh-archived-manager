@@ -111,7 +111,7 @@ function pageValues(overrides) {
     'archived', [], [], 'ready', null, [], null, false, null,
     [], '', 'all', 'lastUsed', '', 'movedAt', null,
     { trashRetentionDays: 0 }, { bytes: 0, files: 0 }, null,
-    null, '', {}, {}, false, '', false, 0, '', [],
+    null, '', {}, {}, false, '', false, 0, '', [], false,
   ];
   return base.map((value, index) => Object.prototype.hasOwnProperty.call(overrides, index) ? overrides[index] : value);
 }
@@ -406,8 +406,8 @@ test('the quarantine tab offers bulk restore, individual discard and retention c
   assert.ok(text.includes('附件'), text);
   const buttons = findAll(tree, (node) => node.type === 'button');
   assert.notEqual(buttons.find((node) => textOf(node) === '恢复会话'), undefined);
-  assert.equal(buttons.find((node) => textOf(node) === '彻底删除'), undefined);
-  assert.notEqual(buttons.find((node) => textOf(node) === '隔离区 · 更多'), undefined);
+  assert.notEqual(buttons.find((node) => textOf(node) === '彻底删除'), undefined);
+  assert.notEqual(buttons.find((node) => textOf(node) === '清空隔离区 (1)'), undefined);
   assert.notEqual(findByClass(tree, 'am-retention'), undefined);
 });
 
@@ -611,7 +611,7 @@ test('quarantine select-all clicks also drive per-row highlights and partial sel
 
 test('a selected quarantine entry enables bulk restore and bulk delete', async () => {
   const key = REMOVED.batch + '/' + REMOVED.id;
-  const client = await loadClient(makeReact(pageValues({ 0: 'removed', 2: [REMOVED], 9: [key], 18: 'removed-batch' })));
+  const client = await loadClient(makeReact(pageValues({ 0: 'removed', 2: [REMOVED], 9: [key] })));
   let component;
   const ctx = {
     inject(names, callback) {
@@ -755,6 +755,7 @@ test('each bulk action enforces 200 targets, while a mixed selection may exceed 
     const tree = render();
     const action = buttonNamed(tree, '取消归档 (' + count + ')');
     assert.equal(action.props.disabled, count > 200);
+    assert.equal(buttonNamed(tree, '彻底删除 (' + count + ')').props.disabled, count > 200);
     assert.equal(findAll(tree, (node) => node.props.className === 'am-selected-count').length, 1);
     action.props.onClick(event());
     assert.equal(calls.length, count > 200 ? 0 : 1);
@@ -860,7 +861,7 @@ test('lost mutation response reconciles once, retains the last list and blocks c
 test('quarantine global clear includes hidden entries, freezes the full snapshot, and is separate from selected deletion', async () => {
   const hidden = { ...REMOVED, id: 'hidden', title: '未匹配会话' };
   const calls = [];
-  const render = await pageRenderer(pageValues({ 0: 'removed', 2: [REMOVED, hidden], 13: 'no-match', 18: 'quarantine-global' }), { fetch: (url, options) => {
+  const render = await pageRenderer(pageValues({ 0: 'removed', 2: [REMOVED, hidden], 13: 'no-match' }), { fetch: (url, options) => {
     calls.push({ url, body: options.body && JSON.parse(options.body) });
     return new Promise(() => {});
   } });
@@ -919,12 +920,12 @@ test('recorded files load only on demand and use exact archived or quarantine id
 });
 
 test('version label distinguishes runtime mismatch and a local source can explicitly switch at the same version', async () => {
-  const mismatch = await renderPage(pageValues({ 19: { runtimeVersion: '0.2.6', installedVersion: '0.3.0', sourceKind: 'link' } }));
+  const mismatch = await renderPage(pageValues({ 19: { runtimeVersion: '0.2.6', installedVersion: '0.3.1', sourceKind: 'link' } }));
   assert.ok(textOf(mismatch).includes('更新待生效'));
   const calls = [], opened = [];
   const controlUrl = 'http://localhost:3119/archived-manager/update-control/' + 'a'.repeat(48);
-  const status = { ok: true, runtimeVersion: '0.3.0', installedVersion: '0.3.0', sourceKind: 'link', busy: false, canUpdate: true, job: null };
-  const release = { id: 17, version: '0.3.0', htmlUrl: 'https://github.com/chen1pengvincent/dsh-archived-manager/releases/tag/v0.3.0' };
+  const status = { ok: true, runtimeVersion: '0.3.1', installedVersion: '0.3.1', sourceKind: 'link', busy: false, canUpdate: true, job: null };
+  const release = { id: 17, version: '0.3.1', htmlUrl: 'https://github.com/chen1pengvincent/dsh-archived-manager/releases/tag/v0.3.1' };
   const render = await pageRenderer(pageValues({ 19: status }), { window: { open: (...args) => opened.push(args), location: { origin: 'http://localhost:3119' } }, fetch: (url, options) => {
     calls.push({ url, body: options.body && JSON.parse(options.body) });
     if (url.endsWith('/check')) return response({ ...status, release, relation: 'same', checkedAt: 1793900000000 });
@@ -936,16 +937,16 @@ test('version label distinguishes runtime mismatch and a local source can explic
   await tick();
   assert.equal(calls.length, 1, 'checking never installs');
   let tree = render();
-  assert.ok(textOf(tree).includes('已是最新稳定版 v0.3.0'));
+  assert.ok(textOf(tree).includes('已是最新稳定版 v0.3.1'));
   buttonNamed(tree, '切换为发布版').props.onClick(event());
   await tick();
-  assert.deepEqual(calls.find((call) => call.url.endsWith('/prepare')).body, { releaseId: 17, version: '0.3.0', switchFromLink: true });
+  assert.deepEqual(calls.find((call) => call.url.endsWith('/prepare')).body, { releaseId: 17, version: '0.3.1', switchFromLink: true });
   assert.equal(opened[0][0], controlUrl);
   assert.equal(findAll(render(), (node) => node.type === 'a' && node.props.href === controlUrl).length, 1, 'fallback link remains when popup is blocked');
 });
 
 test('update installation is unavailable during a data operation, during update, or when a downgrade would be required', async () => {
-  const status = { runtimeVersion: '0.3.0', installedVersion: '0.3.0', sourceKind: 'release', canUpdate: true, release: { id: 1, version: '0.4.0' }, relation: 'newer' };
+  const status = { runtimeVersion: '0.3.1', installedVersion: '0.3.1', sourceKind: 'release', canUpdate: true, release: { id: 1, version: '0.4.0' }, relation: 'newer' };
   for (const changes of [{ 7: true }, { 19: { ...status, busy: true } }]) {
     const tree = await renderPage(pageValues({ 1: [ITEM], 19: status, ...changes }));
     assert.equal(buttonNamed(tree, '更新到 v0.4.0').props.disabled, true);
@@ -1041,4 +1042,56 @@ test('list refresh stores quarantine warnings returned alongside known entries',
   assert.ok(textOf(tree).includes('unknown-batch · 无法核对，已保留'));
   assert.ok(textOf(tree).includes('没有可列出的隔离会话'));
   assert.equal(textOf(tree).includes('隔离区为空'), false);
+});
+
+test('version details toggle shares the version row and exposes its keyboard-accessible disclosure state', async () => {
+  const render = await pageRenderer(pageValues({ 19: { runtimeVersion: '0.3.1', installedVersion: '0.3.1', sourceKind: 'link', busy: false } }));
+  let tree = render();
+  const line = findByClass(tree, 'am-version-line');
+  assert.ok(textOf(line).includes('v0.3.1'));
+  const toggle = buttonNamed(line, '版本详情');
+  assert.notEqual(toggle, undefined, 'the disclosure button is on the version row');
+  assert.equal(toggle.props.type, 'button');
+  assert.equal(toggle.props['aria-expanded'], false);
+  assert.equal(findByClass(tree, 'am-version-details'), undefined, 'collapsed details do not reserve a second row');
+  assert.notEqual(toggle.props.tabIndex, -1);
+  toggle.props.onClick(event());
+  tree = render();
+  const panel = findByClass(tree, 'am-version-details');
+  assert.equal(panel.props.id, toggle.props['aria-controls']);
+  assert.ok(textOf(panel).includes('页面版本：v0.3.1'));
+  assert.ok(textOf(panel).includes('服务版本：0.3.1'));
+  assert.equal(buttonNamed(tree, '版本详情').props['aria-expanded'], true);
+  buttonNamed(tree, '版本详情').props.onClick(event());
+  assert.equal(findByClass(render(), 'am-version-details'), undefined);
+});
+
+test('individual and bulk deletion buttons open the same explicit confirmation without a more menu', async () => {
+  for (const isRemoved of [false, true]) {
+    const another = isRemoved ? { ...REMOVED, id: 'session-another', title: '另一个隔离会话' } : { ...ITEM, id: 'session-another', title: '另一个会话' };
+    const entries = isRemoved ? [REMOVED, another] : [ITEM, another];
+    const selection = entries.map((item) => isRemoved ? item.batch + '/' + item.id : item.id);
+    const values = pageValues({ 0: isRemoved ? 'removed' : 'archived', 1: isRemoved ? [] : entries, 2: isRemoved ? entries : [], 5: isRemoved ? [] : selection, 9: isRemoved ? selection : [] });
+    const render = await pageRenderer(values);
+    let tree = render();
+    assert.equal(findAll(tree, (node) => node.props['aria-haspopup'] === 'menu').length, 0);
+    const rowDelete = buttonNamed(listRows(tree)[0], '彻底删除');
+    assert.notEqual(rowDelete, undefined);
+    assert.ok(rowDelete.props.className.split(' ').includes('danger'));
+    rowDelete.props.onClick(event());
+    tree = render();
+    assert.equal(findAll(tree, (node) => node.props.role === 'dialog').length, 1);
+    let modal = findByClass(tree, 'am-modal');
+    assert.equal(buttonNamed(modal, '彻底删除 1 条').props.disabled, true);
+    buttonNamed(modal, '取消').props.onClick(event());
+    tree = render();
+    const batchDelete = buttonNamed(findByClass(tree, 'am-toolbar'), '彻底删除 (2)');
+    assert.notEqual(batchDelete, undefined);
+    assert.ok(batchDelete.props.className.split(' ').includes('danger'));
+    batchDelete.props.onClick(event());
+    modal = findByClass(render(), 'am-modal');
+    assert.equal(buttonNamed(modal, '彻底删除 2 条').props.disabled, true);
+    if (isRemoved) assert.deepEqual([...render.state[6].items].map((item) => item.batch + '/' + item.id), selection);
+    else assert.deepEqual([...render.state[6].ids], selection);
+  }
 });

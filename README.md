@@ -26,7 +26,7 @@
 2. 输入以下 spec：
 
    ```text
-   github:chen1pengvincent/dsh-archived-manager#v0.3.0
+   github:chen1pengvincent/dsh-archived-manager#v0.3.1
    ```
 
 3. 安装后**完全退出并重新打开 DSH**，再硬刷新页面（macOS：`Cmd+Shift+R`）。
@@ -63,7 +63,7 @@ link:/absolute/path/to/dsh-archived-manager
 | 彻底删除 | 永久删除已确认的会话数据，需确认 | 使用“清理失效记录” |
 | 清理失效记录 | 不适用 | 只移除归档记录 |
 
-运行中的会话不可选择或删除；请先停止对应会话。取消归档与移入隔离区为直接入口，彻底删除收进“更多”。顶部摘要紧凑显示当前数量和日志大小。
+运行中的会话不可选择或删除；请先停止对应会话。取消归档、移入隔离区和彻底删除均为直接入口；彻底删除仍需在确认框中核对范围并确认不可恢复。顶部摘要紧凑显示当前数量和日志大小。版本详情与版本号同排，点击或通过键盘展开后可查看页面、服务和安装版本。
 
 ### 选中与高亮契约
 
@@ -84,7 +84,7 @@ link:/absolute/path/to/dsh-archived-manager
 
 - 单独或批量**恢复**到原会话目录；
 - 单独或批量**彻底删除**；
-- 在全局“更多”中**清空隔离区全部会话**，包含搜索隐藏的项；
+- 使用独立的**清空隔离区**按钮处理全部隔离会话，包含搜索隐藏的项；
 - 配置自动保留期限。开启自动清理需要二次确认，保存后立即检查过期条目。
 
 危险操作使用模态确认框，并要求勾选不可恢复确认。界面语言跟随 **DSH → 设置 → 通用 → 语言**，旧版缺少 locale 服务时才回退到浏览器语言。
@@ -177,6 +177,12 @@ npm pack
 
 测试覆盖 Host 文件操作、路径与路由安全、归档/隔离/恢复/删除、保留策略、Client 设置页注册、搜索筛选、模态框、选中行高亮（全选/单选/无选择）、隔离区高亮、深浅主题和 WCAG 对比度。GitHub Actions 对 push 和 pull request 自动运行测试。
 
+### v0.3.1
+
+- 版本详情与版本号同排，收起时不再单独占一行；保留点击与键盘展开。
+- 单条与批量的彻底删除改为直接按钮，清空隔离区保留独立的全局入口；确认范围、不可恢复确认及操作期间禁用保持不变。
+- 更新真实 DSH 测试会话的深浅主题截图。
+
 ### v0.3.0
 
 - 重排列表与紧凑摘要，统一归档和隔离区的选择反馈，强调已选数量。
@@ -200,7 +206,7 @@ npm pack
 Open **DSH → Settings → Plugins → Install** and enter:
 
 ```text
-github:chen1pengvincent/dsh-archived-manager#v0.3.0
+github:chen1pengvincent/dsh-archived-manager#v0.3.1
 ```
 
 Fully restart DSH after installation, hard-refresh the Web UI, then open **Settings → Archived Sessions**. Node.js 24+ is needed only for development and tests.
@@ -217,7 +223,9 @@ The recorded-files view shows structured delivery/write/edit paths and can open 
 
 Manual updates use a separate control page that survives removal of the target plugin, verifies the pinned release package before removal, and offers retry or recovery. Keep DSH running during installation. If the whole process exits between removal and successful installation, recover through the native plugin manager using the displayed release address. Source-linked installs change source only after an explicit switch confirmation; the checkout remains untouched.
 
-See the Chinese sections above for the operation matrix, data paths, API table, security controls, development commands, and v0.3.0 release notes.
+Version details sit beside the version number and expand on click or keyboard activation. Permanent delete is directly available for single and selected sessions; clearing the entire quarantine has its own labeled control. Destructive actions still require the existing confirmation and remain disabled during operations.
+
+See the Chinese sections above for the operation matrix, data paths, API table, security controls, development commands, and release notes.
 
 ## License
 

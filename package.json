@@ -1,6 +1,6 @@
 {
   "name": "dsh-archived-manager",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "DSH (DeepSeek Harness) plugin to manage archived sessions: native unarchive, recoverable quarantine, permanent purge, search/filter/sort, and retention.",
   "type": "module",
   "main": "lib/index.js",
