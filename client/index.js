@@ -10,37 +10,39 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	var useEffect = React.useEffect;
 
 	var API = "/archived-manager";
+	var CLIENT_VERSION = "0.3.0";
+	var MAX_BATCH = 200;
 	var LANG = typeof navigator !== "undefined" && navigator.language ? String(navigator.language).toLowerCase() : "";
 	var ZH = LANG.indexOf("zh") === 0;
 
 	var STR_ZH = {
 		section: "归档会话",
 		title: "归档会话管理",
-		subtitle: "先归档，再在这里批量管理。取消归档让会话回到侧栏；移入隔离区保留文件；彻底删除只清理会话日志。",
+		subtitle: "查找、恢复和清理旧会话。独立文件与共享附件保留在原处。",
 		tabArchived: "已归档",
 		tabRemoved: "隔离区",
-		refresh: "刷新",
+		refresh: "刷新列表",
 		loading: "正在读取…",
 		failed: "读取失败：{message}",
 		retry: "重试",
 		emptyArchived: "当前没有已归档会话。",
 		emptyRemoved: "隔离区是空的。",
-		selectAll: "全选",
-		selected: "已选 {n} 个",
+		selectAll: "全选当前结果",
+		selected: "已选 {n} 条",
 		hide: "移入隔离区",
 		unarchive: "取消归档",
 		purge: "彻底删除",
-		restore: "恢复",
+		restore: "恢复会话",
 		emptyTrash: "清空隔离区",
 		hideConfirmTitle: "移入隔离区 {n} 个会话？",
-		hideConfirmBody: "会话文件会移动到隔离区，DSH 所有列表都不再显示；可随时从「隔离区」恢复。项目文件与附件不受影响。",
+		hideConfirmBody: "会话数据移入隔离区，可从这里恢复；暂不释放空间。独立文件、项目文件与共享附件保持不动，含无法确认内容的项会保留。",
 		purgeConfirmTitle: "彻底删除 {n} 个会话？",
-		purgeConfirmBody: "只删除会话日志目录，无法恢复；项目文件与附件不受影响。",
+		purgeConfirmBody: "只删除可确认属于对应会话的数据，无法恢复；独立文件、项目文件与共享附件保持不动。含额外文件或无法确认内容的会话会保留并说明原因。",
 		purgeCheck: "我已知晓：删除后不可恢复",
-		emptyConfirmTitle: "清空隔离区？",
-		emptyConfirmBody: "隔离区里的 {n} 个会话会被永久删除，无法恢复；项目文件与附件不受影响。",
+		emptyConfirmTitle: "清空隔离区全部 {n} 条？",
+		emptyConfirmBody: "永久删除隔离区全部 {n} 条会话数据，包括当前搜索未显示的记录。无法恢复；独立文件与共享附件保持不动，受保护的项会保留并说明原因。",
 		discardTitle: "彻底删除 {n} 个隔离会话？",
-		discardBody: "隔离区里的会话日志会被永久删除，无法恢复。项目文件与附件不受影响。",
+		discardBody: "永久删除对应的会话数据，无法恢复。独立文件、项目文件与附件不受影响；含无法确认内容的项会保留。",
 		cancel: "取消",
 		confirmHide: "移入隔离区",
 		confirmPurge: "彻底删除",
@@ -83,11 +85,11 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		tipArchived: "文件仍在磁盘（会话目录 {size}）。取消归档会回到侧栏；移入隔离区会保留文件；彻底删除才清理日志。",
 		tipMissing: "该会话的日志目录已不存在，只剩归档记录。清理只删这条记录，不动任何文件。",
 		lastUsedLabel: "最后使用",
-		archivedLabel: "归档于",
+		archivedLabel: "归档记录时间",
 		unknownTime: "未记录",
 		sizeUsed: "会话目录 {size}（彻底删除可释放）",
 		sizeMissing: "会话目录 0 B（文件已不存在）",
-		releaseLine: "将释放约 {size}（仅会话日志）",
+		releaseLine: "所选会话日志约 {size}；实际释放量以处理结果为准",
 		hideSummary: "文件会移入隔离区，暂不释放空间；清空隔离区后才释放。",
 		noFilesLine: "没有文件会被删除",
 		modalClearTitle: "清理 {n} 条失效归档记录？",
@@ -100,7 +102,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		cleanupBody: "这些会话的文件已不存在，只会移除归档记录，不会删除任何文件。",
 		confirmCleanup: "清理记录",
 		ignoredNote: "另有 {n} 条文件缺失的记录不会被此操作处理。",
-		selectedSplit: "已选 {n} 个（有文件 {files} · 失效 {missing}）",
+		selectedSplit: "已选 {n} 条（有文件 {files} · 失效 {missing}）",
 		hideShort: "移入",
 		cleanupShort: "清理记录",
 		tipHideAction: "移入隔离区：文件保留，可随时恢复",
@@ -127,17 +129,17 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		showing: "显示 {shown} / {total}",
 		removedSearchPlaceholder: "搜索隔离会话",
 		removedSelectHint: "勾选隔离会话后可批量恢复或删除",
-		removedSelected: "已选 {n} 个隔离会话",
+		removedSelected: "已选 {n} 条隔离会话",
 		removedEmptyFilter: "没有匹配的隔离会话",
 		discardShort: "彻底删除",
 		tipDiscardAction: "永久删除隔离区中的会话日志",
-		tipUnarchiveAction: "回到侧栏，文件原地保留（DSH 原生取消归档）",
-		unarchiveDone: "已取消归档，会话回到侧栏",
+		tipUnarchiveAction: "取消归档，文件原地保留",
+		unarchiveDone: "已取消归档；侧栏显示以宿主刷新为准",
 		toastUnarchive: "已取消归档 {n} 个",
 		toastIgnored: "，{n} 条失效记录未处理",
 		toastHide: "已移入隔离区 {n} 个（可恢复）",
 		toastPurge: "已彻底删除 {n} 个会话，释放 {size}",
-		toastRestore: "已恢复 {n} 个会话",
+		toastRestore: "已恢复 {n} 条会话到原位置；工作区关联以处理结果为准",
 		toastDiscard: "已永久删除 {n} 个隔离会话，释放 {size}",
 		toastEmpty: "已清空隔离区，释放 {size}",
 		toastCleanup: "已清理 {n} 条失效记录",
@@ -153,7 +155,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		retentionHint: "开启后，超过期限的隔离会话会在后台被永久删除；默认关闭。",
 		retentionWarn: "自动清理不可恢复",
 		retentionConfirmTitle: "开启隔离区自动清理？",
-		retentionConfirmBody: "超过 {days} 天的隔离会话会被永久删除，无法恢复。保存后立即生效。",
+		retentionConfirmBody: "移入隔离区超过 {days} 天的会话将被永久删除；现有已到期会话也会立即处理，不能恢复。含非会话文件或无法确认内容的项会保留。",
 		retentionCheck: "我已知晓：过期隔离会话会被自动删除",
 		confirmRetention: "开启",
 		retentionSaved: "已保存：隔离区保留 {days} 天",
@@ -175,36 +177,108 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		errStorage: "文件操作失败",
 		errSchedule: "提醒停止失败",
 		errGeneric: "操作失败",
+		clearSelection: "取消选择",
+		more: "更多",
+		details: "详情",
+		files: "已记录的关联文件",
+		loadFiles: "查看关联文件",
+		filesEmpty: "未找到已记录的文件位置",
+		filesCoverage: "仅展示已记录的文件位置，可能不包含全部历史产物；工作区单独列出。",
+		openFolder: "打开所在文件夹",
+		openWorkspace: "打开工作区",
+		workspacePath: "会话工作区",
+		folder: "所在文件夹",
+		path: "完整路径",
+		fileMissing: "文件已不存在",
+		folderMissing: "所在文件夹已不存在",
+		unavailable: "当前位置不可打开",
+		batchLimit: "单次最多处理 200 条，请缩小筛选范围或取消部分选择",
+		processing: "正在处理 {n} 条",
+		selectionPruned: "筛选或会话状态已变化，已取消选择 {n} 条不再显示或不可操作的会话。",
+		unknownResult: "结果未确认。正在刷新核对当前状态；不会自动重复提交。",
+		staleList: "列表尚未刷新，暂不可修改会话。请刷新列表后重试。",
+		showAllReasons: "查看全部 {n} 条原因",
+		showLess: "收起原因",
+		runningLocked: "运行中，暂不可操作",
+		logSize: "会话日志",
+		resultSummary: "完成：成功 {ok} 条，失败 {fail} 条，跳过 {skip} 条",
+		settings: "设置",
+		retentionSummary: "自动清理：{value}",
+		retentionDisabled: "关闭",
+		retentionAfter: "移入满 {n} 天",
+		versionDetails: "版本详情",
+		checkUpdate: "检查更新",
+		checkingUpdate: "正在检查更新…",
+		pageVersion: "页面版本",
+		serviceVersion: "服务版本",
+		installedVersion: "已安装版本",
+		notProvided: "未提供",
+		pendingUpdate: "更新待生效",
+		localSource: "本地源码",
+		releaseSource: "GitHub 发布版",
+		unknownSource: "来源未确认",
+		missingSource: "插件未安装",
+		updateTo: "更新到 v{version}",
+		switchRelease: "切换为发布版",
+		latestRelease: "已是最新稳定版 v{version}",
+		aheadRelease: "当前版本高于最新稳定版 v{version}，不会自动降级",
+		releaseNotes: "更新说明",
+		checkedAt: "核对时间",
+		installedPending: "已安装 v{version}，重新加载后核对生效状态",
+		updateFailed: "无法检查更新：{message}",
+		updateUnknown: "更新状态未确认，请重新核对",
+		updateContinue: "查看更新进度或恢复安装",
+		updatePreparing: "正在准备独立更新页面…",
+		openUpdate: "打开更新确认页",
+		updateHandoff: "在独立更新页确认目标版本并查看安装结果。",
+		versionChecking: "页面 v{version} · 版本信息待核对",
+		updateBusy: "插件更新中，暂不可修改会话数据",
+		filesFailed: "读取文件位置失败：{message}",
+		noWorkspace: "未记录工作区位置",
+		operationUnknown: "操作结果未确认",
+		confirmCount: "彻底删除 {n} 条",
+		emptyCount: "清空隔离区全部 {n} 条",
+		checkedRelease: "稳定版 v{version}",
+		source: "安装来源",
+		rangeChanged: "隔离区范围已变化，本次未删除。请刷新核对后重新确认。",
+		sizeUnknown: "未确认",
+		sizePartial: "{n} 条日志大小未确认，未计入合计",
+		protectedItem: "已保护",
+		removedWarningsTitle: "{n} 个无法确认的批次已保留",
+		removedWarningsHint: "已知会话数量不包含这些内容。文件仍保留在原处。",
+		removedUnlistedTitle: "没有可列出的隔离会话",
+		removedUnlistedHint: "当前没有可读取的隔离会话记录；仍有无法确认的内容已保留，请查看批次提示。",
+		knownTabCount: "{label}（已知 {n}）",
 	};
 
 	var STR_EN = {
 		section: "Archived sessions",
 		title: "Archived session manager",
-		subtitle: "Archive first, then manage in bulk. Unarchive returns a session to the sidebar; quarantine keeps the files; permanent deletion removes only the session logs.",
+		subtitle: "Find, restore and clean up old sessions. Independent files and shared attachments stay in place.",
 		tabArchived: "Archived",
 		tabRemoved: "Quarantine",
-		refresh: "Refresh",
+		refresh: "Refresh list",
 		loading: "Loading…",
 		failed: "Failed: {message}",
 		retry: "Retry",
 		emptyArchived: "No archived sessions.",
 		emptyRemoved: "The quarantine is empty.",
-		selectAll: "Select all",
+		selectAll: "Select all results",
 		selected: "{n} selected",
 		hide: "Move to quarantine",
 		unarchive: "Unarchive",
 		purge: "Delete permanently",
-		restore: "Restore",
+		restore: "Restore session",
 		emptyTrash: "Empty quarantine",
 		hideConfirmTitle: "Move {n} session(s) to the quarantine?",
-		hideConfirmBody: "The session files move into the quarantine and disappear from every DSH list; restore them later from Quarantine. Project files and attachments are not touched.",
+		hideConfirmBody: "Move verified session data into quarantine for recovery. This does not free space. Independent and shared files stay untouched; unknown content is kept.",
 		purgeConfirmTitle: "Permanently delete {n} session(s)?",
-		purgeConfirmBody: "Only the session log directories are removed, permanently and without recovery. Project files and attachments are not touched.",
+		purgeConfirmBody: "Permanently delete verified session data only. Independent files, project files and shared attachments stay untouched. Sessions containing unknown content are kept and reported.",
 		purgeCheck: "I understand this cannot be undone",
-		emptyConfirmTitle: "Empty the quarantine?",
-		emptyConfirmBody: "{n} quarantined session(s) will be permanently deleted and cannot be recovered. Project files and attachments are not touched.",
+		emptyConfirmTitle: "Empty all {n} quarantined sessions?",
+		emptyConfirmBody: "Permanently delete all {n} quarantined sessions, including entries hidden by this search. Independent files and attachments stay untouched; protected entries are kept and reported.",
 		discardTitle: "Permanently delete {n} quarantined session(s)?",
-		discardBody: "The quarantined session logs will be permanently deleted and cannot be recovered. Project files and attachments are not touched.",
+		discardBody: "Permanently delete the selected session data. Independent files, project files and attachments stay untouched; unknown content is kept.",
 		cancel: "Cancel",
 		confirmHide: "Move to quarantine",
 		confirmPurge: "Delete permanently",
@@ -247,11 +321,11 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		tipArchived: "The files are still on disk ({size} session directory). Unarchive returns it to the sidebar; quarantine keeps the files; only permanent deletion removes the logs.",
 		tipMissing: "This session's log directory is gone; only the archive record remains. Clearing removes just this record and touches no files.",
 		lastUsedLabel: "Last used",
-		archivedLabel: "Archived",
+		archivedLabel: "Archive first observed",
 		unknownTime: "not recorded",
 		sizeUsed: "{size} session directory (freed by permanent deletion)",
 		sizeMissing: "0 B session directory (files missing)",
-		releaseLine: "About {size} will be freed (session logs only)",
+		releaseLine: "About {size} of selected session logs; actual reclaimed space is reported afterward",
 		hideSummary: "Files move into the quarantine; space is freed only after the quarantine is emptied.",
 		noFilesLine: "No files will be deleted",
 		modalClearTitle: "Clean up {n} stale archive record(s)?",
@@ -264,7 +338,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		cleanupBody: "These sessions no longer have files; only the archive records are removed. No files are touched.",
 		confirmCleanup: "Clean records",
 		ignoredNote: "{n} record(s) with missing files are not touched by this action.",
-		selectedSplit: "{n} selected ({files} with files · {missing} stale)",
+		selectedSplit: "{n} selected ({files} with files · {missing} missing)",
 		hideShort: "Move",
 		cleanupShort: "Clean up",
 		tipHideAction: "Move to quarantine: files are kept and can be restored",
@@ -291,17 +365,17 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		showing: "Showing {shown} / {total}",
 		removedSearchPlaceholder: "Search quarantined sessions",
 		removedSelectHint: "Select quarantined sessions to restore or delete in bulk",
-		removedSelected: "{n} quarantined session(s) selected",
+		removedSelected: "{n} quarantined sessions selected",
 		removedEmptyFilter: "No matching quarantined sessions",
 		discardShort: "Delete permanently",
 		tipDiscardAction: "Permanently delete the quarantined session logs",
-		tipUnarchiveAction: "Return to the sidebar; files stay in place (DSH native unarchive)",
-		unarchiveDone: "Unarchived; the session is back in the sidebar",
+		tipUnarchiveAction: "Unarchive and keep files in place",
+		unarchiveDone: "Unarchived; sidebar visibility depends on the host refresh",
 		toastUnarchive: "Unarchived {n} session(s)",
 		toastIgnored: ", {n} stale record(s) left untouched",
 		toastHide: "Moved {n} session(s) to the quarantine (recoverable)",
 		toastPurge: "Deleted {n} session(s), freed {size}",
-		toastRestore: "Restored {n} session(s)",
+		toastRestore: "Restored {n} session(s) to their original locations; workspace results are reported separately",
 		toastDiscard: "Permanently deleted {n} quarantined session(s), freed {size}",
 		toastEmpty: "Quarantine emptied, freed {size}",
 		toastCleanup: "Cleaned up {n} stale record(s)",
@@ -317,7 +391,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		retentionHint: "When enabled, quarantined sessions older than the limit are deleted permanently in the background. Off by default.",
 		retentionWarn: "Automatic cleanup cannot be undone",
 		retentionConfirmTitle: "Enable automatic quarantine cleanup?",
-		retentionConfirmBody: "Quarantined sessions older than {days} days will be permanently deleted and cannot be recovered. This takes effect immediately after saving.",
+		retentionConfirmBody: "Sessions quarantined for over {days} days will be permanently deleted, including already expired entries immediately. This cannot be undone. Unknown content is kept.",
 		retentionCheck: "I understand expired quarantined sessions will be deleted automatically",
 		confirmRetention: "Enable",
 		retentionSaved: "Saved: quarantine keeps sessions for {days} days",
@@ -339,6 +413,78 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		errStorage: "The file operation failed",
 		errSchedule: "Failed to stop reminders",
 		errGeneric: "The operation failed",
+		clearSelection: "Clear selection",
+		more: "More",
+		details: "Details",
+		files: "Recorded associated files",
+		loadFiles: "View associated files",
+		filesEmpty: "No recorded file locations found",
+		filesCoverage: "Recorded locations only; some historical outputs may not be listed. The workspace is shown separately.",
+		openFolder: "Open containing folder",
+		openWorkspace: "Open workspace",
+		workspacePath: "Session workspace",
+		folder: "Containing folder",
+		path: "Full path",
+		fileMissing: "File no longer exists",
+		folderMissing: "Containing folder no longer exists",
+		unavailable: "This location cannot be opened",
+		batchLimit: "Up to 200 entries per action. Narrow the filter or deselect some entries.",
+		processing: "Processing {n} entries",
+		selectionPruned: "Filters or session state changed; {n} hidden or unavailable entries were deselected.",
+		unknownResult: "Result unconfirmed. Refreshing to reconcile current state; the request will not be repeated automatically.",
+		staleList: "The list could not be refreshed. Refresh it before changing sessions.",
+		showAllReasons: "View all {n} reasons",
+		showLess: "Show fewer reasons",
+		runningLocked: "Running; actions unavailable",
+		logSize: "Session logs",
+		resultSummary: "Done: {ok} succeeded, {fail} failed, {skip} skipped",
+		settings: "Settings",
+		retentionSummary: "Automatic cleanup: {value}",
+		retentionDisabled: "off",
+		retentionAfter: "after {n} days in quarantine",
+		versionDetails: "Version details",
+		checkUpdate: "Check for updates",
+		checkingUpdate: "Checking for updates…",
+		pageVersion: "Page version",
+		serviceVersion: "Service version",
+		installedVersion: "Installed version",
+		notProvided: "Not provided",
+		pendingUpdate: "Update pending activation",
+		localSource: "Local source",
+		releaseSource: "GitHub release",
+		unknownSource: "Unknown source",
+		missingSource: "Not installed",
+		updateTo: "Update to v{version}",
+		switchRelease: "Switch to release",
+		latestRelease: "Latest stable version v{version}",
+		aheadRelease: "Current version is newer than stable v{version}; no automatic downgrade",
+		releaseNotes: "Release notes",
+		checkedAt: "Checked at",
+		installedPending: "Installed v{version}; reload to verify activation",
+		updateFailed: "Could not check for updates: {message}",
+		updateUnknown: "Update state unconfirmed. Check again.",
+		updateContinue: "View update progress or recover installation",
+		updatePreparing: "Preparing an independent update page…",
+		openUpdate: "Open update confirmation",
+		updateHandoff: "Confirm the target version and review results in the independent update page.",
+		versionChecking: "Page v{version} · awaiting version verification",
+		updateBusy: "Plugin update in progress; session changes are unavailable",
+		filesFailed: "Could not read file locations: {message}",
+		noWorkspace: "No workspace location recorded",
+		operationUnknown: "Operation result unconfirmed",
+		confirmCount: "Delete {n} permanently",
+		emptyCount: "Empty all {n} quarantined sessions",
+		checkedRelease: "Stable v{version}",
+		source: "Installation source",
+		rangeChanged: "Quarantine contents changed; nothing was deleted. Refresh and confirm the new scope.",
+		sizeUnknown: "Unconfirmed",
+		sizePartial: "Log size unconfirmed for {n} entries; excluded from total",
+		protectedItem: "Protected",
+		removedWarningsTitle: "{n} unverified quarantine batches were kept",
+		removedWarningsHint: "The known session count excludes these contents. Their files remain in place.",
+		removedUnlistedTitle: "No listable quarantined sessions",
+		removedUnlistedHint: "No readable quarantine session records are available. Retained contents may remain; see the batch notices.",
+		knownTabCount: "{label} ({n} known)",
 	};
 
 	var STR = ZH ? STR_ZH : STR_EN;
@@ -404,6 +550,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 					error.code = data && data.code;
 					throw error;
 				}
+				if (!data || typeof data !== "object" || (data.ok === false && !Array.isArray(data.results))) throw new Error(data && data.error || "Invalid response");
 				return data;
 			});
 		});
@@ -445,14 +592,17 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	}
 
 	function summarize(results) {
-		var summary = { ok: 0, fail: 0, bytes: 0, reminders: 0, failures: [] };
+		var summary = { ok: 0, fail: 0, skip: 0, bytes: 0, reminders: 0, failures: [], successes: [], warnings: [] };
 		(Array.isArray(results) ? results : []).forEach(function (result) {
 			if (result && result.ok === true) {
 				summary.ok += 1;
+				summary.successes.push(result);
+				if (result.warning) summary.warnings.push(result);
 				summary.bytes += Number(result.bytes) || 0;
 				summary.reminders += Number(result.reminders) || 0;
 			} else {
-				summary.fail += 1;
+				if (result && result.skipped) summary.skip += 1;
+				else summary.fail += 1;
 				summary.failures.push(result || { code: "storage" });
 			}
 		});
@@ -590,6 +740,13 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		"@media (max-width:420px){.am-stats-grid{grid-template-columns:minmax(0,1fr)}}",
 		"@media (max-width:860px){.am-row{grid-template-columns:24px minmax(0,1fr)}.am-row-actions{grid-column:2;justify-self:start;padding-top:6px}.am-row-plain{grid-template-columns:minmax(0,1fr)}.am-row-plain .am-row-actions{grid-column:1}}",
 		"@media (max-width:720px){.am-search{flex-basis:100%}.am-sort{margin-left:auto}}",
+		".am-page{gap:14px;min-width:0}.am-workbench{container-type:inline-size}",
+		".am-head{flex-wrap:wrap;gap:12px}.am-head-text{flex:1 1 270px}.am-version{flex:0 1 420px;min-width:0;font-size:12px;line-height:1.6}.am-version-line,.am-update-result{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.am-version-label{font-weight:600}.am-version-details{margin-top:4px}.am-version-details summary{cursor:pointer;width:max-content}.am-version a{color:var(--am-accent);text-decoration:underline}.am-update-result{margin-top:6px}.am-help{font-size:12px;line-height:1.6;color:var(--am-text-secondary)}",
+		".am-summary{display:flex;gap:14px;flex-wrap:wrap;padding:9px 14px;color:var(--am-text-secondary);font-size:12px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12))}.am-toolbar{gap:8px}.am-selected-count{font-size:12px;font-weight:700;color:var(--am-accent)}.am-batch-limit{flex-basis:100%;color:var(--am-warning);font-size:12px}.am-notice{padding:9px 14px;font-size:12px;color:var(--am-text-secondary);border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12))}",
+		".am-list{overflow:visible}.am-row{grid-template-columns:28px minmax(120px,1fr) minmax(64px,90px) auto;gap:12px;padding:14px}.am-row-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;overflow:hidden;overflow-wrap:anywhere;border:0;padding:0;background:transparent;color:var(--am-text-primary);text-align:left;cursor:pointer;font:inherit;font-size:14px;font-weight:500;line-height:1.5}.am-row-title:focus-visible,.am-page summary:focus-visible,.am-search-clear:focus-visible{outline:2px solid var(--am-accent);outline-offset:3px}.am-titleline{align-items:flex-start}.am-check-target{display:flex;width:28px;min-height:28px;align-items:center;justify-content:center;cursor:pointer}.am-check{margin:0}.am-log-size{display:flex;flex-direction:column;gap:2px;align-items:flex-end;font-size:12px;font-variant-numeric:tabular-nums}.am-log-size strong{font-weight:500}.am-badge{font-size:12px}.am-row-actions{gap:6px;max-width:100%}",
+		".am-more{position:relative;display:inline-flex}.am-action-menu{position:absolute;right:0;top:calc(100% + 5px);z-index:100;min-width:170px;max-width:min(300px,70vw);padding:4px;border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.3));border-radius:10px;background:var(--am-surface);box-shadow:0 8px 24px rgba(0,0,0,.2)}.am-action-menu .am-select-option{white-space:normal;overflow-wrap:anywhere}.am-danger-text{color:var(--am-danger)}.am-warning-text{color:var(--am-warning);overflow-wrap:anywhere}.am-select-option:disabled{color:var(--am-text-tertiary);cursor:not-allowed}.am-details{grid-column:2/-1;min-width:0;padding-top:10px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));font-size:12px;line-height:1.6}.am-path{overflow-wrap:anywhere;white-space:pre-wrap;user-select:text}.am-file-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}.am-file-list p{margin:0}.am-file{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:10px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));border-radius:8px;min-width:0}.am-file>div{max-width:100%}.am-report-item{white-space:normal;overflow-wrap:anywhere;overflow:visible}.am-report-actions{gap:8px;flex-wrap:wrap}.am-retention-settings{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-basis:100%}.am-retention-hint{min-width:0}.am-search{min-width:0}.am-modal{background:var(--am-surface)}.am-modal-actions{flex-wrap:wrap}.am-chip:disabled{cursor:not-allowed;color:var(--am-text-tertiary)}",
+		"@container (max-width:820px){.am-row{grid-template-columns:28px minmax(0,1fr) auto}.am-row-actions{grid-column:2/-1;justify-self:start;justify-content:flex-start;padding-top:2px}.am-log-size{grid-column:3;grid-row:1}.am-details{grid-column:2/-1}.am-search{flex-basis:100%}.am-controls{align-items:flex-start}.am-sort{margin-left:0}}",
+		"@container (max-width:480px){.am-row{grid-template-columns:28px minmax(0,1fr);gap:8px}.am-log-size{grid-column:2;grid-row:auto;flex-direction:row;gap:8px;align-items:baseline}.am-row-actions{grid-column:2;flex-wrap:wrap}.am-btn{white-space:normal;height:auto;min-height:32px;padding:6px 10px;line-height:1.4}.am-row-title{-webkit-line-clamp:3}.am-filter{flex-wrap:wrap}.am-viewbar{gap:6px}.am-tab{padding:0 10px}.am-head{display:block}.am-version{margin-top:10px}.am-time{white-space:normal}.am-details{grid-column:1/-1}.am-modal-backdrop{padding:12px}}",
 	].join("\n");
 
 	var stylesInjected = false;
@@ -661,6 +818,35 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		var menu = menuState[0];
 		var setMenu = menuState[1];
 
+		var updateState = useState(null);
+		var update = updateState[0], setUpdate = updateState[1];
+		var updatePhaseState = useState("");
+		var updatePhase = updatePhaseState[0], setUpdatePhase = updatePhaseState[1];
+		var filesState = useState({});
+		var files = filesState[0], setFiles = filesState[1];
+		var expandedState = useState({});
+		var expanded = expandedState[0], setExpanded = expandedState[1];
+		var reportAllState = useState(false);
+		var reportAll = reportAllState[0], setReportAll = reportAllState[1];
+		var selectionNoticeState = useState("");
+		var selectionNotice = selectionNoticeState[0], setSelectionNotice = selectionNoticeState[1];
+		var retentionExpandedState = useState(false);
+		var retentionExpanded = retentionExpandedState[0], setRetentionExpanded = retentionExpandedState[1];
+		var operationCountState = useState(0);
+		var operationCount = operationCountState[0], setOperationCount = operationCountState[1];
+		var updateErrorState = useState("");
+		var updateError = updateErrorState[0], setUpdateError = updateErrorState[1];
+		var removedWarningsState = useState([]);
+		var removedWarnings = removedWarningsState[0], setRemovedWarnings = removedWarningsState[1];
+		var locked = busy || Boolean(update && update.busy) || updatePhase === "preparing" || phase !== "ready";
+		var actionRef = React.useRef(false);
+		var updateRef = React.useRef(false);
+		var returnFocusRef = React.useRef(null);
+		var cancelRef = React.useRef(null);
+		var refreshRef = React.useRef(null);
+		var archivedAllRef = React.useRef(null);
+		var removedAllRef = React.useRef(null);
+		var pendingFocusRef = React.useRef(false);
 		var loadRef = React.useRef(false);
 		var confirmRef = React.useRef(null);
 		var menuRef = React.useRef(null);
@@ -675,8 +861,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			var silent = opts.silent === true;
 			if (loadRef.current) return Promise.resolve();
 			loadRef.current = true;
+			setPhase("loading");
 			if (silent !== true) {
-				setPhase("loading");
 				setError(null);
 				setReport(null);
 			}
@@ -685,37 +871,29 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				request("/settings").catch(function () { return null; })
 			]).then(function (pair) {
 				var data = pair[0] || {};
+				if (!Array.isArray(data.items) || !Array.isArray(data.removed)) throw new Error("Incomplete session list response");
 				var settingsData = pair[1];
 				var nextItems = Array.isArray(data.items) ? data.items : [];
 				var nextRemoved = Array.isArray(data.removed) ? data.removed : [];
 				setItems(nextItems);
 				setRemoved(nextRemoved);
+				setRemovedWarnings(Array.isArray(data.removedWarnings) ? data.removedWarnings : []);
 				setAttachments(data.attachments && typeof data.attachments === "object"
 					? { bytes: Number(data.attachments.bytes) || 0, files: Number(data.attachments.files) || 0 }
 					: { bytes: 0, files: 0 });
 				if (settingsData && settingsData.settings) {
 					setSettings({ trashRetentionDays: Number(settingsData.settings.trashRetentionDays) || 0 });
-				}
-				if (opts.keepSelection === true) {
-					var allowedItems = {};
-					nextItems.forEach(function (item) { allowedItems[item.id] = true; });
-					setSelected(function (current) {
-						return current.filter(function (id) { return allowedItems[id] === true; });
-					});
-					var allowedEntries = {};
-					nextRemoved.forEach(function (entry) { allowedEntries[keyOf(entry)] = true; });
-					setRemovedSelected(function (current) {
-						return current.filter(function (key) { return allowedEntries[key] === true; });
-					});
 				} else {
+					setSettings(function (current) { return Object.assign({}, current, { unavailable: true }); });
+				}
+				if (opts.keepSelection !== true) {
 					setSelected([]);
 					setRemovedSelected([]);
 				}
 				setPhase("ready");
 			}).catch(function (failure) {
-				if (silent) return;
 				setError(String(failure && failure.message ? failure.message : failure));
-				setPhase("failed");
+				setPhase(items.length > 0 || removed.length > 0 ? "stale" : "failed");
 			}).finally(function () {
 				loadRef.current = false;
 			});
@@ -745,7 +923,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		useEffect(function () {
 			if (menu === null || !menuRef.current) return;
 			var target = menuRef.current.querySelector('[aria-selected="true"]')
-				|| menuRef.current.querySelector('[role="option"]');
+				|| menuRef.current.querySelector('[role="option"]') || menuRef.current.querySelector('[role="menuitem"]:not(:disabled)');
 			if (target && typeof target.focus === "function") target.focus();
 		}, [menu]);
 
@@ -776,7 +954,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		useEffect(function () {
 			if (confirm === null) return undefined;
 			function onKey(event) {
-				if (event.key === "Escape" && busy !== true) {
+				if (event.key === "Escape" && !actionRef.current) {
 					event.preventDefault();
 					setConfirm(null);
 					return;
@@ -803,14 +981,32 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				}
 			}
 			document.addEventListener("keydown", onKey);
-			if (confirmRef.current && typeof confirmRef.current.focus === "function") confirmRef.current.focus();
-			return function () { document.removeEventListener("keydown", onKey); };
-		}, [confirm, busy]);
+			if (cancelRef.current && typeof cancelRef.current.focus === "function") cancelRef.current.focus();
+			return function () {
+				document.removeEventListener("keydown", onKey);
+				pendingFocusRef.current = true;
+			};
+		}, [confirm !== null]);
+
+		// Closing a submitted dialog often coincides with a list refresh. Wait
+		// until a connected target is enabled; focusing disabled buttons is a no-op.
+		useEffect(function () {
+			if (!pendingFocusRef.current || confirm !== null || busy || update && update.busy || updatePhase === "preparing") return;
+			var candidates = [returnFocusRef.current, tab === "removed" ? removedAllRef.current : archivedAllRef.current, refreshRef.current];
+			for (var index = 0; index < candidates.length; index++) {
+				var target = candidates[index];
+				if (target && target.isConnected !== false && !target.disabled && typeof target.focus === "function") {
+					target.focus();
+					pendingFocusRef.current = false;
+					return;
+				}
+			}
+		}, [confirm !== null, phase, busy, Boolean(update && update.busy), updatePhase, tab]);
 
 		useEffect(function () {
 			var last = 0;
 			function refresh() {
-				if (busy === true || confirm !== null) return;
+				if (locked || actionRef.current || confirm !== null) return;
 				var now = Date.now();
 				if (now - last < 5000) return;
 				last = now;
@@ -827,7 +1023,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				document.removeEventListener("visibilitychange", onVisibility);
 				clearInterval(timer);
 			};
-		}, [busy, confirm]);
+		}, [locked, confirm]);
 
 		function itemText(item) {
 			return [
@@ -873,6 +1069,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		});
 		var sortedRemoved = filteredRemoved.slice().sort(compareRemoved);
 
+		selected = selected.filter(function (id) { return sortedItems.some(function (item) { return item.id === id && !item.running; }); });
+		removedSelected = removedSelected.filter(function (key) { return sortedRemoved.some(function (entry) { return keyOf(entry) === key; }); });
 		var filesCount = items.filter(function (item) { return !item.missing; }).length;
 		var missingCount = items.filter(function (item) { return item.missing; }).length;
 		var archivedBytes = items.reduce(function (sum, item) { return sum + (item.sizeBytes || 0); }, 0);
@@ -886,29 +1084,29 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		var selectedRemovedEntries = removed.filter(function (entry) { return removedSelected.indexOf(keyOf(entry)) >= 0; });
 
 		useEffect(function () {
-			setSelected(function (current) {
-				var allowed = {};
-				sortedItems.forEach(function (item) { allowed[item.id] = true; });
-				var next = current.filter(function (id) { return allowed[id] === true; });
-				return next.length === current.length ? current : next;
-			});
-			setRemovedSelected(function (current) {
-				var allowed = {};
-				sortedRemoved.forEach(function (entry) { allowed[keyOf(entry)] = true; });
-				var next = current.filter(function (key) { return allowed[key] === true; });
-				return next.length === current.length ? current : next;
-			});
-		}, [query, filter, removedQuery]);
+			var allowed = {}, allowedRemoved = {};
+			sortedItems.forEach(function (item) { if (!item.running) allowed[item.id] = true; });
+			sortedRemoved.forEach(function (entry) { allowedRemoved[keyOf(entry)] = true; });
+			var next = selectedState[0].filter(function (id) { return allowed[id] === true; });
+			var nextRemoved = removedSelectedState[0].filter(function (key) { return allowedRemoved[key] === true; });
+			var pruned = selectedState[0].length - next.length + removedSelectedState[0].length - nextRemoved.length;
+			if (next.length !== selectedState[0].length) setSelected(next);
+			if (nextRemoved.length !== removedSelectedState[0].length) setRemovedSelected(nextRemoved);
+			if (pruned > 0) setSelectionNotice(tr("selectionPruned", { n: pruned }));
+		}, [query, filter, removedQuery, items, removed]);
 
 		function syncAllRef(node) {
+			archivedAllRef.current = node;
 			if (node) node.indeterminate = selected.length > 0 && !allSelected;
 		}
 
 		function syncRemovedRef(node) {
+			removedAllRef.current = node;
 			if (node) node.indeterminate = removedSelected.length > 0 && !allRemovedSelected;
 		}
 
 		function toggle(id) {
+			if (locked || actionRef.current) return;
 			setSelected(function (current) {
 				return current.indexOf(id) >= 0
 					? current.filter(function (value) { return value !== id; })
@@ -917,10 +1115,12 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function toggleAll() {
+			if (locked || actionRef.current) return;
 			setSelected(allSelected ? [] : selectable.map(function (item) { return item.id; }));
 		}
 
 		function toggleRemoved(key) {
+			if (locked || actionRef.current) return;
 			setRemovedSelected(function (current) {
 				return current.indexOf(key) >= 0
 					? current.filter(function (value) { return value !== key; })
@@ -929,15 +1129,18 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function toggleAllRemoved() {
+			if (locked || actionRef.current) return;
 			setRemovedSelected(allRemovedSelected ? [] : sortedRemoved.map(keyOf));
 		}
 
 		function clearFilters() {
+			if (locked || actionRef.current) return;
 			setQuery("");
 			setFilter("all");
 		}
 
 		function clearRemovedFilters() {
+			if (locked || actionRef.current) return;
 			setRemovedQuery("");
 		}
 
@@ -959,41 +1162,51 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function finish(summary, meta) {
+			actionRef.current = false;
 			setBusy(false);
 			setConfirm(null);
 			var failures = summary.failures || [];
+			var successes = summary.successes || [];
 			if (meta.scope === "removed") {
-				var keys = [];
-				failures.forEach(function (failure) {
-					var entry = removed.filter(function (candidate) { return candidate.id === failure.id; })[0];
-					if (entry) keys.push(keyOf(entry));
+				var successKeys = successes.map(function (entry) { return keyOf(entry); });
+				setRemovedSelected(function (current) {
+					var next = current.filter(function (key) { return successKeys.indexOf(key) < 0; });
+					failures.forEach(function (failure) {
+						var entry = removed.filter(function (candidate) { return candidate.id === failure.id && (!failure.batch || candidate.batch === failure.batch); })[0];
+						if (entry && next.indexOf(keyOf(entry)) < 0) next.push(keyOf(entry));
+					});
+					return next;
 				});
-				setRemovedSelected(keys);
-				setSelected([]);
+				setRemoved(function (current) { return current.filter(function (entry) { return successKeys.indexOf(keyOf(entry)) < 0; }); });
 			} else {
-				var kept = Array.isArray(meta.keepIds) ? meta.keepIds : [];
-				var nextSelected = failures.map(function (failure) { return failure.id; }).filter(Boolean);
-				kept.forEach(function (id) {
-					if (nextSelected.indexOf(id) < 0) nextSelected.push(id);
+				var successIds = successes.map(function (item) { return item.id; });
+				setSelected(function (current) {
+					var next = current.filter(function (id) { return successIds.indexOf(id) < 0; });
+					failures.forEach(function (failure) { if (failure.id && next.indexOf(failure.id) < 0) next.push(failure.id); });
+					return next;
 				});
-				setSelected(nextSelected);
-				setRemovedSelected([]);
+				setItems(function (current) { return current.filter(function (item) { return successIds.indexOf(item.id) < 0; }); });
 			}
+			setFiles(function (current) {
+				var next = Object.assign({}, current);
+				successes.forEach(function (entry) { delete next[entry.batch ? keyOf(entry) : entry.id]; });
+				return next;
+			});
 			if (failures.length > 0) {
 				setReport({
-					title: tr("reportTitle", { ok: summary.ok, fail: summary.fail }),
-					failures: failures.slice(0, 4).map(function (failure) {
+					title: tr("resultSummary", { ok: summary.ok, fail: summary.fail, skip: summary.skip || 0 }),
+					failures: failures.map(function (failure) {
 						return { title: failureTitle(failure), reason: failureReason(failure) };
 					}),
-					more: failures.length > 4 ? failures.length - 4 : 0
+					more: 0
 				});
 				setToast({
 					kind: "bad",
-					text: tr("toastPartial", { ok: summary.ok, fail: summary.fail })
+					text: tr("resultSummary", { ok: summary.ok, fail: summary.fail, skip: summary.skip || 0 })
 						+ "：" + failureTitle(failures[0]) + " · " + failureReason(failures[0])
 				});
 			} else {
-				setReport(null);
+				setReport(summary.warnings.length ? { title: tr("resultSummary", { ok: summary.ok, fail: 0, skip: 0 }), failures: summary.warnings.map(function (entry) { return { title: failureTitle(entry), reason: entry.warning }; }) } : null);
 				setToast({
 					kind: "ok",
 					text: typeof meta.ok === "function" ? meta.ok(summary) : tr("resultOk", { ok: summary.ok, fail: 0 })
@@ -1003,19 +1216,38 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function failRequest(failure) {
+			actionRef.current = false;
 			setBusy(false);
 			setConfirm(null);
-			setToast({
-				kind: "bad",
-				text: tr("resultFail", { message: errorText(failure && failure.code, failure && failure.message) })
-			});
+			setReport({ title: failure && failure.code === "state-changed" ? tr("rangeChanged") : tr("operationUnknown"), failures: [{ title: failure && failure.code === "state-changed" ? tr("rangeChanged") : tr("unknownResult"), reason: errorText(failure && failure.code, failure && failure.message) }] });
+			setPhase("stale");
+			void load({ silent: true, keepSelection: true });
+		}
+
+		function beginAction(count, allowAll) {
+			if (locked || actionRef.current) return false;
+			if (!allowAll && (count < 1 || count > MAX_BATCH)) {
+				setToast({ kind: "bad", text: tr("batchLimit") });
+				return false;
+			}
+			actionRef.current = true;
+			setBusy(true);
+			setOperationCount(count);
+			setReport(null);
+			setReportAll(false);
+			setMenu(null);
+			return true;
 		}
 
 		function runAction(path, body, meta) {
-			setBusy(true);
-			setReport(null);
+			var count = (body.ids || body.items || []).length;
+			if (!beginAction(count, false)) return;
 			request(path, body).then(function (data) {
-				finish(summarize(data && data.results), meta);
+				if (!Array.isArray(data.results) || data.results.length !== count) throw new Error("Incomplete action response");
+				var expected = (body.ids || body.items).map(function (entry) { return typeof entry === "string" ? entry : keyOf(entry); }).sort();
+				var actual = data.results.map(function (entry) { return body.ids ? entry.id : keyOf(entry); }).sort();
+				if (JSON.stringify(expected) !== JSON.stringify(actual)) throw new Error("Mismatched action response");
+				finish(summarize(data.results), meta);
 			}).catch(failRequest);
 		}
 
@@ -1077,22 +1309,20 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			return entries.map(function (entry) { return { batch: entry.batch, id: entry.id }; });
 		}
 
-		function runEmpty() {
-			setBusy(true);
-			setReport(null);
-			request("/empty-trash", { confirm: "EMPTY" }).then(function (data) {
-				setBusy(false);
-				setConfirm(null);
-				setRemovedSelected([]);
-				setToast({ kind: "ok", text: tr("toastEmpty", { size: fmtSize(data && data.bytes) }) });
-				void load({ silent: true, keepSelection: true });
+		function runEmpty(snapshot) {
+			if (!Array.isArray(snapshot) || snapshot.length === 0 || !beginAction(snapshot.length, true)) return;
+			request("/empty-trash", { confirm: "EMPTY", items: snapshot }).then(function (data) {
+				if (!Array.isArray(data.results)) throw new Error("Incomplete cleanup response");
+				finish(summarize(data.results), { scope: "removed", ok: function (summary) {
+					return tr("toastDiscard", { n: summary.ok, size: fmtSize(summary.bytes) });
+				} });
 			}).catch(failRequest);
 		}
 
 		function runRetention(days) {
-			setBusy(true);
-			setReport(null);
+			if (!beginAction(0, true)) return;
 			request("/settings/save", { trashRetentionDays: days }).then(function (data) {
+				actionRef.current = false;
 				setBusy(false);
 				setConfirm(null);
 				if (data && data.settings) setSettings({ trashRetentionDays: Number(data.settings.trashRetentionDays) || 0 });
@@ -1100,172 +1330,266 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				if (data && data.swept && data.swept.removed > 0) {
 					text += " · " + tr("retentionSwept", { n: data.swept.removed, size: fmtSize(data.swept.bytes) });
 				}
+				if (data.swept && Array.isArray(data.swept.results)) {
+					var summary = summarize(data.swept.results);
+					if (summary.failures.length) setReport({ title: tr("resultSummary", { ok: summary.ok, fail: summary.fail, skip: summary.skip }), failures: summary.failures.map(function (entry) { return { title: failureTitle(entry), reason: failureReason(entry) }; }) });
+				}
+				if (data.swept && data.swept.warning) setReport({ title: tr("operationUnknown"), failures: [{ title: tr("retentionTitle"), reason: data.swept.warning }] });
 				setToast({ kind: "ok", text: text });
 				void load({ silent: true, keepSelection: true });
 			}).catch(failRequest);
 		}
 
 		function changeRetention(value) {
+			if (locked || settings.unavailable || actionRef.current) return;
 			var days = Number(value);
 			if (days === settings.trashRetentionDays) return;
 			if (days === 0) {
 				runRetention(0);
 				return;
 			}
-			setConfirm({ kind: "retention", days: days, checked: false });
+			openConfirm({ kind: "retention", days: days, checked: false });
 		}
 
-		function rowBadges(item) {
-			var badges = [];
-			if (item.running) badges.push(h("span", { key: "run", className: "am-badge danger" }, tr("running")));
-			else if (item.resident) badges.push(h("span", { key: "res", className: "am-badge warn" }, tr("resident")));
-			badges.push(item.missing
-				? h("span", { key: "status", className: "am-badge muted", title: tr("tipMissing") }, tr("badgeMissing"))
-				: h("span", {
-					key: "status",
-					className: "am-badge ok",
-					title: tr("tipArchived", { size: fmtSize(item.sizeBytes) })
-				}, tr("badgeArchived")));
-			return badges;
+		function openConfirm(value) {
+			if (locked || actionRef.current) return;
+			var count = (value.ids || value.items || []).length;
+			if (count > MAX_BATCH && value.kind !== "empty") {
+				setToast({ kind: "bad", text: tr("batchLimit") });
+				return;
+			}
+			returnFocusRef.current = menu && menuTriggerRef.current ? menuTriggerRef.current : document.activeElement;
+			setMenu(null);
+			setConfirm(value);
 		}
 
-		function archivedRow(item) {
-			var checked = selected.indexOf(item.id) >= 0;
-			var workspace = item.workspace && item.workspace.title ? item.workspace.title : "—";
-			var firstMeta = [
-				workspace,
-				item.missing ? tr("sizeMissing") : tr("sizeUsed", { size: fmtSize(item.sizeBytes) })
-			].join(" · ");
-			var lastUsedValue = typeof item.lastUsedAt === "number" ? fmtTime(item.lastUsedAt) : "—";
-			var archivedValue = typeof item.archivedAt === "number" ? fmtTime(item.archivedAt) : tr("unknownTime");
-			var actions = item.missing
-				? h("button", {
-					key: "cleanup",
-					type: "button",
-					className: "am-btn batch",
-					disabled: busy,
-					title: tr("tipCleanupAction"),
-					onClick: function () { setConfirm({ kind: "cleanup", ids: [item.id], checked: true }); }
-				}, tr("cleanupShort"))
-				: [
-					h("button", {
-						key: "unarchive",
-						type: "button",
-						className: "am-btn batch",
-						disabled: busy || item.running,
-						title: tr("tipUnarchiveAction"),
-						onClick: function () { runUnarchive([item.id]); }
-					}, tr("unarchive")),
-					h("button", {
-						key: "hide",
-						type: "button",
-						className: "am-btn batch",
-						disabled: busy || item.running,
-						title: tr("tipHideAction"),
-						onClick: function () { setConfirm({ kind: "hide", ids: [item.id], checked: true }); }
-					}, tr("hide")),
-					h("button", {
-						key: "purge",
-						type: "button",
-						className: "am-btn batch danger",
-						disabled: busy || item.running,
-						title: tr("scopeNoteShort"),
-						onClick: function () { setConfirm({ kind: "purge", ids: [item.id], checked: false }); }
-					}, tr("purge"))
-				];
-			return h("div", { key: item.id, className: "am-row" + (checked ? " selected" : ""), role: "listitem" }, [
-				h("input", {
-					key: "check",
-					type: "checkbox",
-					className: "am-check",
-					checked: checked,
-					disabled: Boolean(item.running),
-					onChange: function () { toggle(item.id); },
-					"aria-label": item.title || item.id
-				}),
-				h("div", { key: "main", className: "am-main" }, [
-					h("div", { key: "titleline", className: "am-titleline" }, [
-						h("div", { key: "title", className: "am-row-title", title: item.title || item.id }, item.title || tr("noTitle")),
-						h("div", { key: "badges", className: "am-badges" }, rowBadges(item))
-					]),
-					h("div", { key: "meta1", className: "am-row-meta", title: firstMeta }, firstMeta),
-					h("div", { key: "meta2", className: "am-row-meta am-row-times" }, [
-						timeItem("lu", tr("lastUsedLabel"), tr("tipLastUsedLabel"), lastUsedValue),
-						timeItem("ar", tr("archivedLabel"), tr("tipArchivedLabel"), archivedValue)
-					])
-				]),
-				h("div", { key: "actions", className: "am-row-actions" }, actions)
+		function button(key, label, onClick, disabled, danger) {
+			return h("button", { key: key, type: "button", className: "am-btn" + (danger ? " danger" : ""), disabled: Boolean(disabled), onClick: function (event) {
+				if (!disabled) onClick(event);
+			} }, label);
+		}
+
+		function moreMenu(id, actions, label) {
+			var open = menu === id;
+			return h("div", { key: id, className: "am-more" }, [
+				h("button", { key: "trigger", type: "button", className: "am-btn", disabled: locked, "aria-haspopup": "menu", "aria-expanded": open,
+					onClick: function (event) { if (locked || actionRef.current) return; menuTriggerRef.current = event.currentTarget; setMenu(open ? null : id); },
+					onKeyDown: function (event) { if (event.key === "ArrowDown" && !locked) { event.preventDefault(); menuTriggerRef.current = event.currentTarget; setMenu(id); } }
+				}, label || tr("more")),
+				open ? h("div", { key: "menu", className: "am-action-menu", role: "menu", ref: menuRef, "aria-label": label || tr("more"), onKeyDown: function (event) {
+					if (!menuRef.current) return;
+					var nodes = Array.prototype.slice.call(menuRef.current.querySelectorAll('[role="menuitem"]:not(:disabled)'));
+					var current = nodes.indexOf(document.activeElement), next;
+					if (event.key === "ArrowDown") next = (current + 1) % nodes.length;
+					else if (event.key === "ArrowUp") next = (current + nodes.length - 1) % nodes.length;
+					else if (event.key === "Home") next = 0;
+					else if (event.key === "End") next = nodes.length - 1;
+					if (next !== undefined && nodes[next]) { event.preventDefault(); nodes[next].focus(); }
+				} }, actions.map(function (action) {
+					return h("button", { key: action.key, type: "button", role: "menuitem", className: "am-select-option am-danger-text", disabled: locked || action.disabled,
+						onClick: function () { if (!locked && !action.disabled && !actionRef.current) action.run(); }
+					}, action.label);
+				})) : null
 			]);
 		}
 
-		function removedRow(entry) {
-			var key = keyOf(entry);
-			var checked = removedSelected.indexOf(key) >= 0;
-			var workspace = entry.workspace || "—";
-			var firstMeta = [workspace, fmtSize(entry.bytes)].join(" · ");
-			return h("div", { key: key, className: "am-row" + (checked ? " selected" : ""), role: "listitem" }, [
-				h("input", {
-					key: "check",
-					type: "checkbox",
-					className: "am-check",
-					checked: checked,
-					disabled: busy,
-					onChange: function () { toggleRemoved(key); },
-					"aria-label": entry.title || entry.id
+		function fileKey(item) { return item.batch ? keyOf(item) : item.id; }
+		function fileRequest(item) { return item.batch ? { id: item.id, batch: item.batch } : { id: item.id }; }
+		function getFiles(item) {
+			var key = fileKey(item);
+			if (files[key] && files[key].loading) return;
+			setFiles(function (current) { var next = Object.assign({}, current); next[key] = { loading: true }; return next; });
+			request("/files", fileRequest(item)).then(function (data) {
+				if (!Array.isArray(data.files)) throw new Error("Invalid file response");
+				setFiles(function (current) { var next = Object.assign({}, current); next[key] = data; return next; });
+			}).catch(function (error) {
+				setFiles(function (current) { var next = Object.assign({}, current); next[key] = { error: String(error.message || error) }; return next; });
+			});
+		}
+		function openFolder(item, file, workspace) {
+			var body = Object.assign({}, fileRequest(item));
+			if (workspace) body.workspace = true;
+			else body.path = file.path;
+			request("/open-folder", body).catch(function (error) { setToast({ kind: "bad", text: errorText(error.code, error.message) }); getFiles(item); });
+		}
+		function fileLocations(item) {
+			var data = files[fileKey(item)];
+			if (!data) return button("files", tr("loadFiles"), function () { getFiles(item); }, false);
+			if (data.loading) return h("p", { key: "files", role: "status" }, tr("loading"));
+			if (data.error) return h("div", { key: "files", role: "status" }, [tr("filesFailed", { message: data.error }), button("retry", tr("retry"), function () { getFiles(item); }, false)]);
+			return h("div", { key: "files", className: "am-file-list" }, [
+				h("strong", { key: "title" }, tr("files")),
+				h("p", { key: "coverage", className: "am-help" }, tr("filesCoverage")),
+				data.warning ? h("p", { key: "warning", className: "am-warning-text" }, data.warning) : null,
+				data.files.length === 0 ? h("p", { key: "empty" }, tr("filesEmpty")) : data.files.map(function (file, index) {
+					return h("div", { key: file.path + index, className: "am-file" }, [
+						h("strong", { key: "name" }, file.name || file.path),
+						h("div", { key: "path", className: "am-path" }, tr("path") + "：" + file.path),
+						h("div", { key: "folder", className: "am-path" }, tr("folder") + "：" + file.directory),
+						file.reason ? h("div", { key: "reason", className: "am-warning-text" }, file.reason) : file.status !== "exists" && file.status !== "available" ? h("div", { key: "status", className: "am-help" }, file.status === "file-missing" || file.status === "missing" ? tr("fileMissing") : file.canOpen ? "" : tr("unavailable")) : null,
+						button("open", tr("openFolder"), function () { openFolder(item, file, false); }, !file.canOpen)
+					]);
 				}),
-				h("div", { key: "main", className: "am-main" }, [
-					h("div", { key: "titleline", className: "am-titleline" }, [
-						h("div", { key: "title", className: "am-row-title", title: entry.title || entry.id }, entry.title || tr("noTitle"))
-					]),
-					h("div", { key: "meta1", className: "am-row-meta", title: firstMeta }, firstMeta),
-					h("div", { key: "meta2", className: "am-row-meta am-row-times" }, [
-						timeItem("mv", tr("movedAt"), tr("tipMovedAtLabel"), fmtTime(entry.movedAt)),
-						h("span", { key: "age", className: "am-time am-time-age" }, fmtAge(entry.movedAt))
-					])
-				]),
-				h("div", { key: "actions", className: "am-row-actions" }, [
-					h("button", {
-						key: "restore",
-						type: "button",
-						className: "am-btn batch primary",
-						disabled: busy,
-						onClick: function () { runRestore([{ batch: entry.batch, id: entry.id }]); }
-					}, tr("restore")),
-					h("button", {
-						key: "discard",
-						type: "button",
-						className: "am-btn batch danger",
-						disabled: busy,
-						title: tr("tipDiscardAction"),
-						onClick: function () {
-							setConfirm({
-								kind: "discard",
-								items: [{ batch: entry.batch, id: entry.id }],
-								checked: false
-							});
-						}
-					}, tr("discardShort"))
+				h("div", { key: "workspace", className: "am-file" }, [
+					h("strong", { key: "title" }, tr("workspacePath")),
+					data.workspace ? h("div", { key: "path", className: "am-path" }, data.workspace.path) : h("span", { key: "none" }, tr("noWorkspace")),
+					data.workspace && data.workspace.reason ? h("div", { key: "reason", className: "am-help" }, data.workspace.reason) : null,
+					data.workspace ? button("open", tr("openWorkspace"), function () { openFolder(item, null, true); }, !data.workspace.canOpen) : null
 				])
 			]);
 		}
 
-		function statCard(key, label, value, hint) {
-			return h("div", { key: key, className: "am-stat" }, [
-				h("div", { key: "label", className: "am-stat-label" }, label),
-				h("div", { key: "value", className: "am-stat-value" }, value),
-				hint ? h("div", { key: "hint", className: "am-stat-hint" }, hint) : null
+		function sizeInfo(entries, isRemoved) {
+			return entries.reduce(function (info, item) {
+				var value = isRemoved ? item.bytes : item.sizeBytes;
+				if (item.sizeKnown === false || typeof value !== "number" || !isFinite(value) || value < 0) info.unknown += 1;
+				else info.bytes += value;
+				return info;
+			}, { bytes: 0, unknown: 0 });
+		}
+		function logSizeText(item, isRemoved) {
+			if (!isRemoved && item.missing) return "—";
+			var info = sizeInfo([item], isRemoved);
+			return info.unknown ? tr("sizeUnknown") : fmtSize(info.bytes);
+		}
+		function summarySize(entries, isRemoved) {
+			var info = sizeInfo(entries, isRemoved);
+			return tr("logSize") + " " + (entries.length > 0 && info.unknown === entries.length ? tr("sizeUnknown") : fmtSize(info.bytes))
+				+ (info.unknown ? " · " + tr("sizePartial", { n: info.unknown }) : "");
+		}
+
+		function details(item, removedItem) {
+			var key = fileKey(item);
+			if (!expanded[key]) return null;
+			var workspace = item.workspace && typeof item.workspace === "object" ? item.workspace.path : item.workspacePath;
+			return h("div", { key: "details", className: "am-details", id: "am-detail-" + key.replace(/[^a-zA-Z0-9_-]/g, "-") }, [
+				h("div", { key: "title", className: "am-path" }, item.title || tr("noTitle")),
+				h("div", { key: "id", className: "am-path" }, "ID：" + item.id),
+				item.protectionReason ? h("div", { key: "protection", className: "am-warning-text" }, item.protectionReason) : null,
+				item.sizeWarning && item.sizeWarning !== item.protectionReason ? h("div", { key: "sizeWarning", className: "am-warning-text" }, item.sizeWarning) : null,
+				workspace ? h("div", { key: "workspace", className: "am-path" }, tr("workspacePath") + "：" + workspace) : null,
+				h("div", { key: "times", className: "am-row-meta am-row-times" }, removedItem
+					? timeItem("moved", tr("movedAt"), tr("tipMovedAtLabel"), fmtTime(item.movedAt))
+					: [timeItem("last", tr("lastUsedLabel"), tr("tipLastUsedLabel"), fmtTime(item.lastUsedAt)), timeItem("archived", tr("archivedLabel"), tr("tipArchivedLabel"), typeof item.archivedAt === "number" ? fmtTime(item.archivedAt) : tr("unknownTime"))]),
+				fileLocations(item)
+			]);
+		}
+		function rowMain(item, removedItem) {
+			var key = fileKey(item), open = Boolean(expanded[key]);
+			var workspace = item.workspace && typeof item.workspace === "object" ? item.workspace.title : item.workspace;
+			return h("div", { key: "main", className: "am-main" }, [
+				h("div", { key: "titleline", className: "am-titleline" }, [
+					h("button", { key: "title", type: "button", className: "am-row-title", title: item.title || item.id, "aria-expanded": open, "aria-controls": "am-detail-" + key.replace(/[^a-zA-Z0-9_-]/g, "-"), onClick: function () { setExpanded(function (current) { var next = Object.assign({}, current); next[key] = !current[key]; return next; }); } }, item.title || tr("noTitle")),
+					item.running ? h("span", { key: "running", className: "am-badge danger" }, tr("running")) : item.missing ? h("span", { key: "missing", className: "am-badge warn" }, tr("missing")) : item.protected ? h("span", { key: "protected", className: "am-badge warn", title: item.protectionReason }, tr("protectedItem")) : null
+				]),
+				h("div", { key: "meta", className: "am-row-meta", title: workspace || "" }, (workspace || "—") + " · " + (removedItem ? tr("movedAt") : tr("lastUsedLabel")) + " " + fmtAge(removedItem ? item.movedAt : item.lastUsedAt)),
+				h("span", { key: "hint", className: "am-help" }, tr("details") + (open ? " ▴" : " ▾"))
+			]);
+		}
+
+		function archivedRow(item) {
+			var checked = selected.indexOf(item.id) >= 0;
+			var actions = item.running ? h("span", { className: "am-help" }, tr("runningLocked")) : item.missing
+				? button("cleanup", tr("cleanup"), function () { openConfirm({ kind: "cleanup", ids: [item.id], checked: true }); }, locked)
+				: [button("unarchive", tr("unarchive"), function () { runUnarchive([item.id]); }, locked), button("hide", tr("hide"), function () { openConfirm({ kind: "hide", ids: [item.id], checked: true }); }, locked),
+					moreMenu("more-" + item.id, [{ key: "purge", label: tr("purge"), run: function () { openConfirm({ kind: "purge", ids: [item.id], checked: false }); } }])];
+			return h("div", { key: item.id, className: "am-row" + (checked ? " selected" : ""), role: "listitem" }, [
+				h("label", { key: "check", className: "am-check-target" }, h("input", { type: "checkbox", className: "am-check", checked: checked, disabled: locked || Boolean(item.running), onChange: function () { if (!item.running) toggle(item.id); }, "aria-label": item.title || item.id })),
+				rowMain(item, false),
+				h("div", { key: "size", className: "am-log-size", title: item.sizeWarning || item.protectionReason }, [h("span", { key: "label", className: "am-help" }, tr("logSize")), h("strong", { key: "value" }, logSizeText(item, false))]),
+				h("div", { key: "actions", className: "am-row-actions" }, actions), details(item, false)
+			]);
+		}
+		function removedRow(entry) {
+			var key = keyOf(entry), checked = removedSelected.indexOf(key) >= 0;
+			return h("div", { key: key, className: "am-row" + (checked ? " selected" : ""), role: "listitem" }, [
+				h("label", { key: "check", className: "am-check-target" }, h("input", { type: "checkbox", className: "am-check", checked: checked, disabled: locked, onChange: function () { toggleRemoved(key); }, "aria-label": entry.title || entry.id })),
+				rowMain(entry, true),
+				h("div", { key: "size", className: "am-log-size", title: entry.sizeWarning || entry.protectionReason }, [h("span", { key: "label", className: "am-help" }, tr("logSize")), h("strong", { key: "value" }, logSizeText(entry, true))]),
+				h("div", { key: "actions", className: "am-row-actions" }, [button("restore", tr("restore"), function () { runRestore([{ batch: entry.batch, id: entry.id }]); }, locked),
+					moreMenu("more-" + key, [{ key: "discard", label: tr("purge"), run: function () { openConfirm({ kind: "discard", items: [{ batch: entry.batch, id: entry.id }], checked: false }); } }])]),
+				details(entry, true)
+			]);
+		}
+
+		function validControlUrl(value) {
+			if (typeof value !== "string") return false;
+			try {
+				var base = window.location && window.location.origin;
+				var url = new URL(value, base || "http://localhost");
+				return /^https?:$/.test(url.protocol) && /^\/archived-manager\/update-control\/[a-f0-9]{48}$/.test(url.pathname)
+					&& !url.search && !url.hash && (url.origin === base || /^(localhost|127\.0\.0\.1|\[::1\])$/.test(url.hostname));
+			} catch (error) { return false; }
+		}
+
+		function updateStatus() {
+			return request("/update/status").then(function (data) { setUpdate(function (current) { return Object.assign({}, current || {}, data); }); setUpdateError(""); }).catch(function () { setUpdateError(tr("updateUnknown")); });
+		}
+		useEffect(function () {
+			void updateStatus();
+			function check() { void updateStatus(); }
+			window.addEventListener("focus", check);
+			var timer = setInterval(check, 5000);
+			return function () { window.removeEventListener("focus", check); clearInterval(timer); };
+		}, []);
+		function checkUpdate() {
+			if (updateRef.current) return;
+			updateRef.current = true;
+			setUpdatePhase("checking"); setUpdateError("");
+			request("/update/check", {}).then(function (data) { setUpdate(data); }).catch(function (error) { setUpdateError(tr("updateFailed", { message: error.message || error })); }).finally(function () { updateRef.current = false; setUpdatePhase(""); });
+		}
+		function prepareUpdate() {
+			if (locked || actionRef.current || updateRef.current || !update || !update.release || !update.canUpdate) return;
+			updateRef.current = true; setUpdatePhase("preparing"); setUpdateError("");
+			request("/update/prepare", { releaseId: update.release.id, version: update.release.version, switchFromLink: update.sourceKind === "link" }).then(function (data) {
+				if (!validControlUrl(data.controlUrl)) throw new Error("Invalid update control URL");
+				setUpdate(function (current) { return Object.assign({}, current, { job: data.job, controlUrl: data.controlUrl }); });
+				window.open(data.controlUrl, "_blank", "noopener,noreferrer");
+			}).catch(function (error) { setUpdateError(error.message || String(error)); }).finally(function () { updateRef.current = false; setUpdatePhase(""); void updateStatus(); });
+		}
+		function versionPanel() {
+			var mismatch = update && ((update.runtimeVersion && update.runtimeVersion !== CLIENT_VERSION) || (update.installedVersion && update.installedVersion !== CLIENT_VERSION));
+			var confirmed = update && update.runtimeVersion === CLIENT_VERSION && update.installedVersion === CLIENT_VERSION;
+			var source = update && update.sourceKind;
+			var sourceText = source === "link" ? tr("localSource") : source === "release" ? tr("releaseSource") : source === "missing" ? tr("missingSource") : tr("unknownSource");
+			var release = update && update.release;
+			var control = update && (update.controlUrl || update.job && update.job.controlUrl);
+			return h("div", { key: "version", className: "am-version" }, [
+				h("div", { key: "line", className: "am-version-line" }, [
+					h("span", { key: "version", className: "am-version-label" }, mismatch ? tr("pendingUpdate") : confirmed ? "v" + CLIENT_VERSION : tr("versionChecking", { version: CLIENT_VERSION })),
+					source === "link" ? h("span", { key: "source", className: "am-badge muted" }, tr("localSource")) : null,
+					button("check", updatePhase === "checking" ? tr("checkingUpdate") : tr("checkUpdate"), checkUpdate, updatePhase !== "" || Boolean(update && update.busy))
+				]),
+				h("details", { key: "details", className: "am-version-details" }, [h("summary", { key: "summary" }, tr("versionDetails")),
+					h("div", { key: "page" }, tr("pageVersion") + "：v" + CLIENT_VERSION),
+					h("div", { key: "runtime" }, tr("serviceVersion") + "：" + (update && update.runtimeVersion || tr("notProvided"))),
+					h("div", { key: "installed" }, tr("installedVersion") + "：" + (update && update.installedVersion || tr("notProvided"))),
+					h("div", { key: "source" }, tr("source") + "：" + sourceText)
+				]),
+				updateError ? h("div", { key: "error", className: "am-warning-text", role: "status" }, updateError) : null,
+				update && update.busy ? h("div", { key: "busy", role: "status" }, tr("updateBusy")) : null,
+				release ? h("div", { key: "release", className: "am-update-result" }, [
+					h("span", { key: "relation" }, update.relation === "same" ? tr("latestRelease", { version: release.version }) : update.relation === "older" ? tr("aheadRelease", { version: release.version }) : tr("checkedRelease", { version: release.version })),
+					release.htmlUrl && /^https:\/\/github\.com\/chen1pengvincent\/dsh-archived-manager\/releases\//.test(release.htmlUrl) ? h("a", { key: "notes", href: release.htmlUrl, target: "_blank", rel: "noopener noreferrer" }, tr("releaseNotes")) : null,
+					update.checkedAt ? h("span", { key: "checked", className: "am-help" }, tr("checkedAt") + " " + fmtTime(typeof update.checkedAt === "number" ? update.checkedAt : Date.parse(update.checkedAt))) : null,
+					(source === "link" || update.relation === "newer") && update.relation !== "older" ? button("install", updatePhase === "preparing" ? tr("updatePreparing") : source === "link" ? tr("switchRelease") : tr("updateTo", { version: release.version }), prepareUpdate, locked || !update.canUpdate || updatePhase !== "") : null,
+					!update.canUpdate && update.capabilityReason ? h("div", { key: "reason", className: "am-help" }, update.capabilityReason) : null
+				]) : null,
+				validControlUrl(control) ? h("div", { key: "control", className: "am-update-result" }, [h("a", { key: "link", href: control, target: "_blank", rel: "noopener noreferrer" }, tr("updateContinue")), h("span", { key: "hint", className: "am-help" }, tr("updateHandoff"))]) : null,
+				update && update.job && update.job.error ? h("div", { key: "jobError", className: "am-warning-text", role: "status" }, update.job.error) : null
 			]);
 		}
 
 		function refreshButton() {
 			return h("button", {
 				key: "refresh",
+				ref: refreshRef,
 				type: "button",
 				className: "am-btn am-refresh",
-				disabled: busy || phase === "loading",
+				disabled: busy || Boolean(update && update.busy) || phase === "loading",
 				title: tr("refresh"),
 				"aria-label": tr("refresh"),
-				onClick: function () { void load(); }
+				onClick: function () { void load({ keepSelection: true }); }
 			}, [
 				h("svg", {
 					key: "icon",
@@ -1319,20 +1643,18 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			var isRetention = kind === "retention";
 			var ids = Array.isArray(confirm.ids) ? confirm.ids : [];
 			var targets = items.filter(function (item) { return ids.indexOf(item.id) >= 0; });
-			var chosenRemoved = isDiscard
+			var chosenRemoved = (isDiscard || isEmpty)
 				? removed.filter(function (entry) {
 					return (confirm.items || []).some(function (item) {
 						return item && item.batch === entry.batch && item.id === entry.id;
 					});
 				})
 				: [];
-			var count = isEmpty ? removed.length : isDiscard ? chosenRemoved.length : ids.length;
+			var count = isEmpty || isDiscard ? (confirm.items || []).length : ids.length;
 			var ignored = Number(confirm.ignored) || 0;
-			var bytes = isDiscard
-				? chosenRemoved.reduce(function (sum, entry) { return sum + (entry.bytes || 0); }, 0)
-				: isEmpty
-					? removedBytes
-					: targets.reduce(function (sum, item) { return sum + (item.sizeBytes || 0); }, 0);
+			var sizeEntries = isDiscard || isEmpty ? chosenRemoved : targets;
+			var confirmedSize = sizeInfo(sizeEntries, isDiscard || isEmpty);
+			var sizeSummary = confirmedSize.unknown ? summarySize(sizeEntries, isDiscard || isEmpty) : tr("releaseLine", { size: fmtSize(confirmedSize.bytes) });
 			var danger = isPurge || isEmpty || isDiscard || isRetention;
 			var title;
 			var bodyText;
@@ -1350,17 +1672,17 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			} else if (isPurge) {
 				title = tr("purgeConfirmTitle", { n: count });
 				bodyText = tr("purgeConfirmBody");
-				summary = tr("releaseLine", { size: fmtSize(bytes) });
-				confirmLabel = tr("confirmPurge");
+				summary = sizeSummary;
+				confirmLabel = tr("confirmCount", { n: count });
 				buttonClass = "hazard";
 				run = function () { runPurge(ids, confirm.ignoredIds); };
 			} else if (isEmpty) {
-				title = tr("emptyConfirmTitle");
+				title = tr("emptyConfirmTitle", { n: count });
 				bodyText = tr("emptyConfirmBody", { n: count });
-				summary = tr("releaseLine", { size: fmtSize(bytes) });
-				confirmLabel = tr("confirmEmpty");
+				summary = sizeSummary;
+				confirmLabel = tr("emptyCount", { n: count });
 				buttonClass = "hazard";
-				run = function () { runEmpty(); };
+				run = function () { runEmpty(confirm.items || []); };
 			} else if (isCleanup) {
 				title = tr("cleanupTitle", { n: count });
 				bodyText = tr("cleanupBody");
@@ -1371,8 +1693,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			} else if (isDiscard) {
 				title = tr("discardTitle", { n: count });
 				bodyText = tr("discardBody");
-				summary = tr("releaseLine", { size: fmtSize(bytes) });
-				confirmLabel = tr("confirmDiscard");
+				summary = sizeSummary;
+				confirmLabel = tr("confirmCount", { n: count });
 				buttonClass = "hazard";
 				run = function () { runDiscard(confirm.items || []); };
 			} else {
@@ -1389,6 +1711,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			var actions = [
 				h("button", {
 					key: "cancel",
+					ref: cancelRef,
 					type: "button",
 					className: "am-btn",
 					disabled: busy,
@@ -1399,7 +1722,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				key: "go",
 				type: "button",
 				className: "am-btn " + buttonClass,
-				disabled: busy || (danger && confirm.checked !== true),
+				disabled: locked || (danger && confirm.checked !== true) || (!isEmpty && !isRetention && count > MAX_BATCH),
 				onClick: run
 			}, confirmLabel));
 			return h("div", {
@@ -1427,6 +1750,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 							type: "checkbox",
 							className: "am-check",
 							checked: confirm.checked === true,
+							disabled: busy,
 							onChange: function (event) {
 								setConfirm(Object.assign({}, confirm, { checked: event.target.checked }));
 							}
@@ -1461,7 +1785,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				type: "button",
 				className: "am-chip" + (filter === id ? " active" : ""),
 				"aria-pressed": filter === id,
-				onClick: function () { setFilter(id); }
+				disabled: locked,
+				onClick: function () { if (!locked && !actionRef.current) setFilter(id); }
 			}, [
 				h("span", { key: "label" }, label),
 				h("span", { key: "count", className: "am-chip-count" }, String(count))
@@ -1480,12 +1805,13 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			}
 
 			function choose(next) {
+				if (locked || actionRef.current) return;
 				closeAndFocus();
 				onChange(next);
 			}
 
 			function toggle(event) {
-				if (busy === true) return;
+				if (locked || actionRef.current) return;
 				if (open) {
 					setMenu(null);
 					if (typeof event.currentTarget.focus === "function") event.currentTarget.focus();
@@ -1496,7 +1822,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			}
 
 			function onTriggerKey(event) {
-				if (busy === true) return;
+				if (locked || actionRef.current) return;
 				if (event.key === "ArrowDown") {
 					event.preventDefault();
 					menuTriggerRef.current = event.currentTarget;
@@ -1552,9 +1878,9 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 					className: "am-select-trigger" + (open ? " open" : ""),
 					"aria-haspopup": "listbox",
 					"aria-expanded": open,
-					"aria-disabled": busy === true,
+					"aria-disabled": locked,
 					"aria-label": ariaLabel,
-					disabled: busy === true,
+					disabled: locked,
 					onClick: toggle,
 					onKeyDown: onTriggerKey
 				}, [
@@ -1585,376 +1911,97 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			]);
 		}
 
+		function selectionBar(isRemoved) {
+			var count = isRemoved ? removedSelected.length : selected.length;
+			var total = isRemoved ? sortedRemoved.length : selectable.length;
+			var filesIds = selectedWithFiles.map(function (item) { return item.id; });
+			var missingIds = selectedMissing.map(function (item) { return item.id; });
+			var targets = removedItems(selectedRemovedEntries);
+			var selectedSize = summarySize(isRemoved ? selectedRemovedEntries : selectedItems, isRemoved);
+			var exceeded = isRemoved ? targets.length > MAX_BATCH : filesIds.length > MAX_BATCH || missingIds.length > MAX_BATCH;
+			var actions = [];
+			if (count > 0) {
+				actions.push(button("clear", tr("clearSelection"), function () { if (actionRef.current) return; if (isRemoved) setRemovedSelected([]); else setSelected([]); }, locked));
+				if (isRemoved) {
+					actions.push(button("restore", tr("restore") + " (" + targets.length + ")", function () { runRestore(targets); }, locked || targets.length > MAX_BATCH));
+					actions.push(moreMenu("removed-batch", [{ key: "discard", label: tr("purge") + " (" + targets.length + ")", disabled: targets.length > MAX_BATCH, run: function () { openConfirm({ kind: "discard", items: targets, checked: false }); } }]));
+				} else {
+					if (filesIds.length > 0) {
+						actions.push(button("unarchive", tr("unarchive") + " (" + filesIds.length + ")", function () { runUnarchive(filesIds, missingIds); }, locked || filesIds.length > MAX_BATCH));
+						actions.push(button("hide", tr("hide") + " (" + filesIds.length + ")", function () { openConfirm({ kind: "hide", ids: filesIds, ignored: missingIds.length, ignoredIds: missingIds, checked: true }); }, locked || filesIds.length > MAX_BATCH));
+					}
+					if (missingIds.length > 0) actions.push(button("cleanup", tr("cleanup") + " (" + missingIds.length + ")", function () { openConfirm({ kind: "cleanup", ids: missingIds, checked: true }); }, locked || missingIds.length > MAX_BATCH));
+					if (filesIds.length > 0) actions.push(moreMenu("archived-batch", [{ key: "purge", label: tr("purge") + " (" + filesIds.length + ")", disabled: filesIds.length > MAX_BATCH, run: function () { openConfirm({ kind: "purge", ids: filesIds, ignored: missingIds.length, ignoredIds: missingIds, checked: false }); } }]));
+				}
+			}
+			return h("div", { key: "toolbar", className: "am-toolbar" }, [
+				h("div", { key: "selection", className: "am-toolbar-group" }, [
+					h("label", { key: "all", className: "am-checkline" }, [h("input", { key: "box", type: "checkbox", className: "am-check", ref: isRemoved ? syncRemovedRef : syncAllRef, checked: isRemoved ? allRemovedSelected : allSelected, "aria-checked": count > 0 && !(isRemoved ? allRemovedSelected : allSelected) ? "mixed" : isRemoved ? allRemovedSelected : allSelected, disabled: locked || total === 0, onChange: isRemoved ? toggleAllRemoved : toggleAll }), h("span", { key: "text" }, tr("selectAll"))]),
+					h("span", { key: "count", className: count > 0 ? "am-selected-count" : "am-stats", role: "status" }, count > 0 ? isRemoved ? tr("removedSelected", { n: count }) : tr("selectedSplit", { n: count, files: filesIds.length, missing: missingIds.length }) : tr("selectHint")),
+					count > 0 ? h("span", { key: "bytes", className: "am-help" }, selectedSize) : null
+				]),
+				actions.length ? h("div", { key: "actions", className: "am-toolbar-group" }, actions) : null,
+				exceeded ? h("div", { key: "limit", className: "am-batch-limit", role: "status" }, tr("batchLimit")) : null
+			]);
+		}
+		function reportPanel() {
+			if (!report) return null;
+			var reasons = Array.isArray(report.failures) ? report.failures : [];
+			return h("div", { key: "report", className: "am-report", role: "status" }, [
+				h("div", { key: "title", className: "am-report-title" }, report.title),
+				h("div", { key: "reasons", className: "am-report-list" }, (reportAll ? reasons : reasons.slice(0, 4)).map(function (failure, index) { return h("div", { key: index, className: "am-report-item" }, failure.title + " · " + failure.reason); })),
+				h("div", { key: "actions", className: "am-report-actions" }, [reasons.length > 4 ? button("all", reportAll ? tr("showLess") : tr("showAllReasons", { n: reasons.length }), function () { setReportAll(!reportAll); }, false) : null, button("dismiss", tr("reportDismiss"), function () { setReport(null); }, false)])
+			]);
+		}
+		function controls(isRemoved) {
+			var value = isRemoved ? removedQuery : query;
+			return h("div", { key: "controls", className: "am-controls" }, [
+				h("div", { key: "search", className: "am-search" }, [searchGlyph(), h("input", { key: "input", type: "text", value: value, disabled: locked, placeholder: tr(isRemoved ? "removedSearchPlaceholder" : "searchPlaceholder"), "aria-label": tr(isRemoved ? "removedSearchPlaceholder" : "searchAria"), onChange: function (event) { if (locked || actionRef.current) return; if (isRemoved) setRemovedQuery(event.target.value); else setQuery(event.target.value); } }), value !== "" ? h("button", { key: "clear", type: "button", className: "am-search-clear", disabled: locked, "aria-label": tr("clearSearch"), onClick: function () { if (locked || actionRef.current) return; if (isRemoved) setRemovedQuery(""); else setQuery(""); } }, "×") : null]),
+				!isRemoved ? h("div", { key: "filter", className: "am-filter", role: "group", "aria-label": tr("filterAll") }, [filterChip("all", tr("filterAll"), items.length), filterChip("files", tr("filterFiles"), filesCount), filterChip("missing", tr("filterMissing"), missingCount)]) : null,
+				h("div", { key: "sort", className: "am-sort" }, [h("span", { key: "label" }, tr("sortLabel")), dropdown(isRemoved ? "removedSort" : "sort", isRemoved ? removedSort : sort, isRemoved ? [{ value: "movedAt", label: tr("sortMoved") }, { value: "size", label: tr("sortSize") }, { value: "title", label: tr("sortTitle") }] : [{ value: "lastUsed", label: tr("sortLastUsed") }, { value: "archived", label: tr("sortArchived") }, { value: "size", label: tr("sortSize") }, { value: "title", label: tr("sortTitle") }], function (next) { if (isRemoved) setRemovedSort(next); else setSort(next); }, tr("sortLabel"), true)])
+			]);
+		}
+		function retentionPanel() {
+			return h("div", { key: "retention", className: "am-retention" }, [
+				h("span", { key: "summary", className: "am-retention-label" }, tr("retentionSummary", { value: settings.unavailable ? tr("notProvided") : settings.trashRetentionDays > 0 ? tr("retentionAfter", { n: settings.trashRetentionDays }) : tr("retentionDisabled") })),
+				button("settings", tr("settings"), function () { setRetentionExpanded(!retentionExpanded); }, locked || settings.unavailable),
+				removed.length > 0 ? moreMenu("quarantine-global", [{ key: "empty", label: tr("emptyTrash") + " (" + removed.length + ")", run: function () { openConfirm({ kind: "empty", items: removedItems(removed), checked: false }); } }], tr("tabRemoved") + " · " + tr("more")) : null,
+				retentionExpanded ? h("div", { key: "settingsPanel", className: "am-retention-settings" }, [h("span", { key: "title" }, tr("retentionTitle")), dropdown("retention", String(settings.trashRetentionDays || 0), [{ value: "0", label: tr("retentionNever") }, { value: "7", label: tr("retentionDays", { n: 7 }) }, { value: "30", label: tr("retentionDays", { n: 30 }) }, { value: "90", label: tr("retentionDays", { n: 90 }) }], changeRetention, tr("retentionLabel"), false), h("span", { key: "hint", className: "am-retention-hint" }, tr("retentionHint"))]) : null
+			]);
+		}
+
 		var children = [];
 		var workspace = [];
-		children.push(h("div", { key: "head", className: "am-head" }, [
-			h("div", { key: "text", className: "am-head-text" }, [
-				h("div", { key: "title", className: "am-title" }, tr("title")),
-				h("div", { key: "sub", className: "am-sub" }, tr("subtitle"))
-			])
-		]));
-
-		if (toast !== null) {
-			children.push(h("div", {
-				key: "toast",
-				className: "am-toast " + (toast.kind === "ok" ? "ok" : "bad"),
-				role: "status",
-				"aria-live": "polite"
-			}, toast.text));
-		}
-
-		if (phase === "ready") {
-			workspace.push(h("div", { key: "stats-grid", className: "am-stats-grid" }, [
-				statCard("archived", tr("statArchived"), String(items.length), tr("statArchivedHint")),
-				statCard("releasable", tr("statReleasable"), fmtSize(archivedBytes), tr("statReleasableHint")),
-				statCard("missing", tr("statMissing"), String(missingCount), tr("statMissingHint")),
-				statCard("trash", tr("statTrash"), String(removed.length), tr("statTrashHint", { size: fmtSize(removedBytes) }))
+		children.push(h("div", { key: "head", className: "am-head" }, [h("div", { key: "text", className: "am-head-text" }, [h("div", { key: "title", className: "am-title" }, tr("title")), h("div", { key: "sub", className: "am-sub" }, tr("subtitle"))]), versionPanel()]));
+		if (toast) children.push(h("div", { key: "toast", className: "am-toast " + (toast.kind === "ok" ? "ok" : "bad"), role: "status", "aria-live": "polite" }, toast.text));
+		workspace.push(h("div", { key: "viewbar", className: "am-viewbar" }, [h("div", { key: "tabs", className: "am-tabs", role: "tablist", "aria-label": tr("title") }, [
+			h("button", { key: "archived", type: "button", role: "tab", "aria-selected": tab === "archived", className: "am-tab" + (tab === "archived" ? " active" : ""), disabled: busy || updatePhase === "preparing", onClick: function () { if (actionRef.current) return; setTab("archived"); setMenu(null); } }, tr("tabArchived") + " (" + items.length + ")"),
+			h("button", { key: "removed", type: "button", role: "tab", "aria-selected": tab === "removed", className: "am-tab" + (tab === "removed" ? " active" : ""), disabled: busy || updatePhase === "preparing", onClick: function () { if (actionRef.current) return; setTab("removed"); setMenu(null); } }, removedWarnings.length > 0 ? tr("knownTabCount", { label: tr("tabRemoved"), n: removed.length }) : tr("tabRemoved") + " (" + removed.length + ")")]), refreshButton()]));
+		if (phase === "loading") workspace.push(h("div", { key: "loading", className: "am-loading", role: "status" }, tr("loading")));
+		if (phase === "failed" || phase === "stale") workspace.push(h("div", { key: "error", className: "am-report", role: "alert" }, [h("span", { key: "text" }, tr("staleList") + " " + tr("failed", { message: error || "" })), button("retry", tr("retry"), function () { void load({ keepSelection: true }); }, busy || Boolean(update && update.busy))]));
+		if (busy) workspace.push(h("div", { key: "progress", className: "am-notice", role: "status" }, operationCount ? tr("processing", { n: operationCount }) : tr("busy")));
+		if (selectionNotice) workspace.push(h("div", { key: "selectionNotice", className: "am-notice", role: "status" }, selectionNotice));
+		if (report) workspace.push(reportPanel());
+		var hasSnapshot = phase === "ready" || phase === "stale" || items.length > 0 || removed.length > 0 || removedWarnings.length > 0;
+		if (hasSnapshot) {
+			var isRemoved = tab === "removed", all = isRemoved ? removed : items, visible = isRemoved ? sortedRemoved : sortedItems;
+			if (all.length > 0) workspace.push(controls(isRemoved));
+			var totalSize = summarySize(visible, isRemoved);
+			workspace.push(h("div", { key: "summary", className: "am-summary" }, [h("span", { key: "count" }, tr("showing", { shown: visible.length, total: all.length })), h("span", { key: "bytes" }, totalSize), !isRemoved && visible.some(function (item) { return item.running; }) ? h("span", { key: "running" }, tr("running") + " " + visible.filter(function (item) { return item.running; }).length) : null, !isRemoved && visible.some(function (item) { return item.missing; }) ? h("span", { key: "missing" }, tr("missing") + " " + visible.filter(function (item) { return item.missing; }).length) : null]));
+			if (isRemoved && removedWarnings.length > 0) workspace.push(h("div", { key: "removedWarnings", className: "am-report am-removed-warnings", role: "status" }, [
+				h("div", { key: "title", className: "am-report-title" }, tr("removedWarningsTitle", { n: removedWarnings.length })),
+				h("div", { key: "hint", className: "am-help" }, tr("removedWarningsHint")),
+				h("div", { key: "reasons", className: "am-report-list" }, removedWarnings.map(function (warning, index) { return h("div", { key: index, className: "am-report-item" }, warning.batch + " · " + warning.reason); }))
 			]));
-		}
-
-		workspace.push(h("div", { key: "viewbar", className: "am-viewbar" }, [
-			h("div", { key: "tabs", className: "am-tabs", role: "tablist", "aria-label": tr("title") }, [
-				h("button", {
-					key: "archived",
-					type: "button",
-					role: "tab",
-					"aria-selected": tab === "archived",
-					className: "am-tab" + (tab === "archived" ? " active" : ""),
-					onClick: function () { setTab("archived"); setConfirm(null); setReport(null); }
-				}, tr("tabArchived") + " (" + items.length + ")"),
-				h("button", {
-					key: "removed",
-					type: "button",
-					role: "tab",
-					"aria-selected": tab === "removed",
-					className: "am-tab" + (tab === "removed" ? " active" : ""),
-					onClick: function () { setTab("removed"); setConfirm(null); setReport(null); }
-				}, tr("tabRemoved") + " (" + removed.length + ")")
-			]),
-			h("div", { key: "space", className: "am-spacer" }),
-			refreshButton()
-		]));
-
-		if (phase === "loading") {
-			workspace.push(h("div", { key: "loading", className: "am-loading" }, [
-				h("span", { key: "spinner", className: "am-spinner" }),
-				h("span", { key: "text" }, tr("loading"))
-			]));
-		} else if (phase === "failed") {
-			workspace.push(h("div", { key: "error", className: "am-error-card" }, [
-				h("div", { key: "icon", className: "am-error-icon", "aria-hidden": "true" },
-					h("svg", {
-						width: 24,
-						height: 24,
-						viewBox: "0 0 24 24",
-						fill: "none",
-						stroke: "currentColor",
-						strokeWidth: 1.7,
-						"stroke-linecap": "round",
-						"stroke-linejoin": "round"
-					}, [
-						h("path", { key: "tri", d: "M12 3 2.8 20h18.4L12 3z" }),
-						h("path", { key: "line", d: "M12 9v5" }),
-						h("path", { key: "dot", d: "M12 17.2v.1" })
-					])
-				),
-				h("div", { key: "text", className: "am-error-text" }, tr("failed", { message: error })),
-				h("button", {
-					key: "retry",
-					type: "button",
-					className: "am-btn batch",
-					onClick: function () { void load(); }
-				}, tr("retry"))
-			]));
-		} else {
-			if (tab === "archived") {
-				if (items.length === 0) {
-					workspace.push(emptyCard("empty", tr("emptyTitle"), tr("emptyHint")));
-				} else {
-					workspace.push(h("div", { key: "controls", className: "am-controls" }, [
-						h("div", { key: "search", className: "am-search" }, [
-							searchGlyph(),
-							h("input", {
-								key: "input",
-								type: "text",
-								value: query,
-								placeholder: tr("searchPlaceholder"),
-								"aria-label": tr("searchAria"),
-								onChange: function (event) { setQuery(event.target.value); }
-							}),
-							query !== "" ? h("button", {
-								key: "clear",
-								type: "button",
-								className: "am-search-clear",
-								"aria-label": tr("clearSearch"),
-								onClick: function () { setQuery(""); }
-							}, "×") : null
-						]),
-						h("div", { key: "filter", className: "am-filter", role: "group", "aria-label": tr("filterAll") }, [
-							filterChip("all", tr("filterAll"), items.length),
-							filterChip("files", tr("filterFiles"), filesCount),
-							filterChip("missing", tr("filterMissing"), missingCount)
-						]),
-						h("div", { key: "sort", className: "am-sort" }, [
-							h("span", { key: "label" }, tr("sortLabel")),
-							dropdown("sort", sort, [
-								{ value: "lastUsed", label: tr("sortLastUsed") },
-								{ value: "archived", label: tr("sortArchived") },
-								{ value: "size", label: tr("sortSize") },
-								{ value: "title", label: tr("sortTitle") }
-							], function (value) { setSort(value); }, tr("sortLabel"), true)
-						]),
-						query !== "" || filter !== "all" ? h("span", { key: "showing", className: "am-stats" },
-							tr("showing", { shown: sortedItems.length, total: items.length })) : null
-					]));
-					if (sortedItems.length > 0) workspace.push(h("div", { key: "toolbar", className: "am-toolbar" }, [
-						h("div", { key: "left", className: "am-toolbar-group" }, [
-							h("label", { key: "all", className: "am-checkline" }, [
-								h("input", {
-									key: "box",
-									type: "checkbox",
-									className: "am-check",
-									ref: syncAllRef,
-									checked: allSelected,
-									"aria-checked": selected.length > 0 && !allSelected ? "mixed" : allSelected,
-									disabled: selectable.length === 0 || busy,
-									onChange: toggleAll
-								}),
-								h("span", { key: "text" }, tr("selectAll"))
-							]),
-							h("span", {
-								key: "count",
-								className: "am-stats",
-								title: selected.length > 0 && selectedWithFiles.length === 0 ? tr("cleanupHint") : undefined
-							}, selected.length > 0
-								? tr("selectedSplit", { n: selected.length, files: selectedWithFiles.length, missing: selectedMissing.length })
-								: tr("selectHint"))
-						]),
-						h("div", { key: "space", className: "am-spacer" }),
-						h("div", { key: "right", className: "am-toolbar-group" }, [
-							h("button", {
-								key: "unarchive",
-								type: "button",
-								className: "am-btn",
-								disabled: busy || selectedWithFiles.length === 0,
-								title: tr("tipUnarchiveAction"),
-								onClick: function () {
-									runUnarchive(selectedWithFiles.map(function (item) { return item.id; }), selectedMissing.map(function (item) { return item.id; }));
-								}
-							}, tr("unarchive")),
-							h("button", {
-								key: "hide",
-								type: "button",
-								className: "am-btn",
-								disabled: busy || selectedWithFiles.length === 0,
-								title: selectedWithFiles.length === 0 && selectedMissing.length > 0 ? tr("cleanupHint") : tr("tipHideAction"),
-								onClick: function () {
-									setConfirm({
-										kind: "hide",
-										ids: selectedWithFiles.map(function (item) { return item.id; }),
-										ignored: selectedMissing.length,
-										ignoredIds: selectedMissing.map(function (item) { return item.id; }),
-										checked: true
-									});
-								}
-							}, tr("hide")),
-							selectedMissing.length > 0 ? h("button", {
-								key: "cleanup",
-								type: "button",
-								className: "am-btn",
-								disabled: busy,
-								onClick: function () {
-									setConfirm({
-										kind: "cleanup",
-										ids: selectedMissing.map(function (item) { return item.id; }),
-										checked: true
-									});
-								}
-							}, tr("cleanup") + " (" + selectedMissing.length + ")") : null,
-							h("button", {
-								key: "purge",
-								type: "button",
-								className: "am-btn danger",
-								disabled: busy || selectedWithFiles.length === 0,
-								title: selectedWithFiles.length === 0 && selectedMissing.length > 0 ? tr("cleanupHint") : tr("scopeNoteShort"),
-								onClick: function () {
-									setConfirm({
-										kind: "purge",
-										ids: selectedWithFiles.map(function (item) { return item.id; }),
-										ignored: selectedMissing.length,
-										ignoredIds: selectedMissing.map(function (item) { return item.id; }),
-										checked: false
-									});
-								}
-							}, tr("purge"))
-						])
-					]));
-					if (report !== null) {
-						workspace.push(h("div", { key: "report", className: "am-report" }, [
-							h("div", { key: "title", className: "am-report-title" }, report.title),
-							h("div", { key: "list", className: "am-report-list" }, report.failures.map(function (failure, index) {
-								return h("div", { key: index, className: "am-report-item", title: failure.title + " · " + failure.reason },
-									failure.title + " · " + failure.reason);
-							})),
-							report.more > 0 ? h("div", { key: "more", className: "am-report-item" }, tr("reportMore", { n: report.more })) : null,
-							h("div", { key: "actions", className: "am-report-actions" },
-								h("button", {
-									type: "button",
-									className: "am-btn batch",
-									onClick: function () { setReport(null); }
-								}, tr("reportDismiss"))
-							)
-						]));
-					}
-					workspace.push(sortedItems.length === 0
-						? emptyCard("filtered", tr("filteredEmpty"), tr("filteredEmptyHint"),
-							h("button", {
-								key: "clear",
-								type: "button",
-								className: "am-btn batch",
-								onClick: clearFilters
-							}, tr("clearFilters")))
-						: h("div", { key: "list", className: "am-list", role: "list" }, sortedItems.map(archivedRow)));
-				}
-			} else {
-				if (removed.length > 0) {
-					workspace.push(h("div", { key: "controls", className: "am-controls" }, [
-						h("div", { key: "search", className: "am-search" }, [
-							searchGlyph(),
-							h("input", {
-								key: "input",
-								type: "text",
-								value: removedQuery,
-								placeholder: tr("removedSearchPlaceholder"),
-								"aria-label": tr("removedSearchPlaceholder"),
-								onChange: function (event) { setRemovedQuery(event.target.value); }
-							}),
-							removedQuery !== "" ? h("button", {
-								key: "clear",
-								type: "button",
-								className: "am-search-clear",
-								"aria-label": tr("clearSearch"),
-								onClick: function () { setRemovedQuery(""); }
-							}, "×") : null
-						]),
-						h("div", { key: "sort", className: "am-sort" }, [
-							h("span", { key: "label" }, tr("sortLabel")),
-							dropdown("removedSort", removedSort, [
-								{ value: "movedAt", label: tr("sortMoved") },
-								{ value: "size", label: tr("sortSize") },
-								{ value: "title", label: tr("sortTitle") }
-							], function (value) { setRemovedSort(value); }, tr("sortLabel"), true)
-						]),
-						removedQuery !== "" ? h("span", { key: "showing", className: "am-stats" },
-							tr("showing", { shown: sortedRemoved.length, total: removed.length })) : null
-					]));
-					if (sortedRemoved.length > 0) workspace.push(h("div", { key: "toolbar", className: "am-toolbar" }, [
-						h("div", { key: "left", className: "am-toolbar-group" }, [
-							h("label", { key: "all", className: "am-checkline" }, [
-								h("input", {
-									key: "box",
-									type: "checkbox",
-									className: "am-check",
-									ref: syncRemovedRef,
-									checked: allRemovedSelected,
-									"aria-checked": removedSelected.length > 0 && !allRemovedSelected ? "mixed" : allRemovedSelected,
-									disabled: sortedRemoved.length === 0 || busy,
-									onChange: toggleAllRemoved
-								}),
-								h("span", { key: "text" }, tr("selectAll"))
-							]),
-							h("span", { key: "count", className: "am-stats" }, removedSelected.length > 0
-								? tr("removedSelected", { n: removedSelected.length })
-								: tr("removedSelectHint"))
-						]),
-						h("div", { key: "space", className: "am-spacer" }),
-						h("div", { key: "right", className: "am-toolbar-group" }, [
-							h("button", {
-								key: "restore",
-								type: "button",
-								className: "am-btn primary",
-								disabled: busy || selectedRemovedEntries.length === 0,
-								onClick: function () { runRestore(removedItems(selectedRemovedEntries)); }
-							}, tr("restore")),
-							h("button", {
-								key: "discard",
-								type: "button",
-								className: "am-btn danger",
-								disabled: busy || selectedRemovedEntries.length === 0,
-								title: tr("tipDiscardAction"),
-								onClick: function () {
-									setConfirm({
-										kind: "discard",
-										items: removedItems(selectedRemovedEntries),
-										checked: false
-									});
-								}
-							}, tr("purge")),
-							h("button", {
-								key: "empty",
-								type: "button",
-								className: "am-btn danger",
-								disabled: busy,
-								onClick: function () { setConfirm({ kind: "empty", ids: [], checked: false }); }
-							}, tr("emptyTrash"))
-						])
-					]));
-				}
-				workspace.push(h("div", { key: "retention", className: "am-retention" }, [
-					h("span", { key: "label", className: "am-retention-label" }, tr("retentionTitle")),
-					h("div", { key: "select", className: "am-sort" }, [
-						h("span", { key: "text" }, tr("retentionLabel")),
-						dropdown("retention", String(settings.trashRetentionDays || 0), [
-							{ value: "0", label: tr("retentionNever") },
-							{ value: "7", label: tr("retentionDays", { n: 7 }) },
-							{ value: "30", label: tr("retentionDays", { n: 30 }) },
-							{ value: "90", label: tr("retentionDays", { n: 90 }) }
-						], changeRetention, tr("retentionLabel"), false)
-					]),
-					h("span", { key: "hint", className: "am-retention-hint" }, tr("retentionHint")),
-					settings.trashRetentionDays > 0
-						? h("span", { key: "warn", className: "am-retention-warn" }, tr("retentionWarn"))
-						: null
-				]));
-				if (report !== null) {
-					workspace.push(h("div", { key: "report", className: "am-report" }, [
-						h("div", { key: "title", className: "am-report-title" }, report.title),
-						h("div", { key: "list", className: "am-report-list" }, report.failures.map(function (failure, index) {
-							return h("div", { key: index, className: "am-report-item", title: failure.title + " · " + failure.reason },
-								failure.title + " · " + failure.reason);
-						})),
-						report.more > 0 ? h("div", { key: "more", className: "am-report-item" }, tr("reportMore", { n: report.more })) : null,
-						h("div", { key: "actions", className: "am-report-actions" },
-							h("button", {
-								type: "button",
-								className: "am-btn batch",
-								onClick: function () { setReport(null); }
-							}, tr("reportDismiss"))
-						)
-					]));
-				}
-				workspace.push(removed.length === 0
-					? emptyCard("empty", tr("emptyRemovedTitle"), tr("emptyRemovedHint"))
-					: sortedRemoved.length === 0
-						? emptyCard("filtered", tr("removedEmptyFilter"), tr("filteredEmptyHint"),
-							h("button", {
-								key: "clear",
-								type: "button",
-								className: "am-btn batch",
-								onClick: clearRemovedFilters
-							}, tr("clearFilters")))
-						: h("div", { key: "list", className: "am-list", role: "list" }, sortedRemoved.map(removedRow)));
-			}
-		}
-
-		workspace.push(confirmPanel());		if (phase === "ready") {
-			workspace.push(h("div", { key: "scope", className: "am-scope" },
-				tr("scopeNote", { size: fmtSize(attachments.bytes), files: attachments.files })
-			));
+			if (isRemoved) workspace.push(retentionPanel());
+			if (visible.length > 0) workspace.push(selectionBar(isRemoved));
+			workspace.push(all.length === 0 ? emptyCard("empty", tr(isRemoved ? removedWarnings.length > 0 ? "removedUnlistedTitle" : "emptyRemovedTitle" : "emptyTitle"), tr(isRemoved ? removedWarnings.length > 0 ? "removedUnlistedHint" : "emptyRemovedHint" : "emptyHint")) : visible.length === 0 ? emptyCard("filtered", tr(isRemoved ? "removedEmptyFilter" : "filteredEmpty"), tr("filteredEmptyHint"), button("clear", tr("clearFilters"), isRemoved ? clearRemovedFilters : clearFilters, locked)) : h("div", { key: "list", className: "am-list", role: "list" }, visible.map(isRemoved ? removedRow : archivedRow)));
+			workspace.push(h("div", { key: "scope", className: "am-scope" }, tr("scopeNote", { size: fmtSize(attachments.bytes), files: attachments.files })));
 		}
 		children.push(h("section", { key: "workbench", className: "am-workbench", role: "region", "aria-label": tr("title") }, workspace));
 		children.push(confirmPanel());
-		return h("div", { className: "am-page", "aria-busy": busy === true }, children);
+		return h("div", { className: "am-page", "aria-busy": busy || Boolean(update && update.busy) }, children);
+
 	}
 
 	/**

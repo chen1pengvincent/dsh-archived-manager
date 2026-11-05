@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { zstdCompressSync } from 'node:zlib';
 
 import { createManager, ManagerError } from '../lib/host.js';
 
@@ -20,7 +21,7 @@ async function makeHome(ids) {
   for (const id of ids) {
     const dir = join(project, id);
     await fs.mkdir(dir, { recursive: true });
-    await fs.writeFile(join(dir, 'session.v4.jsonl.zstd'), JSON.stringify({ type: 'session', id, cwd: '/tmp/proj', createdAt: 1700000000000 }) + '\n');
+    await fs.writeFile(join(dir, 'session.v4.jsonl.zstd'), zstdCompressSync(JSON.stringify({ type: 'session', version: 4, id, cwd: '/tmp/proj', createdAt: 1700000000000, isSeeded: false, delegationDepth: 0 }) + '\n'));
     await fs.writeFile(join(dir, 'session.lock'), '');
     const bare = id.replace(/^session-/, '');
     await fs.writeFile(join(cache, bare + '.json'), JSON.stringify({
@@ -194,6 +195,7 @@ test('restore moves a hidden directory back to its original path', async () => {
   assert.equal(removed.length, 1);
   const results = await manager.restore([{ batch: removed[0].batch, id: A }]);
   assert.equal(results[0].ok, true);
+  assert.equal(results[0].batch, removed[0].batch);
   const stat = await fs.stat(join(home, 'sessions', '--proj--', A));
   assert.equal(stat.isDirectory(), true);
   assert.deepEqual(calls.attach, [A]);
@@ -210,6 +212,7 @@ test('restore refuses a traversal batch name and an unknown id', async () => {
   assert.equal(badBatch[0].ok, false);
   const badId = await manager.restore([{ batch: removed[0].batch, id: C }]);
   assert.equal(badId[0].ok, false);
+  assert.equal(badId[0].batch, removed[0].batch);
 });
 
 test('invalid ids and path traversal are rejected before touching disk', async () => {
@@ -237,7 +240,7 @@ test('emptyTrash removes every batch and reports bytes', async () => {
   const manager = createManager(ctx);
   await manager.hide([A]);
   await manager.hide([B]);
-  const result = await manager.emptyTrash('EMPTY');
+  const result = await manager.emptyTrash('EMPTY', await manager.listRemoved());
   assert.equal(result.removed, 2);
   assert.ok(result.bytes > 0);
   assert.deepEqual(await fs.readdir(join(home, 'archived-manager', 'trash')), []);
@@ -416,4 +419,20 @@ test('discarding a stale manifest entry does not fail or touch a restored sessio
   assert.equal(results[0].ok, true);
   assert.equal(results[0].bytes, 0);
   assert.deepEqual(await manager.listRemoved(), []);
+});
+
+
+test('cold projection cache falls back only to a verified structured session title', async () => {
+  const home = await makeHome([A]);
+  const cache = join(home, 'storages', 'session_projcache', 'sessions', A.replace(/^session-/, '') + '.json');
+  await fs.unlink(cache);
+  const header = { type: 'session', version: 4, id: A, createdAt: 1, isSeeded: false, delegationDepth: 0 };
+  const events = [
+    { type: 'session/title', seq: 0, time: 2, data: { title: '旧标题', source: { kind: 'user' }, messageSeqs: [] } },
+    { type: 'session/title', seq: 1, time: 3, data: { title: '冷缓存仍可查找', source: { kind: 'user' }, messageSeqs: [] } },
+  ];
+  await fs.writeFile(join(home, 'sessions', '--proj--', A, 'session.v4.jsonl.zstd'), Buffer.concat([zstdCompressSync(JSON.stringify(header) + '\n'), zstdCompressSync(events.map(JSON.stringify).join('\n') + '\n')]));
+  const { ctx } = fakeCtx(home, [A]);
+  const report = await createManager(ctx).list();
+  assert.equal(report.items[0].title, '冷缓存仍可查找');
 });

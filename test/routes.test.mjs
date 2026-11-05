@@ -4,6 +4,7 @@ import { promises as fs } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { Readable } from 'node:stream';
+import { zstdCompressSync } from 'node:zlib';
 
 import { createRoutes } from '../lib/host.js';
 
@@ -15,7 +16,7 @@ async function makeHome() {
   const home = await fs.mkdtemp(join(tmpdir(), 'am-routes-'));
   const dir = join(home, 'sessions', '--proj--', A);
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(join(dir, 'session.v4.jsonl.zstd'), '{}\n');
+  await fs.writeFile(join(dir, 'session.v4.jsonl.zstd'), zstdCompressSync(JSON.stringify({ type: 'session', version: 4, id: A, createdAt: 1, isSeeded: false, delegationDepth: 0, cwd: '/tmp/proj' }) + '\n'));
   return home;
 }
 
@@ -139,7 +140,7 @@ test('health reports the home directory and package version', async () => {
   const routes = createRoutes(fakeCtx(home));
   const result = await call(route(routes, '/archived-manager/health'), { method: 'GET', headers: {} });
   assert.equal(result.status, 200);
-  assert.equal(result.json.home, home);
+  assert.equal(result.json.home, await fs.realpath(home));
   assert.equal(result.json.version, PACKAGE_VERSION);
 });
 
@@ -165,4 +166,34 @@ test('the unarchive route uses the native registry action', async () => {
   assert.equal(result.status, 200);
   assert.equal(result.json.ok, true);
   assert.equal(result.json.results[0].action, 'unarchive');
+});
+
+test('known host origin rejects matching attacker Host/Origin and serves update status locally', async () => {
+  const home = await makeHome();
+  const routes = createRoutes(fakeCtx(home), { webServer: { getOrigin: () => 'http://127.0.0.1:43120', register: () => () => {} } });
+  const health = route(routes, '/archived-manager/health');
+  const denied = await call(health, { headers: { host: 'attacker.example:43120', origin: 'http://attacker.example:43120' } });
+  assert.equal(denied.status, 403);
+  const local = await call(health, { headers: { host: '127.0.0.1:43120', origin: 'http://127.0.0.1:43120' } });
+  assert.equal(local.status, 200);
+  const status = await call(route(routes, '/archived-manager/update/status'), { headers: { host: '127.0.0.1:43120' } });
+  assert.equal(status.status, 200);
+  assert.equal(status.json.runtimeVersion, PACKAGE_VERSION);
+  assert.equal(status.json.canUpdate, false, 'missing host manager is reported without breaking archive routes');
+  assert.equal(status.json.installedVersion, null);
+});
+
+test('list reports protected unreadable quarantine content without calling it empty', async () => {
+  const home = await makeHome();
+  const batch = join(home, 'archived-manager', 'trash', 'broken-batch');
+  await fs.mkdir(batch, { recursive: true });
+  await fs.writeFile(join(batch, 'manifest.json'), '{broken');
+  await fs.writeFile(join(batch, 'independent.txt'), 'retain');
+  const result = await call(route(createRoutes(fakeCtx(home)), '/archived-manager/list'), { headers: {} });
+  assert.equal(result.status, 200);
+  assert.equal(result.json.items.length, 1);
+  assert.equal(result.json.removed.length, 0);
+  assert.equal(result.json.removedWarnings.length, 1);
+  assert.equal(result.json.removedWarnings[0].batch, 'broken-batch');
+  assert.equal(await fs.readFile(join(batch, 'independent.txt'), 'utf8'), 'retain');
 });

@@ -39,16 +39,21 @@ test('the plugin entry registers all exact routes once webServer is available', 
   assert.deepEqual(paths, [
     '/archived-manager/discard',
     '/archived-manager/empty-trash',
+    '/archived-manager/files',
     '/archived-manager/forget',
     '/archived-manager/health',
     '/archived-manager/hide',
     '/archived-manager/list',
+    '/archived-manager/open-folder',
     '/archived-manager/purge',
     '/archived-manager/removed',
     '/archived-manager/restore',
     '/archived-manager/settings',
     '/archived-manager/settings/save',
     '/archived-manager/unarchive',
+    '/archived-manager/update/check',
+    '/archived-manager/update/prepare',
+    '/archived-manager/update/status',
   ]);
   for (const route of registered) {
     assert.equal(route.kind, 'exact');
