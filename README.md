@@ -6,6 +6,8 @@
 
 [中文文档](#dsh-archived-manager) · [English](#english) · [Releases](https://github.com/chen1pengvincent/dsh-archived-manager/releases)
 
+当前版本 **0.3.3**。本次发布重写 README 并同步版本号，除版本号常量外运行时代码与 v0.3.2 相同；`v0.3.2` 的 legacy v0 会话支持、`v0.3.0` / `v0.3.1` 的工作台与更新能力都包含在内。
+
 ## 功能
 
 - **取消归档**：调用 DSH 原生 `unarchiveSession`，会话回到侧栏，日志文件原地保留。
@@ -15,7 +17,7 @@
 - **批量与检索**：单选、全选当前筛选结果，按标题/工作区/ID 搜索，按状态筛选，按时间、体积或标题排序。
 - **隔离区保留策略**：永不自动清理，或保留 7 / 30 / 90 天；默认永不。
 - **关联文件**：查看会话中已记录的生成、写入或修改文件的位置，并打开所在文件夹；会话工作区另设入口。
-- **版本与手动更新**：显示页面、服务和安装版本；手动检查 GitHub 稳定版，通过独立控制页更新。源码链接只有在明确选择“切换为发布版”后才改变安装来源。
+- **版本与手动更新**：显示页面、服务和安装版本；手动检查 GitHub 稳定版，通过独立控制页更新。源码链接只有在明确选择「切换为发布版」后才改变安装来源。
 - **本地优先**：无遥测、无后台更新；只有手动检查或更新时访问本仓库 GitHub 发布信息和安装包。管理接口仅接受本机回环、同源且带自定义请求头的调用。
 
 ## 安装与升级
@@ -26,11 +28,18 @@
 2. 输入以下 spec：
 
    ```text
-   github:chen1pengvincent/dsh-archived-manager#v0.3.2
+   github:chen1pengvincent/dsh-archived-manager#v0.3.3
    ```
 
 3. 安装后**完全退出并重新打开 DSH**，再硬刷新页面（macOS：`Cmd+Shift+R`）。
 4. 打开 **设置 → 归档会话**。
+
+从旧版本升级时，在插件管理页安装新版本，或先 `remove_bundle` 再 `install_bundle`：
+
+```json
+{"action":"remove_bundle","target":"dsh-archived-manager"}
+{"action":"install_bundle","target":"github:chen1pengvincent/dsh-archived-manager#v0.3.3"}
+```
 
 v0.3.0 起可在归档会话页手动检查稳定版并更新。更新控制页会固定目标版本，在卸载前下载并校验安装包；旧插件卸载后，该页仍可展示安装结果，并在失败时提供重试或恢复入口。安装成功后按提示重新打开页面或重启 DSH。
 
@@ -58,25 +67,25 @@ link:/absolute/path/to/dsh-archived-manager
 
 | 操作 | 文件在盘 | 文件缺失 |
 |---|---|---|
-| 取消归档 | 回到侧栏，文件原地保留 | 使用“清理失效记录” |
+| 取消归档 | 回到侧栏，文件原地保留 | 使用「清理失效记录」 |
 | 移入隔离区 | 移动已确认的会话数据，可恢复 | 不处理该记录 |
-| 彻底删除 | 永久删除已确认的会话数据，需确认 | 使用“清理失效记录” |
+| 彻底删除 | 永久删除已确认的会话数据，需确认 | 使用「清理失效记录」 |
 | 清理失效记录 | 不适用 | 只移除归档记录 |
 
 运行中的会话不可选择或删除；请先停止对应会话。取消归档、移入隔离区和彻底删除均为直接入口；彻底删除仍需在确认框中核对范围并确认不可恢复。顶部摘要紧凑显示当前数量和日志大小。版本详情与版本号同排，点击或通过键盘展开后可查看页面、服务和安装版本。
 
 ### 选中与高亮契约
 
-高亮由**每一行自己的选中状态**决定，而不是由“是否点击了全选”单独决定：
+高亮由**每一行自己的选中状态**决定，而不是由「是否点击了全选」单独决定：
 
 - **全选**：当前筛选结果中的所有可选行都显示强调色背景和完整内描边；运行中行不参与全选。
 - **单选**：只有对应行高亮，其他行保持原样。
 - **取消选择**：该行高亮立即消退；全部取消后，列表不再保留选中高亮。
 - **隔离区**：使用同一套逐行高亮规则。
-- **数量**：“已选 N 条”随实际选择同步强调。
+- **数量**：「已选 N 条」随实际选择同步强调。
 - **工具条**：保持中性背景；不因单选或全选出现选中背景或描边，有选择时展示适用的批量操作。
 
-搜索和筛选会裁剪选择；“全选”只作用于当前可见且可操作的结果。两个标签分别维护选择，排序保留选择，刷新会移除已消失或开始运行的项。
+搜索和筛选会裁剪选择；「全选」只作用于当前可见且可操作的结果。两个标签分别维护选择，排序保留选择，刷新会移除已消失或开始运行的项。
 
 单次所选操作最多处理 200 条，按该动作实际适用的数量判断，不截断全选结果。操作期间固定目标并禁用改选。部分失败保留失败项，全部原因可展开；响应丢失时先核对列表，不自动重复提交。刷新失败保留上次列表，并暂停数据操作直至成功刷新。
 
@@ -91,7 +100,7 @@ link:/absolute/path/to/dsh-archived-manager
 
 ### 查看关联文件
 
-在会话详情中查看“已记录的关联文件”，包括完整路径、所在文件夹和当前状态。已有文件可在系统文件管理器中显示；文件已失效但原父目录仍有效时，可打开该目录。工作区作为独立入口显示，不等同于产物目录。
+在会话详情中查看「已记录的关联文件」，包括完整路径、所在文件夹和当前状态。已有文件可在系统文件管理器中显示；文件已失效但原父目录仍有效时，可打开该目录。工作区作为独立入口显示，不等同于产物目录。
 
 只采用宿主的结构化交付、成功写入和修改记录；正文中的路径、失败写入、仅读取和无记录的终端产物不会被猜测为产物。列表可能不完整。会话彻底删除后不额外保存关联文件索引，独立文件仍留在原处。
 
@@ -115,6 +124,14 @@ link:/absolute/path/to/dsh-archived-manager
 - Host 内串行执行变更操作，前端在请求期间禁用相关按钮。
 - HTTP 路由校验回环地址、同源和 `x-archived-manager: 1` 自定义头。
 
+### legacy v0 会话
+
+v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本号的 `session.jsonl.zstd` 被判为「无法确认的内容」，永久删除只能逐条失败。v0.3.2 起：
+
+- 识别 generation 0（无版本号文件与 `session.v0.*`）；v1 仍未支持，`session.v5.*` 等未知代仍拒绝。
+- v0 的 packed 增量行（`text-chunks` / `reasoning-chunks` / `tool-call-chunks`）按其覆盖的 `seq` 区间校验：分段必须连续、无重叠、无空洞，`dt` 长度必须等于载荷长度减一，时间不得回退；任何一条不满足仍然拒绝，并保持文件原样。
+- v2 / v3 / v4 的判定、删除、隔离、恢复路径未改动。
+
 ## 数据位置
 
 默认 `<DSH_HOME>` 为 `~/.dsh`：
@@ -129,7 +146,7 @@ link:/absolute/path/to/dsh-archived-manager
 | 会话日志 | `<DSH_HOME>/sessions/` |
 | 共享附件 | `<DSH_HOME>/attachments/` |
 
-首次运行前已经存在的归档记录无法反推真实归档时间，因此显示“未记录”，不会伪装成插件安装时间。
+首次运行前已经存在的归档记录无法反推真实归档时间，因此显示「未记录」，不会伪装成插件安装时间。
 
 ## 本机 HTTP API
 
@@ -165,24 +182,20 @@ link:/absolute/path/to/dsh-archived-manager
 
 配色使用 DSH 主题令牌并适配深浅主题。可访问性目标、排版和对比度说明见 [docs/accessibility.md](docs/accessibility.md)。
 
-## 开发与验证
+## 更新记录
 
-要求 Node.js 24+（原生 Zstandard 解码），无第三方运行依赖；DSH 使用其自带运行时：
+### v0.3.3
 
-```bash
-npm test
-node --check client/index.js
-npm pack
-```
-
-测试覆盖 Host 文件操作、路径与路由安全、归档/隔离/恢复/删除、保留策略、Client 设置页注册、搜索筛选、模态框、选中行高亮（全选/单选/无选择）、隔离区高亮、深浅主题和 WCAG 对比度。GitHub Actions 对 push 和 pull request 自动运行测试。
+- **重写 README。** 重新组织安装/升级、已归档与隔离区操作、选中契约、删除范围、数据位置、本机 API、legacy v0 支持和开发验证，补充 v0.3.2 的格式校验细节。
+- 同步 `package.json` 与页面版本号到 `0.3.3`。
+- **无功能行为变更**：除页面/包版本号常量外，代码逻辑与 v0.3.2 相同，仅为文档与版本号发布。
 
 ### v0.3.2
 
 - 识别 legacy v0 会话日志（`session.jsonl.zstd`，无版本号），这类会话现在能正常列出、查看并彻底删除。此前 0.3.0 起的格式校验把它们判为「无法确认的内容」，永久删除只能逐条失败。
-- v0 的 packed 增量行（`text-chunks` / `reasoning-chunks` / `tool-call-chunks`）按连续 `seq` 覆盖区间校验：分段必须无重叠、无空洞，`dt` 长度必须与载荷一致，时间不得回退；任何一条不满足仍然按「无法确认」拒绝并保持文件原样。
+- v0 的 packed 增量行按连续 `seq` 覆盖区间校验：分段必须无重叠、无空洞，`dt` 长度必须与载荷一致，时间不得回退；任何一条不满足仍然按「无法确认」拒绝并保持文件原样。
 - v2 / v3 / v4 的判定与删除路径未改动；未知代（如 `session.v5.*`）仍然拒绝。
-- 验证：`npm test` 141/141（新增 `test/legacy-v0.test.mjs` 5 条）；本机 181 个真实会话目录（21 个 v0）全部可识别，21 个 v0 副本全部删除成功，改动前这 21 个全部失败。
+- 验证：`npm test` 141/141；本机 181 个真实会话目录（21 个 v0）全部可识别，21 个 v0 副本全部删除成功，改动前这 21 个全部失败。
 
 ### v0.3.1
 
@@ -193,16 +206,29 @@ npm pack
 ### v0.3.0
 
 - 重排列表与紧凑摘要，统一归档和隔离区的选择反馈，强调已选数量。
-- 常用恢复与隔离操作直接可达，永久操作收进“更多”；修正重复确认框、操作期间改选、失败详情截断和刷新状态。
+- 常用恢复与隔离操作直接可达，永久操作收进「更多」；修正重复确认框、操作期间改选、失败详情截断和刷新状态。
 - 所有清理路径按宿主格式验证 session，保护混入目录的独立文件与未知内容。
 - 新增已记录关联文件位置、打开文件夹和独立的工作区入口。
 - 新增可信版本展示、稳定版手动更新和明确的源码链接切换流程；独立控制页提供进度、失败重试及恢复安装。
+
+## 开发与验证
+
+要求 Node.js 24+（原生 Zstandard 解码），无第三方运行依赖；DSH 使用其自带运行时：
+
+```bash
+npm test
+node --check client/index.js
+npm pack
+```
+
+当前测试 **141 项全部通过**，覆盖 Host 文件操作、路径与路由安全、归档/隔离/恢复/删除、保留策略、Client 设置页注册、搜索筛选、模态框、选中行高亮（全选/单选/无选择）、隔离区高亮、深浅主题和 WCAG 对比度。GitHub Actions 对 push 和 pull request 自动运行测试。
 
 ## 已知限制
 
 - 同一 `DSH_HOME` 只支持单实例；多个 DSH 实例同时写同一数据目录不受支持。
 - 恢复或取消归档后，侧栏可能需要刷新或重启才能反映宿主内存索引变化。
 - 卸载插件不会自动删除隔离区；如需清理，请先确认其中没有仍需恢复的会话。
+- v1 会话格式仍未支持；未知代（如 `session.v5.*`）继续拒绝，避免误删。
 
 ## English
 
@@ -213,10 +239,14 @@ npm pack
 Open **DSH → Settings → Plugins → Install** and enter:
 
 ```text
-github:chen1pengvincent/dsh-archived-manager#v0.3.2
+github:chen1pengvincent/dsh-archived-manager#v0.3.3
 ```
 
 Fully restart DSH after installation, hard-refresh the Web UI, then open **Settings → Archived Sessions**. Node.js 24+ is needed only for development and tests.
+
+### What's new in 0.3.3
+
+This is a documentation release. The README is rewritten and the package/client version is synchronized to 0.3.3; runtime behavior is unchanged from 0.3.2 apart from the version constants (including legacy v0 session support).
 
 ### Selection feedback
 
@@ -224,13 +254,11 @@ Every data row derives its highlight from its own checked state. Select-all high
 
 ### Safety and privacy
 
-Session operations are local, with no telemetry or background updates. Only manual update checks and installation access this repository’s GitHub releases. Loopback-only management routes require same-origin requests and a custom header. All cleanup paths verify the host session format; unknown files or unsafe paths preserve the item. Independent generated files, existing project modifications and shared attachments are never deleted or moved.
+Session operations are local, with no telemetry or background updates. Only manual update checks and installation access this repository's GitHub releases. Loopback-only management routes require same-origin requests and a custom header. All cleanup paths verify the host session format; unknown files or unsafe paths preserve the item. Independent generated files, existing project modifications and shared attachments are never deleted or moved.
 
 The recorded-files view shows structured delivery/write/edit paths and can open their folders. It is not a complete historical artifact index. Workspace access is labeled separately.
 
 Manual updates use a separate control page that survives removal of the target plugin, verifies the pinned release package before removal, and offers retry or recovery. Keep DSH running during installation. If the whole process exits between removal and successful installation, recover through the native plugin manager using the displayed release address. Source-linked installs change source only after an explicit switch confirmation; the checkout remains untouched.
-
-Version details sit beside the version number and expand on click or keyboard activation. Permanent delete is directly available for single and selected sessions; clearing the entire quarantine has its own labeled control. Destructive actions still require the existing confirmation and remain disabled during operations.
 
 See the Chinese sections above for the operation matrix, data paths, API table, security controls, development commands, and release notes.
 
