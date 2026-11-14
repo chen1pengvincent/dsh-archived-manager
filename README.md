@@ -26,7 +26,7 @@
 2. 输入以下 spec：
 
    ```text
-   github:chen1pengvincent/dsh-archived-manager#v0.3.1
+   github:chen1pengvincent/dsh-archived-manager#v0.3.2
    ```
 
 3. 安装后**完全退出并重新打开 DSH**，再硬刷新页面（macOS：`Cmd+Shift+R`）。
@@ -177,6 +177,13 @@ npm pack
 
 测试覆盖 Host 文件操作、路径与路由安全、归档/隔离/恢复/删除、保留策略、Client 设置页注册、搜索筛选、模态框、选中行高亮（全选/单选/无选择）、隔离区高亮、深浅主题和 WCAG 对比度。GitHub Actions 对 push 和 pull request 自动运行测试。
 
+### v0.3.2
+
+- 识别 legacy v0 会话日志（`session.jsonl.zstd`，无版本号），这类会话现在能正常列出、查看并彻底删除。此前 0.3.0 起的格式校验把它们判为「无法确认的内容」，永久删除只能逐条失败。
+- v0 的 packed 增量行（`text-chunks` / `reasoning-chunks` / `tool-call-chunks`）按连续 `seq` 覆盖区间校验：分段必须无重叠、无空洞，`dt` 长度必须与载荷一致，时间不得回退；任何一条不满足仍然按「无法确认」拒绝并保持文件原样。
+- v2 / v3 / v4 的判定与删除路径未改动；未知代（如 `session.v5.*`）仍然拒绝。
+- 验证：`npm test` 141/141（新增 `test/legacy-v0.test.mjs` 5 条）；本机 181 个真实会话目录（21 个 v0）全部可识别，21 个 v0 副本全部删除成功，改动前这 21 个全部失败。
+
 ### v0.3.1
 
 - 版本详情与版本号同排，收起时不再单独占一行；保留点击与键盘展开。
@@ -206,7 +213,7 @@ npm pack
 Open **DSH → Settings → Plugins → Install** and enter:
 
 ```text
-github:chen1pengvincent/dsh-archived-manager#v0.3.1
+github:chen1pengvincent/dsh-archived-manager#v0.3.2
 ```
 
 Fully restart DSH after installation, hard-refresh the Web UI, then open **Settings → Archived Sessions**. Node.js 24+ is needed only for development and tests.
