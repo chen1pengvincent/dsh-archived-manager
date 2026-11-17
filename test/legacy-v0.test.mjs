@@ -44,7 +44,7 @@ async function fixture(t) {
     fs: { processPathFromHostPath: (path) => path, resolve: async (path) => resolve(path), processPath: (path) => path },
     sessionController: { workspaceDesktop: () => ({ available: true }), async openWorkspacePath() { throw new Error('unused'); } },
   };
-  return { home, dir, state, manager: createManager({ get: (name) => services[name] }) };
+  return { home, dir, state, manager: createManager({ get: (name) => services[name] }, { lockFile: async () => {} }) };
 }
 
 test('legacy v0 logs decode with packed delta rows', () => {

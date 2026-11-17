@@ -6,7 +6,9 @@ import { tmpdir } from 'node:os';
 import { Readable } from 'node:stream';
 import { zstdCompressSync } from 'node:zlib';
 
-import { createRoutes } from '../lib/host.js';
+import { createRoutes as createHostRoutes } from '../lib/host.js';
+
+const createRoutes = (ctx, options) => createHostRoutes(ctx, { lockFile: async () => {}, ...options });
 
 const PACKAGE_VERSION = JSON.parse(await fs.readFile(new URL('../package.json', import.meta.url), 'utf8')).version;
 
@@ -22,7 +24,7 @@ async function makeHome() {
 
 function fakeCtx(home) {
   const state = { archived: [A] };
-  const entity = { id: 'ws', path: '/tmp/proj', title: '工作', sessionIds: [A], async detachSession() {} };
+  const entity = { id: 'ws', path: '/tmp/proj', title: '工作', sessionIds: [A], async detachSession(id) { entity.sessionIds = entity.sessionIds.filter((value) => value !== id); } };
   const registry = {
     get archivedSessionIds() { return state.archived; },
     list: () => [entity],
@@ -150,8 +152,14 @@ test('the settings routes read and save the quarantine retention window', async 
   const read = await call(route(routes, '/archived-manager/settings'), { method: 'GET', headers: {} });
   assert.equal(read.status, 200);
   assert.equal(read.json.settings.trashRetentionDays, 0);
+  const headers = { 'x-archived-manager': '1' };
+  const unconfirmed = await call(route(routes, '/archived-manager/settings/save'), { method: 'POST', headers, body: { trashRetentionDays: 30 } });
+  assert.equal(unconfirmed.json.code, 'confirm');
+  const preview = await call(route(routes, '/archived-manager/preview'), {
+    method: 'POST', headers, body: { action: 'retention', trashRetentionDays: 30 },
+  });
   const saved = await call(route(routes, '/archived-manager/settings/save'), {
-    method: 'POST', headers: { 'x-archived-manager': '1' }, body: { trashRetentionDays: 30 },
+    method: 'POST', headers, body: { trashRetentionDays: 30, items: preview.json.targets, previewToken: preview.json.previewToken },
   });
   assert.equal(saved.status, 200);
   assert.equal(saved.json.settings.trashRetentionDays, 30);

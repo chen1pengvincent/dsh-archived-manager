@@ -2,20 +2,20 @@
 
 [![test](https://github.com/chen1pengvincent/dsh-archived-manager/actions/workflows/test.yml/badge.svg)](https://github.com/chen1pengvincent/dsh-archived-manager/actions/workflows/test.yml)
 
-> DeepSeek Harness（DSH）归档会话管理插件：原生取消归档、可恢复隔离区、彻底删除、批量选择、检索与保留策略。
+> DeepSeek Harness（DSH）会话清理工作台。查找和批量取消归档，移到「最近删除」，或彻底删除已核验的会话日志。
 
 [中文文档](#dsh-archived-manager) · [English](#english) · [Releases](https://github.com/chen1pengvincent/dsh-archived-manager/releases)
 
-当前版本 **0.3.3**。本次发布重写 README 并同步版本号，除版本号常量外运行时代码与 v0.3.2 相同；`v0.3.2` 的 legacy v0 会话支持、`v0.3.0` / `v0.3.1` 的工作台与更新能力都包含在内。
+当前版本 **0.3.4**。归档和即时撤销由 DSH 原生侧栏提供。插件管理归档后的检索、恢复、清理和文件定位。
 
 ## 功能
 
 - **取消归档**：调用 DSH 原生 `unarchiveSession`，会话回到侧栏，日志文件原地保留。
-- **移入隔离区**：把已确认的会话数据移入插件隔离区；可从隔离区单独或批量恢复。
+- **移到最近删除**：移走会话日志，可单独或批量恢复到侧栏。
 - **彻底删除**：经明确确认后永久删除会话日志；项目文件和共享附件不在删除范围内。
 - **清理失效记录**：日志目录已不存在时，只移除归档记录，不触碰其他文件。
 - **批量与检索**：单选、全选当前筛选结果，按标题/工作区/ID 搜索，按状态筛选，按时间、体积或标题排序。
-- **隔离区保留策略**：永不自动清理，或保留 7 / 30 / 90 天；默认永不。
+- **自动清理**：保留 7、30 或 90 天，默认关闭。修改期限前可核对当前会受影响的会话。
 - **关联文件**：查看会话中已记录的生成、写入或修改文件的位置，并打开所在文件夹；会话工作区另设入口。
 - **版本与手动更新**：显示页面、服务和安装版本；手动检查 GitHub 稳定版，通过独立控制页更新。源码链接只有在明确选择「切换为发布版」后才改变安装来源。
 - **本地优先**：无遥测、无后台更新；只有手动检查或更新时访问本仓库 GitHub 发布信息和安装包。管理接口仅接受本机回环、同源且带自定义请求头的调用。
@@ -28,20 +28,20 @@
 2. 输入以下 spec：
 
    ```text
-   github:chen1pengvincent/dsh-archived-manager#v0.3.3
+   github:chen1pengvincent/dsh-archived-manager#v0.3.4
    ```
 
 3. 安装后**完全退出并重新打开 DSH**，再硬刷新页面（macOS：`Cmd+Shift+R`）。
-4. 打开 **设置 → 归档会话**。
+4. 打开 **设置 → 会话管理**。
 
 从旧版本升级时，在插件管理页安装新版本，或先 `remove_bundle` 再 `install_bundle`：
 
 ```json
 {"action":"remove_bundle","target":"dsh-archived-manager"}
-{"action":"install_bundle","target":"github:chen1pengvincent/dsh-archived-manager#v0.3.3"}
+{"action":"install_bundle","target":"github:chen1pengvincent/dsh-archived-manager#v0.3.4"}
 ```
 
-v0.3.0 起可在归档会话页手动检查稳定版并更新。更新控制页会固定目标版本，在卸载前下载并校验安装包；旧插件卸载后，该页仍可展示安装结果，并在失败时提供重试或恢复入口。安装成功后按提示重新打开页面或重启 DSH。
+v0.3.0 起可在会话管理页手动检查稳定版并更新。更新控制页会固定目标版本，在卸载前下载并校验安装包；旧插件卸载后，该页仍可展示安装结果，并在失败时提供重试或恢复入口。安装成功后按提示重新打开页面或重启 DSH。
 
 更新期间请保持 DSH 运行。关闭控制页不会取消安装；若整个 DSH 进程在卸载后、安装完成前退出，请在宿主插件管理页使用目标版本的安装地址恢复。控制页会列出该地址。无需额外构建，也无需在本机单独安装 Node.js；Node.js 24+ 仅用于源码开发和测试。
 
@@ -63,40 +63,27 @@ link:/absolute/path/to/dsh-archived-manager
 
 ### 已归档
 
-每行显示标题、工作区、状态、最后使用时间、归档时间和会话日志目录体积。可执行：
+从 DSH 侧栏的会话菜单归档，使用宿主提示立即撤销。需要批量处理时，打开 **设置 → 会话管理 → 已归档**。
 
-| 操作 | 文件在盘 | 文件缺失 |
-|---|---|---|
-| 取消归档 | 回到侧栏，文件原地保留 | 使用「清理失效记录」 |
-| 移入隔离区 | 移动已确认的会话数据，可恢复 | 不处理该记录 |
-| 彻底删除 | 永久删除已确认的会话数据，需确认 | 使用「清理失效记录」 |
-| 清理失效记录 | 不适用 | 只移除归档记录 |
+| 操作 | 结果 |
+|---|---|
+| 取消归档 | 通过 DSH 原生接口回到侧栏，日志保留在原目录 |
+| 移到最近删除 | 移动已通过校验的日志，移入时磁盘占用不变 |
+| 彻底删除 | 确认后永久删除本次列出的会话日志 |
+| 清理失效记录 | 日志已经缺失时，仅清除归档记录 |
 
-运行中的会话不可选择或删除；请先停止对应会话。取消归档、移入隔离区和彻底删除均为直接入口；彻底删除仍需在确认框中核对范围并确认不可恢复。顶部摘要紧凑显示当前数量和日志大小。版本详情与版本号同排，点击或通过键盘展开后可查看页面、服务和安装版本。
+列表提供搜索、状态筛选和排序。行内说明会话占用、日志缺失或目录受保护的原因。列表显示的是日志占用，删除预览显示本次可清理的日志。归档首次发现时间由插件记录。
 
-### 选中与高亮契约
+全选作用于当前可见的可选行。两个标签分别保存选择，搜索和筛选会清除移出当前结果的选择，排序保留选择。普通批量操作最多处理 200 条。确认前可以核对将执行的目标和被跳过的原因。目标在确认后发生变化时，刷新并重新核对。执行中固定目标，执行后可查看未处理项。
 
-高亮由**每一行自己的选中状态**决定，而不是由「是否点击了全选」单独决定：
+### 最近删除
 
-- **全选**：当前筛选结果中的所有可选行都显示强调色背景和完整内描边；运行中行不参与全选。
-- **单选**：只有对应行高亮，其他行保持原样。
-- **取消选择**：该行高亮立即消退；全部取消后，列表不再保留选中高亮。
-- **隔离区**：使用同一套逐行高亮规则。
-- **数量**：「已选 N 条」随实际选择同步强调。
-- **工具条**：保持中性背景；不因单选或全选出现选中背景或描边，有选择时展示适用的批量操作。
+- **恢复到侧栏**会先把日志放回原目录，再尝试重新关联工作区。原目录冲突时，日志保留在「最近删除」。日志已经恢复而工作区关联未完成时，页面会单独说明。
+- **彻底删除**处理当前确认的会话。**清空全部**的预览包含搜索隐藏项。
+- **自动清理设置**按移入「最近删除」起算。开启或缩短期限时，先核对已到期条目再保存。关闭后，后续清理按新设置执行。
+- 如果某一步已经生效，结果会说明日志或登记的当前状态。对能继续的条目，使用页面给出的后续操作。
 
-搜索和筛选会裁剪选择；「全选」只作用于当前可见且可操作的结果。两个标签分别维护选择，排序保留选择，刷新会移除已消失或开始运行的项。
-
-单次所选操作最多处理 200 条，按该动作实际适用的数量判断，不截断全选结果。操作期间固定目标并禁用改选。部分失败保留失败项，全部原因可展开；响应丢失时先核对列表，不自动重复提交。刷新失败保留上次列表，并暂停数据操作直至成功刷新。
-
-### 隔离区
-
-- 单独或批量**恢复**到原会话目录；
-- 单独或批量**彻底删除**；
-- 使用独立的**清空隔离区**按钮处理全部隔离会话，包含搜索隐藏的项；
-- 配置自动保留期限。开启自动清理需要二次确认，保存后立即检查过期条目。
-
-危险操作使用模态确认框，并要求勾选不可恢复确认。界面语言跟随 **DSH → 设置 → 通用 → 语言**，旧版缺少 locale 服务时才回退到浏览器语言。
+版本详情与版本号同排，支持键盘展开。界面语言跟随 **DSH → 设置 → 通用 → 语言**。
 
 ### 查看关联文件
 
@@ -104,7 +91,7 @@ link:/absolute/path/to/dsh-archived-manager
 
 只采用宿主的结构化交付、成功写入和修改记录；正文中的路径、失败写入、仅读取和无记录的终端产物不会被猜测为产物。列表可能不完整。会话彻底删除后不额外保存关联文件索引，独立文件仍留在原处。
 
-## 删除范围与安全边界
+## 删除范围
 
 | 范围 | 行为 |
 |---|---|
@@ -112,17 +99,10 @@ link:/absolute/path/to/dsh-archived-manager
 | 独立生成文件及已有项目文件 | 不删除、不移动，不撤销已有修改 |
 | 共享附件 | 不随会话删除；附件采用内容寻址，可能跨会话共享 |
 | 归档记录 | 取消归档、隔离、删除或清理失效记录时按操作更新 |
-| 定时提醒 | 删除或隔离前停止关联提醒，避免留下孤儿任务 |
+| 活动与提醒 | 会话仍有宿主活动或写入占用时，先通过 DSH 处理相关活动再清理 |
 | DSH 工作区账本 | 只通过公开 API 操作，不直接手写 `workspace.json` |
 
-其他保护措施：
-
-- 只接受 UUID 形状的会话 ID；校验真实路径、manifest 目录和恢复目标，拒绝路径穿越。
-- 会话目录或旧隔离目录内存在额外文件、未知内容、异常链接或损坏记录时，保留该项并返回原因。此规则覆盖移入隔离区、永久删除、清空隔离区及自动过期清理。
-- 按文件处理已验证的会话数据；不会递归删除父批次目录吞掉被保护的项。删除和统计不跟随符号链接。
-- 非归档会话、运行中会话及缺少确认的危险请求会被拒绝。
-- Host 内串行执行变更操作，前端在请求期间禁用相关按钮。
-- HTTP 路由校验回环地址、同源和 `x-archived-manager: 1` 自定义头。
+移动、恢复和永久删除前，插件会核对目标路径、会话日志格式，以及 DSH 的活动和写入占用。无法核验或目录内有额外内容的条目会保留，页面会显示原因。批量、清空和自动清理使用同一套日志校验规则。
 
 ### legacy v0 会话
 
@@ -130,7 +110,7 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 
 - 识别 generation 0（无版本号文件与 `session.v0.*`）；v1 仍未支持，`session.v5.*` 等未知代仍拒绝。
 - v0 的 packed 增量行（`text-chunks` / `reasoning-chunks` / `tool-call-chunks`）按其覆盖的 `seq` 区间校验：分段必须连续、无重叠、无空洞，`dt` 长度必须等于载荷长度减一，时间不得回退；任何一条不满足仍然拒绝，并保持文件原样。
-- v2 / v3 / v4 的判定、删除、隔离、恢复路径未改动。
+- 继续识别 v2、v3、v4 的会话格式。
 
 ## 数据位置
 
@@ -138,8 +118,8 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 
 | 数据 | 位置 |
 |---|---|
-| 隔离区 | `<DSH_HOME>/archived-manager/trash/<批次>/` |
-| 隔离区 manifest | 每个批次目录中的 `manifest.json` |
+| 最近删除 | `<DSH_HOME>/archived-manager/trash/<批次>/` |
+| 最近删除清单 | 每个批次目录中的 `manifest.json` |
 | 归档首次观测时间 | `<DSH_HOME>/archived-manager/archive-times.json` |
 | 保留策略 | `<DSH_HOME>/archived-manager/settings.json` |
 | 手动更新状态 | `<DSH_HOME>/archived-manager/update-state.json` |
@@ -152,7 +132,8 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 
 | 方法 | 路径 | 用途 |
 |---|---|---|
-| GET | `/archived-manager/list` | 归档列表、隔离区列表与体积统计 |
+| GET | `/archived-manager/list` | 归档和最近删除列表、操作资格与日志体积 |
+| POST | `/archived-manager/preview` `{action,ids?,items?,trashRetentionDays?}` | 预览目标、跳过原因、日志体积，并返回 `previewToken` |
 | POST | `/archived-manager/unarchive` `{ids}` | 原生取消归档 |
 | POST | `/archived-manager/hide` `{ids}` | 移入隔离区 |
 | POST | `/archived-manager/purge` `{ids, confirm:"PURGE"}` | 永久删除归档会话日志 |
@@ -160,9 +141,10 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 | GET | `/archived-manager/removed` | 隔离区条目 |
 | POST | `/archived-manager/restore` `{items:[{batch,id}]}` | 从隔离区恢复 |
 | POST | `/archived-manager/discard` `{items, confirm:"DISCARD"}` | 删除指定隔离区条目 |
+| POST | `/archived-manager/repair` `{items:[{batch,id}]}` | 核对部分完成的操作及剩余登记 |
 | POST | `/archived-manager/empty-trash` `{confirm:"EMPTY",items:[{batch,id}]}` | 清空隔离区 |
 | GET | `/archived-manager/settings` | 读取保留策略 |
-| POST | `/archived-manager/settings/save` `{trashRetentionDays}` | 保存保留策略并检查过期条目 |
+| POST | `/archived-manager/settings/save` `{trashRetentionDays,items?,previewToken?}` | 保存保留策略。开启时提交预览对象和凭据 |
 | GET | `/archived-manager/health` | 健康检查与版本信息 |
 | POST | `/archived-manager/files` `{id,batch?}` | 已记录关联文件及独立工作区信息 |
 | POST | `/archived-manager/open-folder` `{id,batch?,path?,workspace?}` | 打开经重新核对的文件位置或工作区 |
@@ -170,7 +152,7 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 | POST | `/archived-manager/update/check` | 手动检查最新稳定发布 |
 | POST | `/archived-manager/update/prepare` `{releaseId,version,switchFromLink}` | 准备独立更新控制页，确认后再安装 |
 
-这些接口不是公网 API，不应通过反向代理暴露。
+管理接口仅接受回环地址、同源请求和 `x-archived-manager: 1`。界面在预览后提交相同对象与 `previewToken`。
 
 ## 界面预览
 
@@ -178,11 +160,17 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 
 ![归档会话工作台（浅色）](docs/ui-preview.jpg)
 
-![隔离区与批量选择（深色）](docs/ui-preview-dark.jpg)
+![最近删除与批量选择（深色）](docs/ui-preview-dark.jpg)
 
 配色使用 DSH 主题令牌并适配深浅主题。可访问性目标、排版和对比度说明见 [docs/accessibility.md](docs/accessibility.md)。
 
 ## 更新记录
+
+### v0.3.4
+
+- 新增按实际目标核对的操作预览。「最近删除」明确恢复去向，受保护或占用的条目直接说明原因。
+- 修正删除、恢复、工作区登记及自动清理的结果核对。关闭自动清理后，等待执行的任务重新读取规则。
+- 文件操作遵守宿主活动和写入占用。列表用轻量元数据展示日志占用，选定操作再核验日志正文。
 
 ### v0.3.3
 
@@ -221,7 +209,7 @@ node --check client/index.js
 npm pack
 ```
 
-当前测试 **141 项全部通过**，覆盖 Host 文件操作、路径与路由安全、归档/隔离/恢复/删除、保留策略、Client 设置页注册、搜索筛选、模态框、选中行高亮（全选/单选/无选择）、隔离区高亮、深浅主题和 WCAG 对比度。GitHub Actions 对 push 和 pull request 自动运行测试。
+测试覆盖会话文件操作、状态变化、恢复、批量选择、保留策略、版本更新和主题。GitHub Actions 对 push 和 pull request 自动运行测试。
 
 ## 已知限制
 
@@ -232,21 +220,21 @@ npm pack
 
 ## English
 
-**dsh-archived-manager** adds an **Archived Sessions** page to DeepSeek Harness Settings. It supports native unarchive, recoverable quarantine, permanent session-log deletion, stale-record cleanup, search/filter/sort, bulk actions, and optional 7/30/90-day quarantine retention.
+**dsh-archived-manager** adds **Session Manager** to DeepSeek Harness Settings. Archive and undo archive in the native sidebar. Use the manager to find archived sessions, unarchive in bulk, move logs to Recently Deleted, restore them, or permanently delete verified session logs.
 
 ### Install
 
 Open **DSH → Settings → Plugins → Install** and enter:
 
 ```text
-github:chen1pengvincent/dsh-archived-manager#v0.3.3
+github:chen1pengvincent/dsh-archived-manager#v0.3.4
 ```
 
-Fully restart DSH after installation, hard-refresh the Web UI, then open **Settings → Archived Sessions**. Node.js 24+ is needed only for development and tests.
+Fully restart DSH after installation, hard-refresh the Web UI, then open **Settings → Session Manager**. Node.js 24+ is needed only for development and tests.
 
-### What's new in 0.3.3
+### What's new in 0.3.4
 
-This is a documentation release. The README is rewritten and the package/client version is synchronized to 0.3.3; runtime behavior is unchanged from 0.3.2 apart from the version constants (including legacy v0 session support).
+The manager previews the sessions an action will affect and shows why any will be skipped. Restore reports log recovery separately from workspace reattachment. Cleanup respects DSH activity and write ownership, and scheduled cleanup reads the current retention setting before acting. The list uses lightweight file metadata, with full verification before moving or removing logs.
 
 ### Selection feedback
 

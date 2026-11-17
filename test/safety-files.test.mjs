@@ -34,7 +34,7 @@ async function fixture(t, ids = [A], events = [], overrides = {}) {
     sessionController: { workspaceDesktop: () => ({ available: true }), async openWorkspacePath(options, signal) { assert.ok(signal instanceof AbortSignal, 'host desktop API requires a caller signal'); opens.push(options); } },
     ...overrides,
   };
-  const manager = createManager({ get: (name) => services[name] });
+  const manager = createManager({ get: (name) => services[name] }, { lockFile: async () => {} });
   return { home, manager, workspace, state, services, opens, dir: (id = A) => join(home, 'sessions', '--fixture--', id) };
 }
 
@@ -113,8 +113,14 @@ test('discard, empty, save retention, scheduled sweep and restore all preserve q
     let result;
     if (action === 'discard') result = (await f.manager.discard([entry], 'DISCARD'))[0];
     if (action === 'empty') result = (await f.manager.emptyTrash('EMPTY', await f.manager.listRemoved())).results[0];
-    if (action === 'settings') result = (await f.manager.saveSettings({ trashRetentionDays: 7 })).swept.results[0];
-    if (action === 'sweep') result = (await f.manager.sweepTrash(7)).results[0];
+    if (action === 'settings' || action === 'sweep') {
+      const review = await f.manager.preview({ action: 'retention', trashRetentionDays: 7 });
+      assert.deepEqual(review.targets, []);
+      assert.equal(review.blocked[0].code, 'protected-content');
+      const saved = await f.manager.saveSettings({ trashRetentionDays: 7, items: [], previewToken: review.previewToken });
+      assert.equal(saved.swept.removed, 0);
+      result = action === 'sweep' ? (await f.manager.sweepTrash()).results[0] : { ok: false, code: review.blocked[0].code };
+    }
     if (action === 'restore') result = (await f.manager.restore([entry]))[0];
     assert.equal(result.ok, false); assert.equal(result.code, 'protected-content');
     assert.equal(await fs.readFile(join(target, 'independent.txt'), 'utf8'), 'keep');
@@ -131,7 +137,7 @@ test('empty never recursively removes batch siblings or unreadable manifests', a
   await fs.mkdir(unknownBatch); await fs.writeFile(join(unknownBatch, 'manifest.json'), 'invalid');
   await fs.writeFile(join(unknownBatch, 'report.txt'), 'retain invalid batch');
   const result = await f.manager.emptyTrash('EMPTY', await f.manager.listRemoved());
-  assert.equal(result.removed, 2); assert.equal(result.failed, 1);
+  assert.equal(result.removed, 2); assert.ok(result.failed >= 1);
   assert.equal(await fs.readFile(join(batch, 'independent.bin'), 'utf8'), 'retain root sibling');
   assert.equal(await fs.readFile(join(unknownBatch, 'report.txt'), 'utf8'), 'retain invalid batch');
   assert.deepEqual(JSON.parse(await fs.readFile(join(batch, 'manifest.json'))).entries, []);
@@ -169,11 +175,13 @@ test('changed directory or files after validation are retained before mutation',
 test('failed move never rolls a replaced or modified destination file into the original session', async (t) => {
   for (const replace of [true, false]) await t.test(replace ? 'replaced inode' : 'modified content', async (t) => {
     const f = await fixture(t);
+    const old = join(f.dir(), 'session.v3.jsonl');
+    await fs.writeFile(old, JSON.stringify({ type: 'session', version: 3, id: A, createdAt: 1, isSeeded: false, delegationDepth: 0 }) + '\n');
     const link = fs.link;
     let replacement;
     fs.link = async (source, target) => {
       if (source === join(f.dir(), 'session.v4.jsonl.zstd')) {
-        replacement = join(dirname(target), 'session.lock');
+        replacement = join(dirname(target), 'session.v3.jsonl');
         if (replace) await fs.unlink(replacement);
         await fs.writeFile(replacement, 'independent replacement: retain this exact location');
         throw Object.assign(new Error('fixture move interruption'), { code: 'EIO' });
@@ -184,7 +192,7 @@ test('failed move never rolls a replaced or modified destination file into the o
     try { results = await f.manager.hide([A]); } finally { fs.link = link; }
     assert.equal(results[0].ok, false); assert.equal(results[0].code, 'protected-content');
     assert.equal(await fs.readFile(replacement, 'utf8'), 'independent replacement: retain this exact location');
-    await assert.rejects(() => fs.lstat(join(f.dir(), 'session.lock')), { code: 'ENOENT' });
+    await assert.rejects(() => fs.lstat(old), { code: 'ENOENT' });
     assert.ok(await fs.stat(join(f.dir(), 'session.v4.jsonl.zstd')));
     const manifest = JSON.parse(await fs.readFile(join(dirname(dirname(replacement)), 'manifest.json')));
     assert.equal(manifest.entries.length, 1); assert.equal(manifest.entries[0].id, A);

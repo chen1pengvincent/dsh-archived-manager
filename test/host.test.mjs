@@ -5,7 +5,9 @@ import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { zstdCompressSync } from 'node:zlib';
 
-import { createManager, ManagerError } from '../lib/host.js';
+import { createManager as createHostManager, ManagerError } from '../lib/host.js';
+
+const createManager = (ctx) => createHostManager(ctx, { lockFile: async () => {} });
 
 const A = 'session-11111111-1111-4111-8111-111111111111';
 const B = 'session-22222222-2222-4222-8222-222222222222';
@@ -169,7 +171,7 @@ test('hide refuses a running session', async () => {
   const manager = createManager(ctx);
   const results = await manager.hide([A]);
   assert.equal(results[0].ok, false);
-  assert.equal(results[0].code, 'running');
+  assert.equal(results[0].code, 'occupied');
   assert.notEqual(await fs.stat(join(home, 'sessions', '--proj--', A)).catch(() => undefined), undefined);
 });
 
@@ -208,8 +210,7 @@ test('restore refuses a traversal batch name and an unknown id', async () => {
   const manager = createManager(ctx);
   await manager.hide([A]);
   const removed = await manager.listRemoved();
-  const badBatch = await manager.restore([{ batch: '../escape', id: A }]);
-  assert.equal(badBatch[0].ok, false);
+  await assert.rejects(() => manager.restore([{ batch: '../escape', id: A }]), { code: 'invalid' });
   const badId = await manager.restore([{ batch: removed[0].batch, id: C }]);
   assert.equal(badId[0].ok, false);
   assert.equal(badId[0].batch, removed[0].batch);
@@ -222,14 +223,18 @@ test('invalid ids and path traversal are rejected before touching disk', async (
   await assert.rejects(() => manager.hide(['../../etc/passwd']), (error) => error instanceof ManagerError && error.code === 'invalid');
 });
 
-test('a missing directory only clears the archive record and its archive time', async () => {
+test('a missing directory requires an explicit record-only action', async () => {
   const home = await makeHome([]);
   const { ctx, calls } = fakeCtx(home, [C]);
   const manager = createManager(ctx);
   await manager.list();
-  const results = await manager.hide([C]);
-  assert.equal(results[0].ok, true);
-  assert.equal(results[0].action, 'forget');
+  for (const result of [await manager.hide([C]), await manager.purge([C], 'PURGE')]) {
+    assert.equal(result[0].ok, false);
+    assert.equal(result[0].code, 'files-missing');
+    assert.deepEqual(calls.unarchive, []);
+  }
+  const result = await manager.forget([C]);
+  assert.equal(result[0].action, 'forget');
   assert.deepEqual(calls.unarchive, [C]);
   assert.equal(C in (await timesOf(manager)), false);
 });
@@ -356,7 +361,9 @@ test('settings default to off and sweep only entries older than the retention wi
   const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
   manifest.entries[0].movedAt = Date.now() - 40 * 86400000;
   await fs.writeFile(manifestPath, JSON.stringify(manifest));
-  const saved = await manager.saveSettings({ trashRetentionDays: 7 });
+  const review = await manager.preview({ action: 'retention', trashRetentionDays: 7 });
+  assert.deepEqual(review.targets.map(({ id }) => id), [A]);
+  const saved = await manager.saveSettings({ trashRetentionDays: 7, items: review.targets, previewToken: review.previewToken });
   assert.equal(saved.settings.trashRetentionDays, 7);
   assert.equal(saved.swept.removed, 1);
   const left = await manager.listRemoved();
@@ -365,18 +372,14 @@ test('settings default to off and sweep only entries older than the retention wi
   await assert.rejects(() => manager.saveSettings({ trashRetentionDays: 5 }), (error) => error instanceof ManagerError && error.code === 'invalid');
 });
 
-test('removing a session stops its scheduled reminders', async () => {
+test('moving a session does not delete scheduled tasks as a side effect', async () => {
   const home = await makeHome([A]);
   const stopped = [];
-  const schedule = {
-    async list(request) { return request.sessionId === A ? [{ id: 'r1' }, { id: 'r2' }] : []; },
-    async stopSessionTasks(id) { stopped.push(id); }
-  };
+  const schedule = { async stopSessionTasks(id) { stopped.push(id); } };
   const { ctx } = fakeCtx(home, [A], { schedule });
   const manager = createManager(ctx);
-  const results = await manager.hide([A]);
-  assert.equal(results[0].reminders, 2);
-  assert.deepEqual(stopped, [A]);
+  assert.equal((await manager.hide([A]))[0].ok, true);
+  assert.deepEqual(stopped, []);
 });
 
 test('attachmentStats reports the shared attachment store separately', async () => {
@@ -407,7 +410,7 @@ test('restore validates the manifest directory before touching the filesystem', 
   assert.equal(await fs.stat(join(home, 'sessions', '--proj--', A)).catch(() => undefined), undefined);
 });
 
-test('discarding a stale manifest entry does not fail or touch a restored session', async () => {
+test('repairing a stale manifest entry does not touch session files', async () => {
   const home = await makeHome([A]);
   const { ctx } = fakeCtx(home, [A]);
   const manager = createManager(ctx);
@@ -415,9 +418,10 @@ test('discarding a stale manifest entry does not fail or touch a restored sessio
   const removed = await manager.listRemoved();
   const target = join(home, 'archived-manager', 'trash', removed[0].batch, removed[0].dir);
   await fs.rm(target, { recursive: true, force: true });
-  const results = await manager.discard([{ batch: removed[0].batch, id: A }], 'DISCARD');
-  assert.equal(results[0].ok, true);
-  assert.equal(results[0].bytes, 0);
+  const [refused] = await manager.discard([{ batch: removed[0].batch, id: A }], 'DISCARD');
+  assert.equal(refused.ok, false);
+  const [repaired] = await manager.repair(removed);
+  assert.equal(repaired.ok, true);
   assert.deepEqual(await manager.listRemoved(), []);
 });
 
@@ -435,4 +439,196 @@ test('cold projection cache falls back only to a verified structured session tit
   const { ctx } = fakeCtx(home, [A]);
   const report = await createManager(ctx).list();
   assert.equal(report.items[0].title, '冷缓存仍可查找');
+});
+
+
+test('hide reports moved logs and repairs only the outstanding registry step', async (t) => {
+  const home = await makeHome([A]);
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  const { ctx, registry, state } = fakeCtx(home, [A]);
+  const manager = createManager(ctx);
+  const unarchive = registry.unarchiveSession;
+  registry.unarchiveSession = async () => { throw new Error('registry unavailable'); };
+  const [result] = await manager.hide([A]);
+  assert.equal(result.ok, false);
+  assert.equal(result.partial, true);
+  assert.equal(result.logsMoved, true);
+  assert.deepEqual(state.archived, [A]);
+  const report = await manager.list();
+  assert.equal(report.items[0].capabilities.forget.code, 'repair-required');
+  assert.equal(report.removed[0].capabilities.discard.code, 'repair-required');
+  registry.unarchiveSession = unarchive;
+  assert.equal((await manager.repair(report.removed))[0].ok, true);
+  const reconciled = await manager.list();
+  assert.deepEqual(reconciled.items, []);
+  assert.equal(reconciled.removed[0].capabilities.restore, true);
+});
+
+test('restore reconciles a failed manifest commit without moving the files a second time', async (t) => {
+  const home = await makeHome([A]);
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  const { ctx, calls } = fakeCtx(home, [A]);
+  const manager = createManager(ctx);
+  await manager.hide([A]);
+  const entries = await manager.listRemoved();
+  const rename = fs.rename;
+  let manifestWrites = 0;
+  fs.rename = async (source, target) => {
+    if (target.endsWith('/manifest.json') && ++manifestWrites === 2) throw Object.assign(new Error('manifest write failed'), { code: 'EIO' });
+    return rename(source, target);
+  };
+  let result;
+  try { [result] = await manager.restore(entries); } finally { fs.rename = rename; }
+  assert.equal(result.partial, true);
+  assert.equal(result.logsRestored, true);
+  assert.ok(await fs.stat(join(home, 'sessions', '--proj--', A, 'session.v4.jsonl.zstd')));
+  assert.equal((await manager.listRemoved())[0].capabilities.repair, true);
+  assert.equal((await manager.repair(entries))[0].ok, true);
+  assert.deepEqual(calls.attach, [A, A]); // host reattachment is idempotent.
+  assert.deepEqual(await manager.listRemoved(), []);
+});
+
+test('a confirmed purge refuses a changed log before touching any selected records', async (t) => {
+  const home = await makeHome([A, B]);
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  const { ctx, state } = fakeCtx(home, [A, B]);
+  const manager = createManager(ctx);
+  const review = await manager.preview({ action: 'purge', ids: [A, B] });
+  assert.deepEqual(review.targets.map(({ id }) => id), [A, B]);
+  const changed = join(home, 'sessions', '--proj--', B, 'session.v4.jsonl.zstd');
+  await fs.writeFile(changed, zstdCompressSync(JSON.stringify({ type: 'session', version: 4, id: B, createdAt: 2, isSeeded: false, delegationDepth: 0 }) + '\n'));
+  await assert.rejects(() => manager.purge([A, B], 'PURGE', review.previewToken), { code: 'state-changed' });
+  assert.ok(await fs.stat(join(home, 'sessions', '--proj--', A, 'session.v4.jsonl.zstd')));
+  assert.deepEqual(state.archived, [A, B]);
+});
+
+test('saving retention uses exact reviewed entries and the timer uses the policy in its queue slot', async (t) => {
+  const home = await makeHome([A, B]);
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  const { ctx } = fakeCtx(home, [A, B]);
+  const manager = createManager(ctx);
+  await manager.hide([A]);
+  await manager.hide([B]);
+  const [newer, older] = await manager.listRemoved();
+  const age = async (entry) => {
+    const path = join(manager.trashRoot, entry.batch, 'manifest.json');
+    const manifest = JSON.parse(await fs.readFile(path));
+    manifest.entries[0].movedAt = Date.now() - 100 * 86400000;
+    await fs.writeFile(path, JSON.stringify(manifest));
+  };
+  const initial = await manager.preview({ action: 'retention', trashRetentionDays: 7 });
+  assert.deepEqual(initial.targets, []);
+  await age(older);
+  await assert.rejects(() => manager.saveSettings({ trashRetentionDays: 7, items: [], previewToken: initial.previewToken }), { code: 'state-changed' });
+  assert.equal((await manager.readSettings()).trashRetentionDays, 0);
+  const reviewed = await manager.preview({ action: 'retention', trashRetentionDays: 7 });
+  assert.deepEqual(reviewed.targets.map(({ id }) => id), [older.id]);
+  const enabled = await manager.saveSettings({ trashRetentionDays: 7, items: reviewed.targets, previewToken: reviewed.previewToken });
+  assert.equal(enabled.swept.removed, 1);
+  await age(newer);
+  await Promise.all([manager.saveSettings({ trashRetentionDays: 0 }), manager.sweepTrash()]);
+  assert.deepEqual((await manager.listRemoved()).map(({ id }) => id), [newer.id]);
+});
+
+test('discard partial progress remains visible and requires explicit repair before another delete', async (t) => {
+  const home = await makeHome([A]);
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  const { ctx } = fakeCtx(home, [A]);
+  const manager = createManager(ctx);
+  const old = join(home, 'sessions', '--proj--', A, 'session.v3.jsonl');
+  await fs.writeFile(old, JSON.stringify({ type: 'session', version: 3, id: A, createdAt: 1, isSeeded: false, delegationDepth: 0 }) + '\n');
+  await manager.hide([A]);
+  const entries = await manager.listRemoved();
+  const unlink = fs.unlink;
+  fs.unlink = async (path) => {
+    if (path.endsWith('/session.v4.jsonl.zstd')) throw Object.assign(new Error('fixture delete interruption'), { code: 'EIO' });
+    return unlink(path);
+  };
+  let result;
+  try { [result] = await manager.discard(entries, 'DISCARD'); } finally { fs.unlink = unlink; }
+  assert.equal(result.partial, true);
+  assert.ok(result.bytes > 0);
+  assert.equal((await manager.listRemoved())[0].capabilities.discard.code, 'repair-required');
+  assert.equal((await manager.repair(entries))[0].ok, true);
+  assert.equal((await manager.discard(entries, 'DISCARD'))[0].ok, true);
+});
+
+
+test('repair after an incomplete direct purge releases untouched remaining logs for a new decision', async (t) => {
+  const home = await makeHome([A]);
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  const { ctx, state } = fakeCtx(home, [A]);
+  const manager = createManager(ctx);
+  const directory = await fs.realpath(join(home, 'sessions', '--proj--', A));
+  const legacy = join(directory, 'session.v3.jsonl');
+  const current = join(directory, 'session.v4.jsonl.zstd');
+  await fs.writeFile(legacy, JSON.stringify({ type: 'session', version: 3, id: A, createdAt: 1, isSeeded: false, delegationDepth: 0 }) + '\n');
+  const unlink = fs.unlink;
+  fs.unlink = async (path) => {
+    if (path === current) throw Object.assign(new Error('fixture delete interruption'), { code: 'EIO' });
+    return unlink(path);
+  };
+  let result;
+  try { [result] = await manager.purge([A], 'PURGE'); } finally { fs.unlink = unlink; }
+  assert.equal(result.partial, true);
+  assert.ok(result.bytes > 0);
+  await assert.rejects(fs.stat(legacy), { code: 'ENOENT' });
+  const report = await manager.list();
+  assert.equal(report.items[0].capabilities.purge.code, 'repair-required');
+  assert.equal(report.removed[0].capabilities.repair, true);
+  assert.equal((await manager.repair(report.removed))[0].ok, true);
+  assert.ok(await fs.stat(current));
+  assert.deepEqual(state.archived, [A]);
+  assert.deepEqual(await manager.listRemoved(), []);
+});
+
+test('direct purge repair clears only the registry after logs are gone and preserves late independent files', async (t) => {
+  const home = await makeHome([A]);
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  const { ctx, state } = fakeCtx(home, [A]);
+  const manager = createManager(ctx);
+  const directory = await fs.realpath(join(home, 'sessions', '--proj--', A));
+  const independent = join(directory, 'keep.txt');
+  const rmdir = fs.rmdir;
+  fs.rmdir = async (path) => {
+    if (path === directory) await fs.writeFile(independent, 'user output');
+    return rmdir(path);
+  };
+  let result;
+  try { [result] = await manager.purge([A], 'PURGE'); } finally { fs.rmdir = rmdir; }
+  assert.equal(result.partial, true);
+  assert.ok(result.bytes > 0);
+  const report = await manager.list();
+  assert.equal((await manager.repair(report.removed))[0].ok, true);
+  assert.equal(await fs.readFile(independent, 'utf8'), 'user output');
+  assert.deepEqual(state.archived, []);
+  assert.deepEqual(await manager.listRemoved(), []);
+});
+
+
+test('discard repair keeps an independent file after the verified logs are gone', async (t) => {
+  const home = await makeHome([A]);
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  const { ctx } = fakeCtx(home, [A]);
+  const manager = createManager(ctx);
+  await manager.hide([A]);
+  const entries = await manager.listRemoved();
+  const directory = join(manager.trashRoot, entries[0].batch, entries[0].dir);
+  const independent = join(directory, 'keep.txt');
+  const rmdir = fs.rmdir;
+  fs.rmdir = async (path) => {
+    if (path === directory) await fs.writeFile(independent, 'user output');
+    return rmdir(path);
+  };
+  let result;
+  try { [result] = await manager.discard(entries, 'DISCARD'); } finally { fs.rmdir = rmdir; }
+  assert.equal(result.partial, true);
+  assert.ok(result.bytes > 0);
+  const [repaired] = await manager.repair(entries);
+  assert.equal(repaired.ok, true);
+  assert.match(repaired.warning, /内容已保留/);
+  assert.equal(await fs.readFile(independent, 'utf8'), 'user output');
+  const removed = await manager.listRemoved();
+  assert.deepEqual(removed, []);
+  assert.ok(removed.warnings.length);
 });

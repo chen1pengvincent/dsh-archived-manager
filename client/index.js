@@ -10,107 +10,60 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	var useEffect = React.useEffect;
 
 	var API = "/archived-manager";
-	var CLIENT_VERSION = "0.3.3";
+	var CLIENT_VERSION = "0.3.4";
 	var MAX_BATCH = 200;
 	var LANG = typeof navigator !== "undefined" && navigator.language ? String(navigator.language).toLowerCase() : "";
 	var ZH = LANG.indexOf("zh") === 0;
 
 	var STR_ZH = {
-		section: "归档会话",
-		title: "归档会话管理",
-		subtitle: "查找、恢复和清理旧会话。独立文件与共享附件保留在原处。",
+		section: "会话管理",
+		title: "会话管理",
+		subtitle: "从 DSH 侧栏归档会话，在这里找回或清理。",
 		tabArchived: "已归档",
-		tabRemoved: "隔离区",
+		tabRemoved: "最近删除",
 		refresh: "刷新列表",
 		loading: "正在读取…",
 		failed: "读取失败：{message}",
 		retry: "重试",
-		emptyArchived: "当前没有已归档会话。",
-		emptyRemoved: "隔离区是空的。",
 		selectAll: "全选当前结果",
 		selected: "已选 {n} 条",
-		hide: "移入隔离区",
+		hide: "移到最近删除",
 		unarchive: "取消归档",
 		purge: "彻底删除",
-		restore: "恢复会话",
-		emptyTrash: "清空隔离区",
-		hideConfirmTitle: "移入隔离区 {n} 个会话？",
-		hideConfirmBody: "会话数据移入隔离区，可从这里恢复；暂不释放空间。独立文件、项目文件与共享附件保持不动，含无法确认内容的项会保留。",
+		restore: "恢复到侧栏",
+		emptyTrash: "清空全部",
+		hideConfirmTitle: "移到最近删除 {n} 个会话？",
+		hideConfirmBody: "日志会移到最近删除，可恢复到侧栏。此操作保留日志占用。",
 		purgeConfirmTitle: "彻底删除 {n} 个会话？",
-		purgeConfirmBody: "只删除可确认属于对应会话的数据，无法恢复；独立文件、项目文件与共享附件保持不动。含额外文件或无法确认内容的会话会保留并说明原因。",
-		purgeCheck: "我已知晓：删除后不可恢复",
-		emptyConfirmTitle: "清空隔离区全部 {n} 条？",
-		emptyConfirmBody: "永久删除隔离区全部 {n} 条会话数据，包括当前搜索未显示的记录。无法恢复；独立文件与共享附件保持不动，受保护的项会保留并说明原因。",
-		discardTitle: "彻底删除 {n} 个隔离会话？",
-		discardBody: "永久删除对应的会话数据，无法恢复。独立文件、项目文件与附件不受影响；含无法确认内容的项会保留。",
+		purgeConfirmBody: "只删除已核验的会话日志。删除后无法恢复。",
+		purgeCheck: "我确认永久删除上述会话日志",
+		emptyConfirmTitle: "清空最近删除？",
+		discardTitle: "彻底删除最近删除中的 {n} 个会话？",
+		discardBody: "只删除已核验的会话日志。删除后无法恢复。",
 		cancel: "取消",
-		confirmHide: "移入隔离区",
-		confirmPurge: "彻底删除",
-		confirmEmpty: "清空隔离区",
-		confirmDiscard: "彻底删除",
 		busy: "处理中…",
-		restoreConfirm: "",
-		restoreDone: "已恢复",
 		missing: "文件缺失",
 		running: "运行中",
-		resident: "驻留中",
 		noTitle: "（无标题）",
 		size: "体积",
 		workspace: "工作区",
-		created: "创建时间",
 		movedAt: "移入时间",
-		tipMovedAtLabel: "移入隔离区的时间；由插件记录，恢复后清除。",
-		resultOk: "完成：成功 {ok} 个，失败 {fail} 个",
-		resultFail: "失败：{message}",
+		tipMovedAtLabel: "移到最近删除的时间；由插件记录，恢复后清除。",
 		forget: "清除归档记录",
-		forgetConfirmTitle: "清除 {n} 条归档记录？",
-		forgetConfirmBody: "这些会话在磁盘上已经不存在，只会从归档集合移除记录，不影响任何文件。",
-		trashStats: "隔离区：{n} 条 · {size}",
-		archivedStats: "已归档：{n} 条 · 合计可释放 {size}",
-		statsMissing: "（其中 {n} 条文件缺失）",
-		statArchived: "已归档会话",
-		statArchivedHint: "全部归档记录",
-		statReleasable: "可释放空间",
-		statReleasableHint: "仅会话日志目录",
-		statMissing: "文件缺失",
-		statMissingHint: "仅剩归档记录",
-		statTrash: "隔离区",
-		statTrashHint: "隔离区占用 {size}",
 		emptyTitle: "暂无已归档会话",
 		emptyHint: "在会话菜单里归档后，这里会显示；取消归档会让它回到侧栏。",
-		emptyRemovedTitle: "隔离区为空",
-		emptyRemovedHint: "移入隔离区的会话会出现在这里，可恢复或永久删除。",
-		badgeArchived: "文件在盘",
-		badgeMissing: "文件缺失",
-		tipArchived: "文件仍在磁盘（会话目录 {size}）。取消归档会回到侧栏；移入隔离区会保留文件；彻底删除才清理日志。",
-		tipMissing: "该会话的日志目录已不存在，只剩归档记录。清理只删这条记录，不动任何文件。",
+		emptyRemovedTitle: "最近删除为空",
+		emptyRemovedHint: "移到最近删除的会话会出现在这里，可恢复或永久删除。",
 		lastUsedLabel: "最后使用",
-		archivedLabel: "归档记录时间",
+		archivedLabel: "首次发现归档",
 		unknownTime: "未记录",
-		sizeUsed: "会话目录 {size}（彻底删除可释放）",
-		sizeMissing: "会话目录 0 B（文件已不存在）",
-		releaseLine: "所选会话日志约 {size}；实际释放量以处理结果为准",
-		hideSummary: "文件会移入隔离区，暂不释放空间；清空隔离区后才释放。",
-		noFilesLine: "没有文件会被删除",
-		modalClearTitle: "清理 {n} 条失效归档记录？",
-		modalClearBody: "这些会话的文件已不存在，只会移除归档记录，不会删除任何文件。",
-		modalMixedBody: "其中 {missing} 条文件缺失，只会清除记录；其余 {present} 条日志会被永久删除。",
-		hideMixedBody: "其中 {missing} 条文件缺失，只会清除记录；其余 {present} 条会移入隔离区（保留文件，可恢复）。",
-		clearCheck: "我已知晓：这些归档记录将被清除",
+		releaseLine: "预计释放 {size} 的会话日志",
 		cleanup: "清理失效记录",
 		cleanupTitle: "清理 {n} 条失效归档记录？",
 		cleanupBody: "这些会话的文件已不存在，只会移除归档记录，不会删除任何文件。",
 		confirmCleanup: "清理记录",
-		ignoredNote: "另有 {n} 条文件缺失的记录不会被此操作处理。",
 		selectedSplit: "已选 {n} 条（有文件 {files} · 失效 {missing}）",
-		hideShort: "移入",
-		cleanupShort: "清理记录",
-		tipHideAction: "移入隔离区：文件保留，可随时恢复",
-		tipCleanupAction: "只删除归档记录，不动任何文件",
-		cleanupHint: "所选记录的文件均已不存在，请用「清理失效记录」",
 		selectHint: "勾选会话后可批量操作",
-		confirmClear: "清理记录",
-		close: "关闭",
 		searchPlaceholder: "搜索标题、工作区或 ID",
 		searchAria: "搜索归档会话",
 		clearSearch: "清除搜索",
@@ -119,7 +72,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		filterMissing: "文件缺失",
 		sortLabel: "排序",
 		sortLastUsed: "最后使用",
-		sortArchived: "归档时间",
+		sortArchived: "首次发现归档",
 		sortSize: "体积",
 		sortTitle: "标题",
 		sortMoved: "移入时间",
@@ -127,51 +80,39 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		filteredEmptyHint: "清空搜索或切换筛选后再试。",
 		clearFilters: "清除筛选",
 		showing: "显示 {shown} / {total}",
-		removedSearchPlaceholder: "搜索隔离会话",
-		removedSelectHint: "勾选隔离会话后可批量恢复或删除",
-		removedSelected: "已选 {n} 条隔离会话",
-		removedEmptyFilter: "没有匹配的隔离会话",
-		discardShort: "彻底删除",
-		tipDiscardAction: "永久删除隔离区中的会话日志",
-		tipUnarchiveAction: "取消归档，文件原地保留",
-		unarchiveDone: "已取消归档；侧栏显示以宿主刷新为准",
-		toastUnarchive: "已取消归档 {n} 个",
-		toastIgnored: "，{n} 条失效记录未处理",
-		toastHide: "已移入隔离区 {n} 个（可恢复）",
+		removedSearchPlaceholder: "搜索最近删除中的会话",
+		removedSelected: "已选 {n} 条会话",
+		removedEmptyFilter: "没有匹配的会话",
+		toastUnarchive: "已回到侧栏 {n} 条",
+		toastHide: "已移到最近删除 {n} 个（可恢复）",
 		toastPurge: "已彻底删除 {n} 个会话，释放 {size}",
-		toastRestore: "已恢复 {n} 条会话到原位置；工作区关联以处理结果为准",
-		toastDiscard: "已永久删除 {n} 个隔离会话，释放 {size}",
-		toastEmpty: "已清空隔离区，释放 {size}",
+		toastRestore: "已恢复 {n} 条会话日志",
+		toastDiscard: "已彻底删除 {n} 条会话日志，释放 {size}",
 		toastCleanup: "已清理 {n} 条失效记录",
 		toastReminders: "，停止 {n} 个提醒",
-		toastPartial: "完成 {ok} 个，失败 {fail} 个",
-		reportTitle: "部分完成：成功 {ok} 个，失败 {fail} 个",
-		reportMore: "还有 {n} 条失败未显示",
 		reportDismiss: "知道了",
-		retentionTitle: "隔离区自动清理",
+		retentionTitle: "最近删除自动清理",
 		retentionLabel: "保留期限",
-		retentionNever: "永不",
+		retentionNever: "关闭",
 		retentionDays: "{n} 天",
-		retentionHint: "开启后，超过期限的隔离会话会在后台被永久删除；默认关闭。",
-		retentionWarn: "自动清理不可恢复",
-		retentionConfirmTitle: "开启隔离区自动清理？",
-		retentionConfirmBody: "移入隔离区超过 {days} 天的会话将被永久删除；现有已到期会话也会立即处理，不能恢复。含非会话文件或无法确认内容的项会保留。",
-		retentionCheck: "我已知晓：过期隔离会话会被自动删除",
-		confirmRetention: "开启",
-		retentionSaved: "已保存：隔离区保留 {days} 天",
-		retentionOff: "已关闭隔离区自动清理",
-		retentionSwept: "已清理 {n} 条过期隔离会话，释放 {size}",
-		scopeNote: "统计仅含会话日志目录。附件 {size}（{files} 个）跨会话共享，删除会话不会清理；项目文件也不受影响。",
-		scopeNoteShort: "仅清理会话日志；附件与项目文件不受影响。",
+		retentionHint: "开启后，移到最近删除满保留期限的会话日志会自动永久删除。",
+		retentionConfirmTitle: "保存自动清理设置？",
+		retentionConfirmBody: "移到最近删除满 {days} 天后，已核验的会话日志会自动永久删除。",
+		retentionCheck: "我确认已到期及后续到期的会话日志会被永久删除",
+		confirmRetention: "保存设置",
+		retentionSaved: "已保存：最近删除保留 {days} 天",
+		retentionOff: "已关闭最近删除自动清理",
+		retentionSwept: "已清理 {n} 条过期会话日志，释放 {size}",
+		scopeNote: "删除范围为已核验的会话日志。独立文件、项目改动和共享附件（{size}，{files} 个）会保留。",
 		tipLastUsedLabel: "最后一次在该会话发送消息的时间（来自投影缓存）",
 		tipArchivedLabel: "插件首次观测到该会话进入归档集合的时间；旧记录无法回溯，显示「未记录」。",
 		errRunning: "会话正在运行，请先停止",
 		errNotArchived: "会话已不在归档集合",
-		errFilesExist: "会话文件还在，请用移入隔离区或彻底删除",
+		errFilesExist: "会话文件还在，请用移到最近删除或彻底删除",
 		errFilesMissing: "会话文件已不存在，请用清理失效记录",
-		errConflict: "隔离区已有同名目录",
+		errConflict: "最近删除已有同名目录",
 		errInvalid: "参数无效",
-		errNotFound: "隔离区条目不存在",
+		errNotFound: "最近删除条目不存在",
 		errExists: "原目录已存在，无法恢复",
 		errConfirm: "缺少确认",
 		errStorage: "文件操作失败",
@@ -182,14 +123,13 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		files: "已记录的关联文件",
 		loadFiles: "查看关联文件",
 		filesEmpty: "未找到已记录的文件位置",
-		filesCoverage: "仅展示已记录的文件位置，可能不包含全部历史产物；工作区单独列出。",
+		filesCoverage: "仅展示已记录的文件位置，可能不包含全部历史产物。彻底删除会话日志后，文件仍在原处，文件位置记录随日志删除。",
 		openFolder: "打开所在文件夹",
 		openWorkspace: "打开工作区",
 		workspacePath: "会话工作区",
 		folder: "所在文件夹",
 		path: "完整路径",
 		fileMissing: "文件已不存在",
-		folderMissing: "所在文件夹已不存在",
 		unavailable: "当前位置不可打开",
 		batchLimit: "单次最多处理 200 条，请缩小筛选范围或取消部分选择",
 		processing: "正在处理 {n} 条",
@@ -199,7 +139,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		showAllReasons: "查看全部 {n} 条原因",
 		showLess: "收起原因",
 		runningLocked: "运行中，暂不可操作",
-		logSize: "会话日志",
+		logSize: "日志占用",
 		resultSummary: "完成：成功 {ok} 条，失败 {fail} 条，跳过 {skip} 条",
 		settings: "设置",
 		retentionSummary: "自动清理：{value}",
@@ -223,12 +163,10 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		aheadRelease: "当前版本高于最新稳定版 v{version}，不会自动降级",
 		releaseNotes: "更新说明",
 		checkedAt: "核对时间",
-		installedPending: "已安装 v{version}，重新加载后核对生效状态",
 		updateFailed: "无法检查更新：{message}",
 		updateUnknown: "更新状态未确认，请重新核对",
 		updateContinue: "查看更新进度或恢复安装",
 		updatePreparing: "正在准备独立更新页面…",
-		openUpdate: "打开更新确认页",
 		updateHandoff: "在独立更新页确认目标版本并查看安装结果。",
 		versionChecking: "页面 v{version} · 版本信息待核对",
 		updateBusy: "插件更新中，暂不可修改会话数据",
@@ -236,116 +174,91 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		noWorkspace: "未记录工作区位置",
 		operationUnknown: "操作结果未确认",
 		confirmCount: "彻底删除 {n} 条",
-		emptyCount: "清空隔离区全部 {n} 条",
 		checkedRelease: "稳定版 v{version}",
 		source: "安装来源",
-		rangeChanged: "隔离区范围已变化，本次未删除。请刷新核对后重新确认。",
+		rangeChanged: "操作范围已变化，本次未执行。请刷新后重新核对。",
 		sizeUnknown: "未确认",
 		sizePartial: "{n} 条日志大小未确认，未计入合计",
 		protectedItem: "已保护",
 		removedWarningsTitle: "{n} 个无法确认的批次已保留",
 		removedWarningsHint: "已知会话数量不包含这些内容。文件仍保留在原处。",
-		removedUnlistedTitle: "没有可列出的隔离会话",
-		removedUnlistedHint: "当前没有可读取的隔离会话记录；仍有无法确认的内容已保留，请查看批次提示。",
+		removedUnlistedTitle: "没有可显示的最近删除会话",
+		removedUnlistedHint: "有内容暂时无法核对，请查看批次提示。",
 		knownTabCount: "{label}（已知 {n}）",
+		previewScope: "操作范围",
+		previewLoading: "正在核对操作范围…",
+		previewFailed: "无法核对操作范围：{message}",
+		previewReady: "本次处理 {n} 条",
+		previewBlocked: "待处理 {n} 条",
+		previewNone: "本次没有可处理的会话。",
+		previewAll: "范围包含搜索隐藏的记录。",
+		previewUnavailable: "宿主尚未提供此操作的资格，请刷新列表或重启 DSH。",
+		previewFileNote: "独立文件会保留。请先保存需要的文件位置；彻底删除日志后，无法再从此会话查看这些位置。",
+		protectedReason: "有操作暂不可用",
+		occupied: "宿主占用中",
+		viewRemoved: "查看最近删除",
+		partialReason: "部分完成：{reason}",
+		partialMoved: "日志已移到最近删除，请在该列表核对剩余步骤。{reason}",
+		partialRestored: "日志已恢复到原位置，仍有步骤待核对。{reason}",
+		resultSummaryPartial: "成功 {ok} 条，部分完成 {partial} 条，失败 {fail} 条，跳过 {skip} 条",
+		repair: "核对并继续",
+		toastRepair: "已完成 {n} 条待核对操作",
+		unarchiveTitle: "取消归档 {n} 个会话？",
+		unarchiveBody: "这些会话会回到侧栏，日志仍在原位置。",
+		restoreTitle: "恢复 {n} 个会话到侧栏？",
+		restoreBody: "日志会移回原位置。原工作区无法关联时，会在结果中提示。",
+		retentionPreview: "按 {days} 天计算，当前有 {n} 条会话日志可以在保存时清理。",
 	};
 
 	var STR_EN = {
-		section: "Archived sessions",
-		title: "Archived session manager",
-		subtitle: "Find, restore and clean up old sessions. Independent files and shared attachments stay in place.",
+		section: "Session Manager",
+		title: "Session Manager",
+		subtitle: "Archive conversations from the DSH sidebar. Find, restore, or clean them up here.",
 		tabArchived: "Archived",
-		tabRemoved: "Quarantine",
+		tabRemoved: "Recently Deleted",
 		refresh: "Refresh list",
 		loading: "Loading…",
 		failed: "Failed: {message}",
 		retry: "Retry",
-		emptyArchived: "No archived sessions.",
-		emptyRemoved: "The quarantine is empty.",
 		selectAll: "Select all results",
 		selected: "{n} selected",
-		hide: "Move to quarantine",
+		hide: "Move to Recently Deleted",
 		unarchive: "Unarchive",
 		purge: "Delete permanently",
-		restore: "Restore session",
-		emptyTrash: "Empty quarantine",
-		hideConfirmTitle: "Move {n} session(s) to the quarantine?",
-		hideConfirmBody: "Move verified session data into quarantine for recovery. This does not free space. Independent and shared files stay untouched; unknown content is kept.",
+		restore: "Restore to sidebar",
+		emptyTrash: "Empty all",
+		hideConfirmTitle: "Move {n} session(s) to Recently Deleted?",
+		hideConfirmBody: "The logs move to Recently Deleted and can be restored to the sidebar. They still use space.",
 		purgeConfirmTitle: "Permanently delete {n} session(s)?",
-		purgeConfirmBody: "Permanently delete verified session data only. Independent files, project files and shared attachments stay untouched. Sessions containing unknown content are kept and reported.",
+		purgeConfirmBody: "Only verified session logs are deleted. This is permanent.",
 		purgeCheck: "I understand this cannot be undone",
-		emptyConfirmTitle: "Empty all {n} quarantined sessions?",
-		emptyConfirmBody: "Permanently delete all {n} quarantined sessions, including entries hidden by this search. Independent files and attachments stay untouched; protected entries are kept and reported.",
-		discardTitle: "Permanently delete {n} quarantined session(s)?",
-		discardBody: "Permanently delete the selected session data. Independent files, project files and attachments stay untouched; unknown content is kept.",
+		emptyConfirmTitle: "Empty Recently Deleted?",
+		discardTitle: "Permanently delete {n} recently deleted session(s)?",
+		discardBody: "Only verified session logs are deleted. This is permanent.",
 		cancel: "Cancel",
-		confirmHide: "Move to quarantine",
-		confirmPurge: "Delete permanently",
-		confirmEmpty: "Empty quarantine",
-		confirmDiscard: "Delete permanently",
 		busy: "Working…",
-		restoreConfirm: "",
-		restoreDone: "Restored",
 		missing: "Files missing",
 		running: "Running",
-		resident: "Resident",
 		noTitle: "(untitled)",
 		size: "Size",
 		workspace: "Workspace",
-		created: "Created",
-		movedAt: "Quarantined",
-		tipMovedAtLabel: "When the session was moved into quarantine; recorded by the plugin and cleared on restore.",
-		resultOk: "Done: {ok} succeeded, {fail} failed",
-		resultFail: "Failed: {message}",
+		movedAt: "recently deleted",
+		tipMovedAtLabel: "When the session was moved into Recently Deleted; recorded by the plugin and cleared on restore.",
 		forget: "Clear archive record",
-		forgetConfirmTitle: "Clear {n} archive record(s)?",
-		forgetConfirmBody: "These sessions no longer exist on disk; only the archive record is removed and no files are touched.",
-		trashStats: "Quarantine: {n} · {size}",
-		archivedStats: "Archived: {n} · up to {size} releasable",
-		statsMissing: " ({n} with files missing)",
-		statArchived: "Archived sessions",
-		statArchivedHint: "All archive records",
-		statReleasable: "Releasable space",
-		statReleasableHint: "Session logs only",
-		statMissing: "Files missing",
-		statMissingHint: "Records only",
-		statTrash: "Quarantine",
-		statTrashHint: "{size} in quarantine",
 		emptyTitle: "No archived sessions",
 		emptyHint: "Archive a conversation from its menu and it appears here; unarchive returns it to the sidebar.",
-		emptyRemovedTitle: "The quarantine is empty",
-		emptyRemovedHint: "Quarantined sessions appear here and can be restored or deleted permanently.",
-		badgeArchived: "Files present",
-		badgeMissing: "Files missing",
-		tipArchived: "The files are still on disk ({size} session directory). Unarchive returns it to the sidebar; quarantine keeps the files; only permanent deletion removes the logs.",
-		tipMissing: "This session's log directory is gone; only the archive record remains. Clearing removes just this record and touches no files.",
+		emptyRemovedTitle: "Recently Deleted is empty",
+		emptyRemovedHint: "Sessions moved here can be restored or deleted permanently.",
 		lastUsedLabel: "Last used",
 		archivedLabel: "Archive first observed",
 		unknownTime: "not recorded",
-		sizeUsed: "{size} session directory (freed by permanent deletion)",
-		sizeMissing: "0 B session directory (files missing)",
-		releaseLine: "About {size} of selected session logs; actual reclaimed space is reported afterward",
-		hideSummary: "Files move into the quarantine; space is freed only after the quarantine is emptied.",
-		noFilesLine: "No files will be deleted",
-		modalClearTitle: "Clean up {n} stale archive record(s)?",
-		modalClearBody: "These sessions no longer have files; only the archive records are removed. No files are touched.",
-		modalMixedBody: "{missing} row(s) have no files and only lose their records; the other {present} log(s) will be deleted permanently.",
-		hideMixedBody: "{missing} row(s) have no files and only lose their records; the other {present} will be quarantined (files kept, restorable).",
-		clearCheck: "I understand these archive records will be cleared",
+		releaseLine: "About {size} of session logs can be removed",
 		cleanup: "Clean up records",
 		cleanupTitle: "Clean up {n} stale archive record(s)?",
 		cleanupBody: "These sessions no longer have files; only the archive records are removed. No files are touched.",
 		confirmCleanup: "Clean records",
-		ignoredNote: "{n} record(s) with missing files are not touched by this action.",
 		selectedSplit: "{n} selected ({files} with files · {missing} missing)",
-		hideShort: "Move",
-		cleanupShort: "Clean up",
-		tipHideAction: "Move to quarantine: files are kept and can be restored",
-		tipCleanupAction: "Removes only the archive record; no files are touched",
-		cleanupHint: "Every selected record has no files; use Clean up records",
 		selectHint: "Select sessions to act in bulk",
-		confirmClear: "Clean records",
-		close: "Close",
 		searchPlaceholder: "Search title, workspace or ID",
 		searchAria: "Search archived sessions",
 		clearSearch: "Clear search",
@@ -354,59 +267,47 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		filterMissing: "Files missing",
 		sortLabel: "Sort",
 		sortLastUsed: "Last used",
-		sortArchived: "Archived time",
+		sortArchived: "Archive first observed",
 		sortSize: "Size",
 		sortTitle: "Title",
-		sortMoved: "Quarantined",
+		sortMoved: "recently deleted",
 		filteredEmpty: "No matching archived sessions",
 		filteredEmptyHint: "Clear the search or switch the filter and try again.",
 		clearFilters: "Clear filters",
 		showing: "Showing {shown} / {total}",
-		removedSearchPlaceholder: "Search quarantined sessions",
-		removedSelectHint: "Select quarantined sessions to restore or delete in bulk",
-		removedSelected: "{n} quarantined sessions selected",
-		removedEmptyFilter: "No matching quarantined sessions",
-		discardShort: "Delete permanently",
-		tipDiscardAction: "Permanently delete the quarantined session logs",
-		tipUnarchiveAction: "Unarchive and keep files in place",
-		unarchiveDone: "Unarchived; sidebar visibility depends on the host refresh",
+		removedSearchPlaceholder: "Search recently deleted sessions",
+		removedSelected: "{n} recently deleted sessions selected",
+		removedEmptyFilter: "No matching recently deleted sessions",
 		toastUnarchive: "Unarchived {n} session(s)",
-		toastIgnored: ", {n} stale record(s) left untouched",
-		toastHide: "Moved {n} session(s) to the quarantine (recoverable)",
+		toastHide: "Moved {n} session(s) to Recently Deleted (recoverable)",
 		toastPurge: "Deleted {n} session(s), freed {size}",
 		toastRestore: "Restored {n} session(s) to their original locations; workspace results are reported separately",
-		toastDiscard: "Permanently deleted {n} quarantined session(s), freed {size}",
-		toastEmpty: "Quarantine emptied, freed {size}",
+		toastDiscard: "Permanently deleted {n} recently deleted session(s), freed {size}",
 		toastCleanup: "Cleaned up {n} stale record(s)",
 		toastReminders: ", stopped {n} reminder(s)",
-		toastPartial: "{ok} succeeded, {fail} failed",
-		reportTitle: "Partially done: {ok} succeeded, {fail} failed",
-		reportMore: "{n} more failure(s) not shown",
 		reportDismiss: "Dismiss",
-		retentionTitle: "Quarantine retention",
+		retentionTitle: "Recently Deleted retention",
 		retentionLabel: "Keep for",
-		retentionNever: "Never",
+		retentionNever: "Off",
 		retentionDays: "{n} days",
-		retentionHint: "When enabled, quarantined sessions older than the limit are deleted permanently in the background. Off by default.",
-		retentionWarn: "Automatic cleanup cannot be undone",
-		retentionConfirmTitle: "Enable automatic quarantine cleanup?",
-		retentionConfirmBody: "Sessions quarantined for over {days} days will be permanently deleted, including already expired entries immediately. This cannot be undone. Unknown content is kept.",
-		retentionCheck: "I understand expired quarantined sessions will be deleted automatically",
-		confirmRetention: "Enable",
-		retentionSaved: "Saved: quarantine keeps sessions for {days} days",
-		retentionOff: "Automatic quarantine cleanup is off",
-		retentionSwept: "Cleaned {n} expired quarantined session(s), freed {size}",
+		retentionHint: "When enabled, recently deleted sessions older than the limit are deleted permanently in the background. Off by default.",
+		retentionConfirmTitle: "Save automatic cleanup settings?",
+		retentionConfirmBody: "Verified logs in Recently Deleted are permanently removed after {days} days.",
+		retentionCheck: "I confirm that currently expired and future expired session logs will be permanently removed",
+		confirmRetention: "Save settings",
+		retentionSaved: "Saved: Recently Deleted keeps sessions for {days} days",
+		retentionOff: "Automatic Recently Deleted cleanup is off",
+		retentionSwept: "Cleaned {n} expired recently deleted session(s), freed {size}",
 		scopeNote: "Totals cover session log directories only. Attachments ({size}, {files} files) are shared across sessions and are not removed with a session; project files are untouched.",
-		scopeNoteShort: "Only session logs are removed; attachments and project files are untouched.",
 		tipLastUsedLabel: "When a message was last sent in this session (from the projection cache)",
 		tipArchivedLabel: "When the plugin first observed this session entering the archive set; older records cannot be recovered and show \"not recorded\".",
 		errRunning: "The session is running; stop it first",
 		errNotArchived: "The session is no longer archived",
-		errFilesExist: "Session files still exist; use quarantine or permanent deletion",
+		errFilesExist: "Session files still exist; use Recently Deleted or permanent deletion",
 		errFilesMissing: "Session files are gone; clean the stale record instead",
-		errConflict: "A directory with the same name already exists in the quarantine",
+		errConflict: "A directory with the same name already exists in Recently Deleted",
 		errInvalid: "Invalid request",
-		errNotFound: "The quarantine entry does not exist",
+		errNotFound: "Recently Deleted entry does not exist",
 		errExists: "The original directory already exists; cannot restore",
 		errConfirm: "Confirmation is missing",
 		errStorage: "The file operation failed",
@@ -424,7 +325,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		folder: "Containing folder",
 		path: "Full path",
 		fileMissing: "File no longer exists",
-		folderMissing: "Containing folder no longer exists",
 		unavailable: "This location cannot be opened",
 		batchLimit: "Up to 200 entries per action. Narrow the filter or deselect some entries.",
 		processing: "Processing {n} entries",
@@ -434,12 +334,12 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		showAllReasons: "View all {n} reasons",
 		showLess: "Show fewer reasons",
 		runningLocked: "Running; actions unavailable",
-		logSize: "Session logs",
+		logSize: "Log size",
 		resultSummary: "Done: {ok} succeeded, {fail} failed, {skip} skipped",
 		settings: "Settings",
 		retentionSummary: "Automatic cleanup: {value}",
 		retentionDisabled: "off",
-		retentionAfter: "after {n} days in quarantine",
+		retentionAfter: "after {n} days in Recently Deleted",
 		versionDetails: "Version details",
 		checkUpdate: "Check for updates",
 		checkingUpdate: "Checking for updates…",
@@ -458,12 +358,10 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		aheadRelease: "Current version is newer than stable v{version}; no automatic downgrade",
 		releaseNotes: "Release notes",
 		checkedAt: "Checked at",
-		installedPending: "Installed v{version}; reload to verify activation",
 		updateFailed: "Could not check for updates: {message}",
 		updateUnknown: "Update state unconfirmed. Check again.",
 		updateContinue: "View update progress or recover installation",
 		updatePreparing: "Preparing an independent update page…",
-		openUpdate: "Open update confirmation",
 		updateHandoff: "Confirm the target version and review results in the independent update page.",
 		versionChecking: "Page v{version} · awaiting version verification",
 		updateBusy: "Plugin update in progress; session changes are unavailable",
@@ -471,18 +369,40 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		noWorkspace: "No workspace location recorded",
 		operationUnknown: "Operation result unconfirmed",
 		confirmCount: "Delete {n} permanently",
-		emptyCount: "Empty all {n} quarantined sessions",
 		checkedRelease: "Stable v{version}",
 		source: "Installation source",
-		rangeChanged: "Quarantine contents changed; nothing was deleted. Refresh and confirm the new scope.",
+		rangeChanged: "The scope changed. Refresh the list and review it again.",
 		sizeUnknown: "Unconfirmed",
 		sizePartial: "Log size unconfirmed for {n} entries; excluded from total",
 		protectedItem: "Protected",
-		removedWarningsTitle: "{n} unverified quarantine batches were kept",
+		removedWarningsTitle: "{n} unverified Recently Deleted batches were kept",
 		removedWarningsHint: "The known session count excludes these contents. Their files remain in place.",
-		removedUnlistedTitle: "No listable quarantined sessions",
-		removedUnlistedHint: "No readable quarantine session records are available. Retained contents may remain; see the batch notices.",
+		removedUnlistedTitle: "No listable recently deleted sessions",
+		removedUnlistedHint: "No readable Recently Deleted session records are available. Retained contents may remain; see the batch notices.",
 		knownTabCount: "{label} ({n} known)",
+		previewScope: "Operation scope",
+		previewLoading: "Checking the scope…",
+		previewFailed: "Could not check the scope: {message}",
+		previewReady: "{n} to process",
+		previewBlocked: "{n} needing attention",
+		previewNone: "No sessions can be processed for this action.",
+		previewAll: "The scope includes records hidden by search.",
+		previewUnavailable: "The host has not reported eligibility for this action. Refresh the list or restart DSH.",
+		previewFileNote: "Independent files stay in place. Save any locations you need before permanently deleting the log, which also removes this session's record of those locations.",
+		protectedReason: "Some actions are unavailable",
+		occupied: "In use by DSH",
+		viewRemoved: "View Recently Deleted",
+		partialReason: "Partially complete: {reason}",
+		partialMoved: "Logs moved to Recently Deleted. Check the remaining steps there. {reason}",
+		partialRestored: "Logs restored to their original location. Some steps still need attention. {reason}",
+		resultSummaryPartial: "{ok} succeeded, {partial} partially complete, {fail} failed, {skip} skipped",
+		repair: "Check and continue",
+		toastRepair: "Completed {n} pending operation(s)",
+		unarchiveTitle: "Unarchive {n} session(s)?",
+		unarchiveBody: "These sessions will return to the sidebar. The logs stay in their original locations.",
+		restoreTitle: "Restore {n} session(s) to the sidebar?",
+		restoreBody: "The logs return to their original locations. The result will show if the original workspace could not be linked.",
+		retentionPreview: "With a {days}-day limit, {n} session log(s) can be removed when you save.",
 	};
 
 	var STR = ZH ? STR_ZH : STR_EN;
@@ -589,8 +509,19 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		return tr("errGeneric");
 	}
 
+	function capability(item, action) {
+		if (item.running) return { code: "running" };
+		if (item.capabilities && Object.prototype.hasOwnProperty.call(item.capabilities, action)) return item.capabilities[action];
+		if (action === "unarchive" && !item.missing) return true;
+		return { reason: tr("previewUnavailable") };
+	}
+
+	function targetOf(item) {
+		return item.batch ? { id: item.id, batch: item.batch } : { id: item.id };
+	}
+
 	function summarize(results) {
-		var summary = { ok: 0, fail: 0, skip: 0, bytes: 0, reminders: 0, failures: [], successes: [], warnings: [] };
+		var summary = { ok: 0, fail: 0, partial: 0, skip: 0, bytes: 0, reminders: 0, failures: [], successes: [], warnings: [] };
 		(Array.isArray(results) ? results : []).forEach(function (result) {
 			if (result && result.ok === true) {
 				summary.ok += 1;
@@ -599,7 +530,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				summary.bytes += Number(result.bytes) || 0;
 				summary.reminders += Number(result.reminders) || 0;
 			} else {
-				if (result && result.skipped) summary.skip += 1;
+				if (result && result.partial) summary.partial += 1;
+				else if (result && result.skipped) summary.skip += 1;
 				else summary.fail += 1;
 				summary.failures.push(result || { code: "storage" });
 			}
@@ -634,11 +566,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-tab{height:32px;padding:0 16px;border-radius:7px;border:none;background:transparent;color:var(--am-text-secondary);font-size:12px;cursor:pointer}",
 		".am-tab:hover{color:var(--am-text-primary)}",
 		".am-tab.active{background:var(--dsw-alias-bg-l2,rgba(127,127,127,.16));color:var(--am-text-primary);font-weight:600}",
-		".am-stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--dsw-alias-border-l1,rgba(127,127,127,.14));border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.14));border-radius:13px 13px 0 0;overflow:hidden}",
-		".am-stat{padding:14px 16px;background:var(--am-surface);min-width:0}",
-		".am-stat-label{font-size:12px;line-height:1.45;color:var(--am-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-		".am-stat-value{font-size:22px;line-height:1.25;font-weight:600;margin-top:4px;font-variant-numeric:tabular-nums}",
-		".am-stat-hint{font-size:11px;line-height:1.5;margin-top:4px;color:var(--am-text-tertiary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
 		".am-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));background:transparent}",
 		".am-toolbar-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
 		".am-spacer{flex:1 1 auto}",
@@ -690,7 +617,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-row{transition:background .12s ease}",
 		".am-row:hover{background:var(--dsw-alias-bg-l1,rgba(127,127,127,.05))}",
 		".am-row.selected,.am-row.selected:hover{background:var(--am-accent-soft);box-shadow:inset 0 0 0 1px var(--am-accent)}",
-		".am-row-plain{grid-template-columns:minmax(0,1fr) auto}",
 		".am-main{min-width:0;display:flex;flex-direction:column;gap:3px}",
 		".am-titleline{display:flex;align-items:center;gap:8px;min-width:0}",
 		".am-row-title{flex:0 1 auto;min-width:0;font-size:14px;line-height:1.45;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
@@ -721,7 +647,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-modal-summary{font-size:13px;line-height:1.6;color:var(--am-text-secondary)}",
 		".am-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}",
 		".am-modal-actions .am-btn{height:32px;padding:0 16px}",
-		".am-toast{font-size:13px;line-height:1.55;padding:9px 12px;border-radius:9px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18))}",
+		".am-preview{display:flex;flex-direction:column;gap:9px;padding-block:2px;max-height:42vh;overflow:auto;min-height:0}.am-preview-set{flex-shrink:0}.am-preview:focus-visible{outline:2px solid var(--am-accent);outline-offset:2px}.am-preview-set{border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.22));padding:8px 12px;border-radius:8px;line-height:1.55;overflow-wrap:anywhere}.am-preview-set ul{padding-inline-start:18px;margin:4px 0 0}.am-toast{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;line-height:1.55;padding:9px 12px;border-radius:9px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18))}",
 		".am-toast.ok{color:var(--am-success)}",
 		".am-toast.bad{color:var(--am-danger)}",
 		".am-error-card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 20px;border:1px solid color-mix(in srgb,var(--am-danger) 25%,transparent);border-radius:12px;background:color-mix(in srgb,var(--am-danger) 5%,transparent);text-align:center}",
@@ -734,9 +660,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		"@keyframes am-pop{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}",
 		"@keyframes am-menu{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}",
 		"@media (prefers-reduced-motion:reduce){.am-modal,.am-modal-backdrop,.am-spinner,.am-select-menu,.am-refresh-icon.spinning{animation:none}}",
-		"@media (max-width:760px){.am-stats-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}",
-		"@media (max-width:420px){.am-stats-grid{grid-template-columns:minmax(0,1fr)}}",
-		"@media (max-width:860px){.am-row{grid-template-columns:24px minmax(0,1fr)}.am-row-actions{grid-column:2;justify-self:start;padding-top:6px}.am-row-plain{grid-template-columns:minmax(0,1fr)}.am-row-plain .am-row-actions{grid-column:1}}",
+		"@media (max-width:860px){.am-row{grid-template-columns:24px minmax(0,1fr)}.am-row-actions{grid-column:2;justify-self:start;padding-top:6px}}",
 		"@media (max-width:720px){.am-search{flex-basis:100%}.am-sort{margin-left:auto}}",
 		".am-page{gap:14px;min-width:0}.am-workbench{container-type:inline-size}",
 		".am-head{flex-wrap:wrap;gap:12px}.am-head-text{flex:1 1 270px}.am-version{flex:0 1 420px;min-width:0;font-size:12px;line-height:1.6}.am-version-line,.am-update-result{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.am-version-label{font-weight:600}.am-version-details{margin-top:8px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));border-radius:8px}.am-version a{color:var(--am-accent);text-decoration:underline}.am-update-result{margin-top:6px}.am-help{font-size:12px;line-height:1.6;color:var(--am-text-secondary)}",
@@ -961,7 +885,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				}
 				if (event.key !== "Tab" || !confirmRef.current) return;
 				var nodes = Array.prototype.slice.call(confirmRef.current.querySelectorAll(
-					"button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href]"
+					"button:not(:disabled), input:not(:disabled), select:not(:disabled), textarea:not(:disabled), a[href], [tabindex='0']"
 				)).filter(function (node) { return node.getClientRects().length > 0; });
 				if (nodes.length === 0) return;
 				var first = nodes[0];
@@ -1063,35 +987,29 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			if (filter === "missing") return item.missing;
 			return true;
 		});
-		var sortedItems = filteredItems.slice().sort(compareItems);
+		var sortedItems = filteredItems.sort(compareItems);
 		var filteredRemoved = removed.filter(function (entry) {
 			return normalizedRemovedQuery === "" || entryText(entry).indexOf(normalizedRemovedQuery) >= 0;
 		});
-		var sortedRemoved = filteredRemoved.slice().sort(compareRemoved);
-
-		selected = selected.filter(function (id) { return sortedItems.some(function (item) { return item.id === id && !item.running; }); });
-		removedSelected = removedSelected.filter(function (key) { return sortedRemoved.some(function (entry) { return keyOf(entry) === key; }); });
-		var filesCount = items.filter(function (item) { return !item.missing; }).length;
-		var missingCount = items.filter(function (item) { return item.missing; }).length;
-		var archivedBytes = items.reduce(function (sum, item) { return sum + (item.sizeBytes || 0); }, 0);
-		var removedBytes = removed.reduce(function (sum, entry) { return sum + (entry.bytes || 0); }, 0);
+		var sortedRemoved = filteredRemoved.sort(compareRemoved);
 		var selectable = sortedItems.filter(function (item) { return !item.running; });
-		var allSelected = selectable.length > 0 && selectable.every(function (item) { return selected.indexOf(item.id) >= 0; });
-		var selectedItems = items.filter(function (item) { return selected.indexOf(item.id) >= 0; });
-		var selectedWithFiles = selectedItems.filter(function (item) { return !item.missing && !item.running; });
-		var selectedMissing = selectedItems.filter(function (item) { return item.missing; });
-		var allRemovedSelected = sortedRemoved.length > 0 && sortedRemoved.every(function (entry) { return removedSelected.indexOf(keyOf(entry)) >= 0; });
-		var selectedRemovedEntries = removed.filter(function (entry) { return removedSelected.indexOf(keyOf(entry)) >= 0; });
+		var allowed = new Set(selectable.map(function (item) { return item.id; }));
+		var allowedRemoved = new Set(sortedRemoved.map(keyOf));
+		selected = selected.filter(function (id) { return allowed.has(id); });
+		removedSelected = removedSelected.filter(function (key) { return allowedRemoved.has(key); });
+		var selectedIds = new Set(selected);
+		var removedKeys = new Set(removedSelected);
+		var selectedItems = items.filter(function (item) { return selectedIds.has(item.id); });
+		var selectedRemovedEntries = removed.filter(function (entry) { return removedKeys.has(keyOf(entry)); });
+		var allSelected = selectable.length > 0 && selectedIds.size === selectable.length;
+		var allRemovedSelected = sortedRemoved.length > 0 && removedKeys.size === sortedRemoved.length;
+		var missingCount = items.filter(function (item) { return item.missing; }).length;
+		var filesCount = items.length - missingCount;
 
 		useEffect(function () {
-			var allowed = {}, allowedRemoved = {};
-			sortedItems.forEach(function (item) { if (!item.running) allowed[item.id] = true; });
-			sortedRemoved.forEach(function (entry) { allowedRemoved[keyOf(entry)] = true; });
-			var next = selectedState[0].filter(function (id) { return allowed[id] === true; });
-			var nextRemoved = removedSelectedState[0].filter(function (key) { return allowedRemoved[key] === true; });
-			var pruned = selectedState[0].length - next.length + removedSelectedState[0].length - nextRemoved.length;
-			if (next.length !== selectedState[0].length) setSelected(next);
-			if (nextRemoved.length !== removedSelectedState[0].length) setRemovedSelected(nextRemoved);
+			var pruned = selectedState[0].length - selected.length + removedSelectedState[0].length - removedSelected.length;
+			if (selected.length !== selectedState[0].length) setSelected(selected);
+			if (removedSelected.length !== removedSelectedState[0].length) setRemovedSelected(removedSelected);
 			if (pruned > 0) setSelectionNotice(tr("selectionPruned", { n: pruned }));
 		}, [query, filter, removedQuery, items, removed]);
 
@@ -1145,16 +1063,19 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function failureTitle(failure) {
-			var id = failure && failure.id;
-			var item = items.filter(function (candidate) { return candidate.id === id; })[0];
-			if (item) return item.title || item.id;
-			var entry = removed.filter(function (candidate) { return candidate.id === id; })[0];
-			if (entry) return entry.title || entry.id;
-			return id || tr("errGeneric");
+			if (!failure) return tr("errGeneric");
+			if (failure.title && failure.title !== failure.id) return failure.title;
+			var entry = (failure.batch ? removed : items).find(function (candidate) {
+				return candidate.id === failure.id && (!failure.batch || candidate.batch === failure.batch);
+			});
+			return entry && entry.title || failure.id || tr("errGeneric");
 		}
 
 		function failureReason(failure) {
-			return errorText(failure && failure.code, failure && failure.error);
+			var reason = errorText(failure && failure.code, failure && (failure.error || failure.reason));
+			if (!failure || !failure.partial) return reason;
+			var label = failure.logsMoved ? "partialMoved" : failure.logsRestored ? "partialRestored" : "partialReason";
+			return tr(label, { reason: failure.error || reason });
 		}
 
 		function reminderText(count) {
@@ -1165,10 +1086,15 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			actionRef.current = false;
 			setBusy(false);
 			setConfirm(null);
-			var failures = summary.failures || [];
-			var successes = summary.successes || [];
+			var failures = summary.failures;
+			var successes = summary.successes;
+			var blocked = meta.blocked || [];
+			var reasons = failures.concat(blocked, summary.warnings);
+			var resultTitle = tr(summary.partial ? "resultSummaryPartial" : "resultSummary", {
+				ok: summary.ok, partial: summary.partial, fail: summary.fail, skip: summary.skip + blocked.length
+			});
 			if (meta.scope === "removed") {
-				var successKeys = successes.map(function (entry) { return keyOf(entry); });
+				var successKeys = successes.map(keyOf);
 				setRemovedSelected(function (current) {
 					var next = current.filter(function (key) { return successKeys.indexOf(key) < 0; });
 					failures.forEach(function (failure) {
@@ -1177,7 +1103,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 					});
 					return next;
 				});
-				setRemoved(function (current) { return current.filter(function (entry) { return successKeys.indexOf(keyOf(entry)) < 0; }); });
+				if (!meta.preserveRows) setRemoved(function (current) { return current.filter(function (entry) { return successKeys.indexOf(keyOf(entry)) < 0; }); });
 			} else {
 				var successIds = successes.map(function (item) { return item.id; });
 				setSelected(function (current) {
@@ -1192,26 +1118,17 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				successes.forEach(function (entry) { delete next[entry.batch ? keyOf(entry) : entry.id]; });
 				return next;
 			});
-			if (failures.length > 0) {
-				setReport({
-					title: tr("resultSummary", { ok: summary.ok, fail: summary.fail, skip: summary.skip || 0 }),
-					failures: failures.map(function (failure) {
-						return { title: failureTitle(failure), reason: failureReason(failure) };
-					}),
-					more: 0
-				});
-				setToast({
-					kind: "bad",
-					text: tr("resultSummary", { ok: summary.ok, fail: summary.fail, skip: summary.skip || 0 })
-						+ "：" + failureTitle(failures[0]) + " · " + failureReason(failures[0])
-				});
-			} else {
-				setReport(summary.warnings.length ? { title: tr("resultSummary", { ok: summary.ok, fail: 0, skip: 0 }), failures: summary.warnings.map(function (entry) { return { title: failureTitle(entry), reason: entry.warning }; }) } : null);
-				setToast({
-					kind: "ok",
-					text: typeof meta.ok === "function" ? meta.ok(summary) : tr("resultOk", { ok: summary.ok, fail: 0 })
-				});
-			}
+			setReport(reasons.length ? {
+				title: resultTitle,
+				failures: reasons.map(function (entry) {
+					return { title: failureTitle(entry), reason: entry.warning || failureReason(entry) };
+				})
+			} : null);
+			setToast({
+				kind: failures.length ? "bad" : "ok",
+				text: failures.length ? resultTitle : meta.ok(summary),
+				showRemoved: meta.showRemoved && (summary.ok > 0 || failures.some(function (failure) { return failure.recoveryBatch; }))
+			});
 			void load({ silent: true, keepSelection: true });
 		}
 
@@ -1241,126 +1158,165 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 
 		function runAction(path, body, meta) {
 			var count = (body.ids || body.items || []).length;
-			if (!beginAction(count, false)) return;
+			if (!beginAction(count, meta.allowAll)) return;
 			request(path, body).then(function (data) {
 				if (!Array.isArray(data.results) || data.results.length !== count) throw new Error("Incomplete action response");
-				var expected = (body.ids || body.items).map(function (entry) { return typeof entry === "string" ? entry : keyOf(entry); }).sort();
-				var actual = data.results.map(function (entry) { return body.ids ? entry.id : keyOf(entry); }).sort();
+				var expected = (body.ids || body.items).map(function (entry) { return typeof entry === "string" ? entry : fileKey(entry); }).sort();
+				var actual = data.results.map(function (entry) { return meta.scope === "archived" ? entry.id : keyOf(entry); }).sort();
 				if (JSON.stringify(expected) !== JSON.stringify(actual)) throw new Error("Mismatched action response");
 				finish(summarize(data.results), meta);
 			}).catch(failRequest);
 		}
 
-		function runUnarchive(ids, keepIds) {
-			var kept = Array.isArray(keepIds) ? keepIds : [];
-			runAction("/unarchive", { ids: ids }, {
-				scope: "archived",
-				keepIds: kept,
-				ok: function (summary) {
-					return tr("toastUnarchive", { n: summary.ok }) + (kept.length > 0 ? tr("toastIgnored", { n: kept.length }) : "");
-				}
+		function actionResult(kind, summary) {
+			var labels = {
+				unarchive: "toastUnarchive", hide: "toastHide", purge: "toastPurge", cleanup: "toastCleanup",
+				restore: "toastRestore", discard: "toastDiscard", empty: "toastDiscard", repair: "toastRepair"
+			};
+			return tr(labels[kind], { n: summary.ok, size: fmtSize(summary.bytes) }) + reminderText(summary.reminders);
+		}
+
+		function runPlan(plan) {
+			var paths = {
+				unarchive: "/unarchive", hide: "/hide", purge: "/purge", cleanup: "/forget",
+				restore: "/restore", discard: "/discard", empty: "/empty-trash", repair: "/repair"
+			};
+			var kind = plan.kind;
+			var targets = plan.targets;
+			if (kind === "retention") {
+				runRetention(plan.days, plan);
+				return;
+			}
+			if (targets.length === 0) return;
+			var isRemoved = kind === "restore" || kind === "discard" || kind === "empty" || kind === "repair" && Boolean(targets[0].batch);
+			var body = isRemoved || kind === "repair"
+				? { items: targets.map(targetOf) }
+				: { ids: targets.map(function (entry) { return entry.id; }) };
+			var confirmation = { purge: "PURGE", discard: "DISCARD", empty: "EMPTY" };
+			if (confirmation[kind]) body.confirm = confirmation[kind];
+			if (plan.previewToken) body.previewToken = plan.previewToken;
+			runAction(paths[kind], body, {
+				scope: isRemoved ? "removed" : "archived",
+				allowAll: kind === "empty",
+				preserveRows: kind === "repair",
+				showRemoved: kind === "hide",
+				blocked: plan.blocked,
+				ok: function (summary) { return actionResult(kind, summary); }
 			});
 		}
 
-		function runHide(ids, keepIds) {
-			runAction("/hide", { ids: ids }, {
-				scope: "archived",
-				keepIds: Array.isArray(keepIds) ? keepIds : [],
-				ok: function (summary) {
-					return tr("toastHide", { n: summary.ok }) + reminderText(summary.reminders)
-						+ (Array.isArray(keepIds) && keepIds.length > 0 ? tr("toastIgnored", { n: keepIds.length }) : "");
-				}
-			});
-		}
-
-		function runPurge(ids, keepIds) {
-			runAction("/purge", { ids: ids, confirm: "PURGE" }, {
-				scope: "archived",
-				keepIds: Array.isArray(keepIds) ? keepIds : [],
-				ok: function (summary) {
-					return tr("toastPurge", { n: summary.ok, size: fmtSize(summary.bytes) }) + reminderText(summary.reminders)
-						+ (Array.isArray(keepIds) && keepIds.length > 0 ? tr("toastIgnored", { n: keepIds.length }) : "");
-				}
-			});
-		}
-
-		function runCleanup(ids) {
-			runAction("/forget", { ids: ids }, {
-				scope: "archived",
-				ok: function (summary) { return tr("toastCleanup", { n: summary.ok }) + reminderText(summary.reminders); }
-			});
-		}
-
-		function runRestore(items) {
-			runAction("/restore", { items: items }, {
-				scope: "removed",
-				ok: function (summary) { return tr("toastRestore", { n: summary.ok }); }
-			});
-		}
-
-		function runDiscard(items) {
-			runAction("/discard", { items: items, confirm: "DISCARD" }, {
-				scope: "removed",
-				ok: function (summary) { return tr("toastDiscard", { n: summary.ok, size: fmtSize(summary.bytes) }) + reminderText(summary.reminders); }
-			});
-		}
-
-		function removedItems(entries) {
-			return entries.map(function (entry) { return { batch: entry.batch, id: entry.id }; });
-		}
-
-		function runEmpty(snapshot) {
-			if (!Array.isArray(snapshot) || snapshot.length === 0 || !beginAction(snapshot.length, true)) return;
-			request("/empty-trash", { confirm: "EMPTY", items: snapshot }).then(function (data) {
-				if (!Array.isArray(data.results)) throw new Error("Incomplete cleanup response");
-				finish(summarize(data.results), { scope: "removed", ok: function (summary) {
-					return tr("toastDiscard", { n: summary.ok, size: fmtSize(summary.bytes) });
-				} });
+		function runRetention(days, plan) {
+			var targets = plan ? plan.targets : [];
+			if (!beginAction(targets.length, true)) return;
+			var body = { trashRetentionDays: days };
+			if (plan) {
+				body.items = targets.map(targetOf);
+				body.previewToken = plan.previewToken;
+			}
+			request("/settings/save", body).then(function (data) {
+				if (!data.settings) throw new Error("Incomplete retention response");
+				setSettings({ trashRetentionDays: Number(data.settings.trashRetentionDays) || 0 });
+				var result = summarize(data.swept && data.swept.results || []);
+				if (data.swept && data.swept.warning) result.warnings.push({ title: tr("retentionTitle"), warning: data.swept.warning });
+				finish(result, {
+					scope: "removed",
+					blocked: plan && plan.blocked,
+					ok: function (summary) {
+						var text = days === 0 ? tr("retentionOff") : tr("retentionSaved", { days: days });
+						return text + (summary.ok ? " · " + tr("retentionSwept", { n: summary.ok, size: fmtSize(summary.bytes) }) : "");
+					}
+				});
 			}).catch(failRequest);
 		}
 
-		function runRetention(days) {
-			if (!beginAction(0, true)) return;
-			request("/settings/save", { trashRetentionDays: days }).then(function (data) {
-				actionRef.current = false;
-				setBusy(false);
-				setConfirm(null);
-				if (data && data.settings) setSettings({ trashRetentionDays: Number(data.settings.trashRetentionDays) || 0 });
-				var text = days === 0 ? tr("retentionOff") : tr("retentionSaved", { days: days });
-				if (data && data.swept && data.swept.removed > 0) {
-					text += " · " + tr("retentionSwept", { n: data.swept.removed, size: fmtSize(data.swept.bytes) });
+		function localPlan(kind, entries) {
+			var targets = [], blocked = [];
+			var action = kind === "cleanup" ? "forget" : kind;
+			entries.forEach(function (item) {
+				var access = capability(item, action);
+				if (access === true) {
+					targets.push(Object.assign(targetOf(item), { title: item.title }));
+				} else {
+					blocked.push(Object.assign(targetOf(item), { title: item.title, code: access && access.code, reason: access && access.reason }));
 				}
-				if (data.swept && Array.isArray(data.swept.results)) {
-					var summary = summarize(data.swept.results);
-					if (summary.failures.length) setReport({ title: tr("resultSummary", { ok: summary.ok, fail: summary.fail, skip: summary.skip }), failures: summary.failures.map(function (entry) { return { title: failureTitle(entry), reason: failureReason(entry) }; }) });
-				}
-				if (data.swept && data.swept.warning) setReport({ title: tr("operationUnknown"), failures: [{ title: tr("retentionTitle"), reason: data.swept.warning }] });
-				setToast({ kind: "ok", text: text });
-				void load({ silent: true, keepSelection: true });
-			}).catch(failRequest);
+			});
+			return { kind: kind, targets: targets, blocked: blocked, checked: false };
+		}
+
+		function previewPlan(plan, input) {
+			return request("/preview", input).then(function (data) {
+				if (!Array.isArray(data.targets) || !Array.isArray(data.blocked) || typeof data.previewToken !== "string" || !data.previewToken) throw new Error("Incomplete preview response");
+				return Object.assign({}, plan, {
+					targets: data.targets,
+					blocked: plan.blocked.concat(data.blocked),
+					previewToken: data.previewToken,
+					loading: false
+				});
+			});
+		}
+
+		function openConfirm(kind, entries, options) {
+			if (locked || actionRef.current || confirm !== null) return;
+			var plan = localPlan(kind, entries);
+			var global = kind === "empty" || kind === "retention";
+			if (!global && plan.targets.length > MAX_BATCH) {
+				setToast({ kind: "bad", text: tr("batchLimit") });
+				return;
+			}
+			var quick = options && options.quick && plan.targets.length === 1 && plan.blocked.length === 0;
+			var serverPreview = global || (plan.targets.length > 0 && kind !== "unarchive" && kind !== "cleanup" && kind !== "repair");
+			if (quick && !serverPreview) {
+				runPlan(plan);
+				return;
+			}
+			returnFocusRef.current = document.activeElement;
+			setMenu(null);
+			if (!serverPreview) {
+				setConfirm(plan);
+				return;
+			}
+			var input = { action: kind };
+			if (kind === "retention") {
+				plan.days = options.days;
+				input.trashRetentionDays = options.days;
+			} else if (kind === "restore" || kind === "discard") {
+				input.items = plan.targets.map(targetOf);
+			} else if (!global) {
+				input.ids = plan.targets.map(function (entry) { return entry.id; });
+			}
+
+			if (quick) {
+				if (!beginAction(1, false)) return;
+				previewPlan(plan, input).then(function (checked) {
+					actionRef.current = false;
+					setBusy(false);
+					if (checked.targets.length === 1 && checked.blocked.length === 0) runPlan(checked);
+					else setConfirm(checked);
+				}, function (error) {
+					actionRef.current = false;
+					setBusy(false);
+					setConfirm(Object.assign({}, plan, { error: errorText(error.code, error.message) }));
+				});
+				return;
+			}
+
+			plan.loading = true;
+			setConfirm(plan);
+			previewPlan(plan, input).then(function (checked) {
+				setConfirm(function (current) { return current === plan ? checked : current; });
+			}, function (error) {
+				setConfirm(function (current) {
+					return current === plan ? Object.assign({}, plan, { error: errorText(error.code, error.message), loading: false }) : current;
+				});
+			});
 		}
 
 		function changeRetention(value) {
 			if (locked || settings.unavailable || actionRef.current) return;
 			var days = Number(value);
 			if (days === settings.trashRetentionDays) return;
-			if (days === 0) {
-				runRetention(0);
-				return;
-			}
-			openConfirm({ kind: "retention", days: days, checked: false });
-		}
-
-		function openConfirm(value) {
-			if (locked || actionRef.current) return;
-			var count = (value.ids || value.items || []).length;
-			if (count > MAX_BATCH && value.kind !== "empty") {
-				setToast({ kind: "bad", text: tr("batchLimit") });
-				return;
-			}
-			returnFocusRef.current = document.activeElement;
-			setMenu(null);
-			setConfirm(value);
+			if (days === 0) runRetention(0);
+			else openConfirm("retention", [], { days: days });
 		}
 
 		function button(key, label, onClick, disabled, danger) {
@@ -1454,37 +1410,54 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		function rowMain(item, removedItem) {
 			var key = fileKey(item), open = Boolean(expanded[key]);
 			var workspace = item.workspace && typeof item.workspace === "object" ? item.workspace.title : item.workspace;
+			var access = capability(item, removedItem ? "discard" : "purge");
+			var restoreAccess = removedItem ? capability(item, "restore") : true;
+			var blocked = access !== true ? access : restoreAccess !== true ? restoreAccess : null;
+			var blockedReason = blocked && errorText(blocked.code, blocked.reason);
 			return h("div", { key: "main", className: "am-main" }, [
 				h("div", { key: "titleline", className: "am-titleline" }, [
-					h("button", { key: "title", type: "button", className: "am-row-title", title: item.title || item.id, "aria-expanded": open, "aria-controls": "am-detail-" + key.replace(/[^a-zA-Z0-9_-]/g, "-"), onClick: function () { setExpanded(function (current) { var next = Object.assign({}, current); next[key] = !current[key]; return next; }); } }, item.title || tr("noTitle")),
-					item.running ? h("span", { key: "running", className: "am-badge danger" }, tr("running")) : item.missing ? h("span", { key: "missing", className: "am-badge warn" }, tr("missing")) : item.protected ? h("span", { key: "protected", className: "am-badge warn", title: item.protectionReason }, tr("protectedItem")) : null
+					h("button", { key: "title", type: "button", className: "am-row-title", title: item.title || item.id, "aria-expanded": open, "aria-controls": open ? "am-detail-" + key.replace(/[^a-zA-Z0-9_-]/g, "-") : undefined, onClick: function () { setExpanded(function (current) { var next = Object.assign({}, current); next[key] = !current[key]; return next; }); } }, item.title || tr("noTitle")),
+					item.running ? h("span", { key: "running", className: "am-badge danger" }, tr("running")) : item.missing ? h("span", { key: "missing", className: "am-badge warn" }, tr("missing")) : blocked ? h("span", { key: "protected", className: "am-badge warn" }, tr(blocked.code === "occupied" ? "occupied" : "protectedReason")) : null
 				]),
-				h("div", { key: "meta", className: "am-row-meta", title: workspace || "" }, (workspace || "—") + " · " + (removedItem ? tr("movedAt") : tr("lastUsedLabel")) + " " + fmtAge(removedItem ? item.movedAt : item.lastUsedAt)),
+				h("div", { key: "meta", className: "am-row-meta", title: workspace || "" }, (workspace || "—") + " · " + (removedItem ? tr("movedAt") : tr("lastUsedLabel")) + " " + (typeof (removedItem ? item.movedAt : item.lastUsedAt) === "number" ? fmtAge(removedItem ? item.movedAt : item.lastUsedAt) : tr("unknownTime"))),
+				blockedReason && !item.running && !item.missing ? h("div", { key: "blocked", className: "am-help am-warning-text" }, blockedReason) : null,
 				h("span", { key: "hint", className: "am-help" }, tr("details") + (open ? " ▴" : " ▾"))
 			]);
 		}
 
+		function actionButton(item, key, kind, label, quick, danger) {
+			var action = kind === "cleanup" ? "forget" : kind;
+			return button(key, tr(label), function () { openConfirm(kind, [item], { quick: quick }); },
+				locked || capability(item, action) !== true, danger);
+		}
+
 		function archivedRow(item) {
-			var checked = selected.indexOf(item.id) >= 0;
+			var checked = selectedIds.has(item.id);
 			var actions = item.running ? h("span", { className: "am-help" }, tr("runningLocked")) : item.missing
-				? button("cleanup", tr("cleanup"), function () { openConfirm({ kind: "cleanup", ids: [item.id], checked: true }); }, locked)
-				: [button("unarchive", tr("unarchive"), function () { runUnarchive([item.id]); }, locked), button("hide", tr("hide"), function () { openConfirm({ kind: "hide", ids: [item.id], checked: true }); }, locked),
-					button("purge", tr("purge"), function () { openConfirm({ kind: "purge", ids: [item.id], checked: false }); }, locked, true)];
+				? actionButton(item, "cleanup", "cleanup", "cleanup")
+				: [
+					actionButton(item, "unarchive", "unarchive", "unarchive", true),
+					actionButton(item, "hide", "hide", "hide", true),
+					actionButton(item, "purge", "purge", "purge", false, true)
+				];
+			if (capability(item, "repair") === true) actions = [actionButton(item, "repair", "repair", "repair", true)];
 			return h("div", { key: item.id, className: "am-row" + (checked ? " selected" : ""), role: "listitem" }, [
 				h("label", { key: "check", className: "am-check-target" }, h("input", { type: "checkbox", className: "am-check", checked: checked, disabled: locked || Boolean(item.running), onChange: function () { if (!item.running) toggle(item.id); }, "aria-label": item.title || item.id })),
 				rowMain(item, false),
-				h("div", { key: "size", className: "am-log-size", title: item.sizeWarning || item.protectionReason }, [h("span", { key: "label", className: "am-help" }, tr("logSize")), h("strong", { key: "value" }, logSizeText(item, false))]),
+				h("div", { key: "size", className: "am-log-size" }, [h("span", { key: "label", className: "am-help" }, tr("logSize")), h("strong", { key: "value" }, logSizeText(item, false))]),
 				h("div", { key: "actions", className: "am-row-actions" }, actions), details(item, false)
 			]);
 		}
 		function removedRow(entry) {
-			var key = keyOf(entry), checked = removedSelected.indexOf(key) >= 0;
+			var key = keyOf(entry), checked = removedKeys.has(key);
+			var actions = capability(entry, "repair") === true
+				? [actionButton(entry, "repair", "repair", "repair", true)]
+				: [actionButton(entry, "restore", "restore", "restore", true), actionButton(entry, "discard", "discard", "purge", false, true)];
 			return h("div", { key: key, className: "am-row" + (checked ? " selected" : ""), role: "listitem" }, [
 				h("label", { key: "check", className: "am-check-target" }, h("input", { type: "checkbox", className: "am-check", checked: checked, disabled: locked, onChange: function () { toggleRemoved(key); }, "aria-label": entry.title || entry.id })),
 				rowMain(entry, true),
-				h("div", { key: "size", className: "am-log-size", title: entry.sizeWarning || entry.protectionReason }, [h("span", { key: "label", className: "am-help" }, tr("logSize")), h("strong", { key: "value" }, logSizeText(entry, true))]),
-				h("div", { key: "actions", className: "am-row-actions" }, [button("restore", tr("restore"), function () { runRestore([{ batch: entry.batch, id: entry.id }]); }, locked),
-					button("discard", tr("purge"), function () { openConfirm({ kind: "discard", items: [{ batch: entry.batch, id: entry.id }], checked: false }); }, locked, true)]),
+				h("div", { key: "size", className: "am-log-size" }, [h("span", { key: "label", className: "am-help" }, tr("logSize")), h("strong", { key: "value" }, logSizeText(entry, true))]),
+				h("div", { key: "actions", className: "am-row-actions" }, actions),
 				details(entry, true)
 			]);
 		}
@@ -1613,131 +1586,84 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		function confirmPanel() {
 			if (confirm === null) return null;
 			var kind = confirm.kind;
-			var isHide = kind === "hide";
-			var isPurge = kind === "purge";
-			var isEmpty = kind === "empty";
-			var isCleanup = kind === "cleanup";
-			var isDiscard = kind === "discard";
+			var targets = confirm.targets;
+			var blocked = confirm.blocked;
+			var count = targets.length;
 			var isRetention = kind === "retention";
-			var ids = Array.isArray(confirm.ids) ? confirm.ids : [];
-			var targets = items.filter(function (item) { return ids.indexOf(item.id) >= 0; });
-			var chosenRemoved = (isDiscard || isEmpty)
-				? removed.filter(function (entry) {
-					return (confirm.items || []).some(function (item) {
-						return item && item.batch === entry.batch && item.id === entry.id;
-					});
-				})
-				: [];
-			var count = isEmpty || isDiscard ? (confirm.items || []).length : ids.length;
-			var ignored = Number(confirm.ignored) || 0;
-			var sizeEntries = isDiscard || isEmpty ? chosenRemoved : targets;
-			var confirmedSize = sizeInfo(sizeEntries, isDiscard || isEmpty);
-			var sizeSummary = confirmedSize.unknown ? summarySize(sizeEntries, isDiscard || isEmpty) : tr("releaseLine", { size: fmtSize(confirmedSize.bytes) });
-			var danger = isPurge || isEmpty || isDiscard || isRetention;
-			var title;
-			var bodyText;
-			var summary;
-			var confirmLabel;
-			var buttonClass;
-			var run;
-			if (isHide) {
-				title = tr("hideConfirmTitle", { n: count });
-				bodyText = tr("hideConfirmBody");
-				summary = tr("hideSummary");
-				confirmLabel = tr("confirmHide");
-				buttonClass = "primary";
-				run = function () { runHide(ids, confirm.ignoredIds); };
-			} else if (isPurge) {
-				title = tr("purgeConfirmTitle", { n: count });
-				bodyText = tr("purgeConfirmBody");
-				summary = sizeSummary;
-				confirmLabel = tr("confirmCount", { n: count });
-				buttonClass = "hazard";
-				run = function () { runPurge(ids, confirm.ignoredIds); };
-			} else if (isEmpty) {
-				title = tr("emptyConfirmTitle", { n: count });
-				bodyText = tr("emptyConfirmBody", { n: count });
-				summary = sizeSummary;
-				confirmLabel = tr("emptyCount", { n: count });
-				buttonClass = "hazard";
-				run = function () { runEmpty(confirm.items || []); };
-			} else if (isCleanup) {
-				title = tr("cleanupTitle", { n: count });
-				bodyText = tr("cleanupBody");
-				summary = "";
-				confirmLabel = tr("confirmCleanup");
-				buttonClass = "";
-				run = function () { runCleanup(ids); };
-			} else if (isDiscard) {
-				title = tr("discardTitle", { n: count });
-				bodyText = tr("discardBody");
-				summary = sizeSummary;
-				confirmLabel = tr("confirmCount", { n: count });
-				buttonClass = "hazard";
-				run = function () { runDiscard(confirm.items || []); };
-			} else {
-				title = tr("retentionConfirmTitle");
-				bodyText = tr("retentionConfirmBody", { days: confirm.days });
-				summary = tr("retentionWarn");
-				confirmLabel = tr("confirmRetention");
-				buttonClass = "hazard";
-				run = function () { runRetention(confirm.days); };
-			}
-			if (ignored > 0 && (isHide || isPurge)) {
-				bodyText = bodyText + " " + tr("ignoredNote", { n: ignored });
-			}
-			var actions = [
-				h("button", {
-					key: "cancel",
-					ref: cancelRef,
-					type: "button",
-					className: "am-btn",
-					disabled: busy,
-					onClick: function () { setConfirm(null); }
-				}, tr("cancel"))
-			];
-			actions.push(h("button", {
-				key: "go",
-				type: "button",
-				className: "am-btn " + buttonClass,
-				disabled: locked || (danger && confirm.checked !== true) || (!isEmpty && !isRetention && count > MAX_BATCH),
-				onClick: run
-			}, confirmLabel));
+			var deletesLogs = kind === "purge" || kind === "discard" || kind === "empty";
+			var danger = deletesLogs || isRetention;
+			var titles = {
+				unarchive: "unarchiveTitle", hide: "hideConfirmTitle", purge: "purgeConfirmTitle", empty: "emptyConfirmTitle",
+				cleanup: "cleanupTitle", discard: "discardTitle", restore: "restoreTitle", retention: "retentionConfirmTitle", repair: "repair"
+			};
+			var labels = {
+				unarchive: "unarchive", hide: "hide", purge: "confirmCount", empty: "confirmCount",
+				cleanup: "confirmCleanup", discard: "confirmCount", restore: "restore", retention: "confirmRetention", repair: "repair"
+			};
+			var bodies = {
+				unarchive: "unarchiveBody", hide: "hideConfirmBody", purge: "purgeConfirmBody", empty: "purgeConfirmBody",
+				cleanup: "cleanupBody", discard: "discardBody", restore: "restoreBody", retention: "retentionConfirmBody"
+			};
+			var title = tr(titles[kind], { n: count });
+			var label = tr(labels[kind], { n: count });
+			var ready = !confirm.loading && !confirm.error;
+			var scopeAllowsSubmit = ready && (count > 0 || isRetention);
+			var size = sizeInfo(targets, true);
+			var planContent = ready ? [
+				kind === "empty" ? h("div", { key: "all", className: "am-help" }, tr("previewAll")) : null,
+				isRetention ? h("div", { key: "retention", className: "am-modal-summary" }, tr("retentionPreview", { n: count, days: confirm.days })) : null,
+				deletesLogs && count > 0 ? h("div", { key: "size", className: "am-modal-summary" },
+					size.unknown ? summarySize(targets, true) : tr("releaseLine", { size: fmtSize(size.bytes) })) : null,
+				targets.length > 0 ? h("div", { key: "targets", className: "am-preview-set" }, [
+					isRetention ? null : h("strong", { key: "count" }, tr("previewReady", { n: count })),
+					h("ul", { key: "list" }, targets.map(function (entry) {
+						return h("li", { key: fileKey(entry) }, failureTitle(entry));
+					}))
+				]) : !isRetention ? h("div", { key: "none", className: "am-modal-summary" }, tr("previewNone")) : null,
+				blocked.length > 0 ? h("div", { key: "blocked", className: "am-preview-set am-warning-text" }, [
+					h("strong", { key: "count" }, tr("previewBlocked", { n: blocked.length })),
+					h("ul", { key: "list" }, blocked.map(function (entry, index) {
+						return h("li", { key: index }, (failureTitle(entry)) + " · " + failureReason(entry));
+					}))
+				]) : null,
+				danger && count > 0 ? h("div", { key: "file-note", className: "am-help" }, tr("previewFileNote")) : null
+			] : h("div", { className: "am-modal-summary", role: "status" },
+				confirm.loading ? tr("previewLoading") : tr("previewFailed", { message: confirm.error }));
 			return h("div", {
 				className: "am-modal-backdrop",
 				onMouseDown: function (event) {
 					if (event.target === event.currentTarget && busy !== true) setConfirm(null);
 				}
+			}, h("div", {
+				className: "am-modal" + (danger ? " danger" : ""),
+				ref: confirmRef,
+				tabIndex: -1,
+				role: "dialog",
+				"aria-modal": "true",
+				"aria-label": title,
+				onMouseDown: function (event) { event.stopPropagation(); }
 			}, [
-				h("div", {
-					key: "card",
-					className: "am-modal" + (danger ? " danger" : ""),
-					ref: confirmRef,
-					tabIndex: -1,
-					role: "dialog",
-					"aria-modal": "true",
-					"aria-label": title,
-					onMouseDown: function (event) { event.stopPropagation(); }
-				}, [
-					h("div", { key: "title", className: "am-modal-title" }, title),
-					h("div", { key: "body", className: "am-modal-body" }, bodyText),
-					summary ? h("div", { key: "summary", className: "am-modal-summary" }, summary) : null,
-					danger ? h("label", { key: "check", className: "am-checkline" }, [
-						h("input", {
-							key: "box",
-							type: "checkbox",
-							className: "am-check",
-							checked: confirm.checked === true,
-							disabled: busy,
-							onChange: function (event) {
-								setConfirm(Object.assign({}, confirm, { checked: event.target.checked }));
-							}
-						}),
-						h("span", { key: "text" }, isRetention ? tr("retentionCheck") : tr("purgeCheck"))
-					]) : null,
-					h("div", { key: "actions", className: "am-modal-actions" }, actions)
+				h("div", { key: "title", className: "am-modal-title" }, title),
+				bodies[kind] ? h("div", { key: "body", className: "am-modal-body" }, tr(bodies[kind], { days: confirm.days })) : null,
+				h("div", { key: "plan", className: "am-preview", role: "region", "aria-label": tr("previewScope"), "aria-live": "polite", tabIndex: ready && (count + blocked.length > 4) ? 0 : undefined }, planContent),
+				danger && scopeAllowsSubmit ? h("label", { key: "check", className: "am-checkline" }, [
+					h("input", {
+						key: "box", type: "checkbox", className: "am-check", checked: confirm.checked, disabled: busy,
+						onChange: function (event) {
+							setConfirm(Object.assign({}, confirm, { checked: event.target.checked }));
+						}
+					}),
+					h("span", { key: "text" }, tr(isRetention ? "retentionCheck" : "purgeCheck"))
+				]) : null,
+				h("div", { key: "actions", className: "am-modal-actions" }, [
+					h("button", { key: "cancel", ref: cancelRef, type: "button", className: "am-btn", disabled: busy, onClick: function () { setConfirm(null); } }, tr("cancel")),
+					ready && !scopeAllowsSubmit ? null : h("button", {
+						key: "go", type: "button", className: "am-btn " + (danger ? "hazard" : "primary"),
+						disabled: locked || !scopeAllowsSubmit || danger && !confirm.checked,
+						onClick: function () { if (scopeAllowsSubmit && (!danger || confirm.checked)) runPlan(confirm); }
+					}, label)
 				])
-			]);
+			]));
 		}
 
 		function searchGlyph() {
@@ -1890,33 +1816,37 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function selectionBar(isRemoved) {
-			var count = isRemoved ? removedSelected.length : selected.length;
+			var entries = isRemoved ? selectedRemovedEntries : selectedItems;
+			var count = entries.length;
 			var total = isRemoved ? sortedRemoved.length : selectable.length;
-			var filesIds = selectedWithFiles.map(function (item) { return item.id; });
-			var missingIds = selectedMissing.map(function (item) { return item.id; });
-			var targets = removedItems(selectedRemovedEntries);
-			var selectedSize = summarySize(isRemoved ? selectedRemovedEntries : selectedItems, isRemoved);
-			var exceeded = isRemoved ? targets.length > MAX_BATCH : filesIds.length > MAX_BATCH || missingIds.length > MAX_BATCH;
+			var filesCount = entries.filter(function (entry) { return !entry.missing; }).length;
 			var actions = [];
+			var exceeded = false;
+			function add(kind, label, danger) {
+				var eligible = localPlan(kind, entries).targets.length;
+				if (!eligible) return;
+				if (eligible > MAX_BATCH) exceeded = true;
+				actions.push(button(kind, tr(label) + " (" + eligible + ")", function () {
+					openConfirm(kind, entries);
+				}, locked || eligible > MAX_BATCH, danger));
+			}
 			if (count > 0) {
 				actions.push(button("clear", tr("clearSelection"), function () { if (actionRef.current) return; if (isRemoved) setRemovedSelected([]); else setSelected([]); }, locked));
 				if (isRemoved) {
-					actions.push(button("restore", tr("restore") + " (" + targets.length + ")", function () { runRestore(targets); }, locked || targets.length > MAX_BATCH));
-					actions.push(button("discard", tr("purge") + " (" + targets.length + ")", function () { openConfirm({ kind: "discard", items: targets, checked: false }); }, locked || targets.length > MAX_BATCH, true));
+					add("restore", "restore");
+					add("discard", "purge", true);
 				} else {
-					if (filesIds.length > 0) {
-						actions.push(button("unarchive", tr("unarchive") + " (" + filesIds.length + ")", function () { runUnarchive(filesIds, missingIds); }, locked || filesIds.length > MAX_BATCH));
-						actions.push(button("hide", tr("hide") + " (" + filesIds.length + ")", function () { openConfirm({ kind: "hide", ids: filesIds, ignored: missingIds.length, ignoredIds: missingIds, checked: true }); }, locked || filesIds.length > MAX_BATCH));
-					}
-					if (missingIds.length > 0) actions.push(button("cleanup", tr("cleanup") + " (" + missingIds.length + ")", function () { openConfirm({ kind: "cleanup", ids: missingIds, checked: true }); }, locked || missingIds.length > MAX_BATCH));
-					if (filesIds.length > 0) actions.push(button("purge", tr("purge") + " (" + filesIds.length + ")", function () { openConfirm({ kind: "purge", ids: filesIds, ignored: missingIds.length, ignoredIds: missingIds, checked: false }); }, locked || filesIds.length > MAX_BATCH, true));
+					add("unarchive", "unarchive");
+					add("hide", "hide");
+					add("cleanup", "cleanup");
+					add("purge", "purge", true);
 				}
 			}
 			return h("div", { key: "toolbar", className: "am-toolbar" }, [
 				h("div", { key: "selection", className: "am-toolbar-group" }, [
 					h("label", { key: "all", className: "am-checkline" }, [h("input", { key: "box", type: "checkbox", className: "am-check", ref: isRemoved ? syncRemovedRef : syncAllRef, checked: isRemoved ? allRemovedSelected : allSelected, "aria-checked": count > 0 && !(isRemoved ? allRemovedSelected : allSelected) ? "mixed" : isRemoved ? allRemovedSelected : allSelected, disabled: locked || total === 0, onChange: isRemoved ? toggleAllRemoved : toggleAll }), h("span", { key: "text" }, tr("selectAll"))]),
-					h("span", { key: "count", className: count > 0 ? "am-selected-count" : "am-stats", role: "status" }, count > 0 ? isRemoved ? tr("removedSelected", { n: count }) : tr("selectedSplit", { n: count, files: filesIds.length, missing: missingIds.length }) : tr("selectHint")),
-					count > 0 ? h("span", { key: "bytes", className: "am-help" }, selectedSize) : null
+					h("span", { key: "count", className: count > 0 ? "am-selected-count" : "am-stats", role: "status" }, count > 0 ? isRemoved ? tr("removedSelected", { n: count }) : tr("selectedSplit", { n: count, files: filesCount, missing: count - filesCount }) : tr("selectHint")),
+					count > 0 ? h("span", { key: "bytes", className: "am-help" }, summarySize(entries, isRemoved)) : null
 				]),
 				actions.length ? h("div", { key: "actions", className: "am-toolbar-group" }, actions) : null,
 				exceeded ? h("div", { key: "limit", className: "am-batch-limit", role: "status" }, tr("batchLimit")) : null
@@ -1943,7 +1873,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			return h("div", { key: "retention", className: "am-retention" }, [
 				h("span", { key: "summary", className: "am-retention-label" }, tr("retentionSummary", { value: settings.unavailable ? tr("notProvided") : settings.trashRetentionDays > 0 ? tr("retentionAfter", { n: settings.trashRetentionDays }) : tr("retentionDisabled") })),
 				button("settings", tr("settings"), function () { setRetentionExpanded(!retentionExpanded); }, locked || settings.unavailable),
-				removed.length > 0 ? button("empty", tr("emptyTrash") + " (" + removed.length + ")", function () { openConfirm({ kind: "empty", items: removedItems(removed), checked: false }); }, locked, true) : null,
+				removed.length > 0 ? button("empty", tr("emptyTrash") + " (" + removed.length + ")", function () { openConfirm("empty", []); }, locked, true) : null,
 				retentionExpanded ? h("div", { key: "settingsPanel", className: "am-retention-settings" }, [h("span", { key: "title" }, tr("retentionTitle")), dropdown("retention", String(settings.trashRetentionDays || 0), [{ value: "0", label: tr("retentionNever") }, { value: "7", label: tr("retentionDays", { n: 7 }) }, { value: "30", label: tr("retentionDays", { n: 30 }) }, { value: "90", label: tr("retentionDays", { n: 90 }) }], changeRetention, tr("retentionLabel"), false), h("span", { key: "hint", className: "am-retention-hint" }, tr("retentionHint"))]) : null
 			]);
 		}
@@ -1951,7 +1881,10 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		var children = [];
 		var workspace = [];
 		children.push(h("div", { key: "head", className: "am-head" }, [h("div", { key: "text", className: "am-head-text" }, [h("div", { key: "title", className: "am-title" }, tr("title")), h("div", { key: "sub", className: "am-sub" }, tr("subtitle"))]), versionPanel()]));
-		if (toast) children.push(h("div", { key: "toast", className: "am-toast " + (toast.kind === "ok" ? "ok" : "bad"), role: "status", "aria-live": "polite" }, toast.text));
+		if (toast) children.push(h("div", { key: "toast", className: "am-toast " + (toast.kind === "ok" ? "ok" : "bad"), role: "status", "aria-live": "polite" }, [
+			h("span", { key: "text" }, toast.text),
+			toast.showRemoved && tab !== "removed" ? button("viewRemoved", tr("viewRemoved"), function () { setTab("removed"); }, locked) : null
+		]));
 		workspace.push(h("div", { key: "viewbar", className: "am-viewbar" }, [h("div", { key: "tabs", className: "am-tabs", role: "tablist", "aria-label": tr("title") }, [
 			h("button", { key: "archived", type: "button", role: "tab", "aria-selected": tab === "archived", className: "am-tab" + (tab === "archived" ? " active" : ""), disabled: busy || updatePhase === "preparing", onClick: function () { if (actionRef.current) return; setTab("archived"); setMenu(null); } }, tr("tabArchived") + " (" + items.length + ")"),
 			h("button", { key: "removed", type: "button", role: "tab", "aria-selected": tab === "removed", className: "am-tab" + (tab === "removed" ? " active" : ""), disabled: busy || updatePhase === "preparing", onClick: function () { if (actionRef.current) return; setTab("removed"); setMenu(null); } }, removedWarnings.length > 0 ? tr("knownTabCount", { label: tr("tabRemoved"), n: removed.length }) : tr("tabRemoved") + " (" + removed.length + ")")]), refreshButton()]));
