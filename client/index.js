@@ -10,7 +10,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	var useEffect = React.useEffect;
 
 	var API = "/archived-manager";
-	var CLIENT_VERSION = "0.3.4";
+	var CLIENT_VERSION = "0.3.5";
 	var MAX_BATCH = 200;
 	var LANG = typeof navigator !== "undefined" && navigator.language ? String(navigator.language).toLowerCase() : "";
 	var ZH = LANG.indexOf("zh") === 0;
@@ -42,7 +42,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		discardBody: "只删除已核验的会话日志。删除后无法恢复。",
 		cancel: "取消",
 		busy: "处理中…",
-		missing: "文件缺失",
+		missing: "日志缺失",
 		running: "运行中",
 		noTitle: "（无标题）",
 		size: "体积",
@@ -62,14 +62,13 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		cleanupTitle: "清理 {n} 条失效归档记录？",
 		cleanupBody: "这些会话的文件已不存在，只会移除归档记录，不会删除任何文件。",
 		confirmCleanup: "清理记录",
-		selectedSplit: "已选 {n} 条（有文件 {files} · 失效 {missing}）",
-		selectHint: "勾选会话后可批量操作",
+		selectedSplit: "已选 {n} 条（有日志 {files} · 失效 {missing}）",
 		searchPlaceholder: "搜索标题、工作区或 ID",
 		searchAria: "搜索归档会话",
 		clearSearch: "清除搜索",
 		filterAll: "全部",
-		filterFiles: "有文件",
-		filterMissing: "文件缺失",
+		filterFiles: "有日志",
+		filterMissing: "日志缺失",
 		sortLabel: "排序",
 		sortLastUsed: "最后使用",
 		sortArchived: "首次发现归档",
@@ -90,12 +89,9 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		toastDiscard: "已彻底删除 {n} 条会话日志，释放 {size}",
 		toastCleanup: "已清理 {n} 条失效记录",
 		toastReminders: "，停止 {n} 个提醒",
-		reportDismiss: "知道了",
 		retentionTitle: "最近删除自动清理",
-		retentionLabel: "保留期限",
 		retentionNever: "关闭",
 		retentionDays: "{n} 天",
-		retentionHint: "开启后，移到最近删除满保留期限的会话日志会自动永久删除。",
 		retentionConfirmTitle: "保存自动清理设置？",
 		retentionConfirmBody: "移到最近删除满 {days} 天后，已核验的会话日志会自动永久删除。",
 		retentionCheck: "我确认已到期及后续到期的会话日志会被永久删除",
@@ -120,6 +116,17 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		errGeneric: "操作失败",
 		clearSelection: "取消选择",
 		details: "详情",
+		close: "关闭",
+		filterLabel: "状态",
+		retentionControl: "自动清理",
+		retentionShort: "{n} 天",
+		retentionExplanation: "移入满期限后永久删除会话日志。",
+		batchActions: "批量操作",
+		operationDetails: "查看结果",
+		operationIdle: "操作结果",
+		scopeLabel: "范围",
+		scopeTitle: "日志统计范围",
+		refreshFailed: "刷新失败",
 		files: "已记录的关联文件",
 		loadFiles: "查看关联文件",
 		filesEmpty: "未找到已记录的文件位置",
@@ -136,13 +143,10 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		selectionPruned: "筛选或会话状态已变化，已取消选择 {n} 条不再显示或不可操作的会话。",
 		unknownResult: "结果未确认。正在刷新核对当前状态；不会自动重复提交。",
 		staleList: "列表尚未刷新，暂不可修改会话。请刷新列表后重试。",
-		showAllReasons: "查看全部 {n} 条原因",
-		showLess: "收起原因",
 		runningLocked: "运行中，暂不可操作",
 		logSize: "日志占用",
 		resultSummary: "完成：成功 {ok} 条，失败 {fail} 条，跳过 {skip} 条",
 		settings: "设置",
-		retentionSummary: "自动清理：{value}",
 		retentionDisabled: "关闭",
 		retentionAfter: "移入满 {n} 天",
 		versionDetails: "版本详情",
@@ -164,11 +168,9 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		releaseNotes: "更新说明",
 		checkedAt: "核对时间",
 		updateFailed: "无法检查更新：{message}",
-		updateUnknown: "更新状态未确认，请重新核对",
 		updateContinue: "查看更新进度或恢复安装",
 		updatePreparing: "正在准备独立更新页面…",
 		updateHandoff: "在独立更新页确认目标版本并查看安装结果。",
-		versionChecking: "页面 v{version} · 版本信息待核对",
 		updateBusy: "插件更新中，暂不可修改会话数据",
 		filesFailed: "读取文件位置失败：{message}",
 		noWorkspace: "未记录工作区位置",
@@ -237,7 +239,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		discardBody: "Only verified session logs are deleted. This is permanent.",
 		cancel: "Cancel",
 		busy: "Working…",
-		missing: "Files missing",
+		missing: "Logs missing",
 		running: "Running",
 		noTitle: "(untitled)",
 		size: "Size",
@@ -257,40 +259,36 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		cleanupTitle: "Clean up {n} stale archive record(s)?",
 		cleanupBody: "These sessions no longer have files; only the archive records are removed. No files are touched.",
 		confirmCleanup: "Clean records",
-		selectedSplit: "{n} selected ({files} with files · {missing} missing)",
-		selectHint: "Select sessions to act in bulk",
-		searchPlaceholder: "Search title, workspace or ID",
-		searchAria: "Search archived sessions",
+		selectedSplit: "{n} selected ({files} with logs · {missing} missing)",
+		searchPlaceholder: "Search sessions",
+		searchAria: "Search archived sessions by title, workspace or ID",
 		clearSearch: "Clear search",
 		filterAll: "All",
-		filterFiles: "With files",
-		filterMissing: "Files missing",
+		filterFiles: "With logs",
+		filterMissing: "Logs missing",
 		sortLabel: "Sort",
 		sortLastUsed: "Last used",
 		sortArchived: "Archive first observed",
 		sortSize: "Size",
 		sortTitle: "Title",
-		sortMoved: "recently deleted",
+		sortMoved: "Date deleted",
 		filteredEmpty: "No matching archived sessions",
 		filteredEmptyHint: "Clear the search or switch the filter and try again.",
 		clearFilters: "Clear filters",
-		showing: "Showing {shown} / {total}",
+		showing: "{shown}/{total} shown",
 		removedSearchPlaceholder: "Search recently deleted sessions",
 		removedSelected: "{n} recently deleted sessions selected",
 		removedEmptyFilter: "No matching recently deleted sessions",
-		toastUnarchive: "Unarchived {n} session(s)",
+		toastUnarchive: "Unarchived {n}",
 		toastHide: "Moved {n} session(s) to Recently Deleted (recoverable)",
 		toastPurge: "Deleted {n} session(s), freed {size}",
 		toastRestore: "Restored {n} session(s) to their original locations; workspace results are reported separately",
 		toastDiscard: "Permanently deleted {n} recently deleted session(s), freed {size}",
 		toastCleanup: "Cleaned up {n} stale record(s)",
 		toastReminders: ", stopped {n} reminder(s)",
-		reportDismiss: "Dismiss",
 		retentionTitle: "Recently Deleted retention",
-		retentionLabel: "Keep for",
 		retentionNever: "Off",
 		retentionDays: "{n} days",
-		retentionHint: "When enabled, recently deleted sessions older than the limit are deleted permanently in the background. Off by default.",
 		retentionConfirmTitle: "Save automatic cleanup settings?",
 		retentionConfirmBody: "Verified logs in Recently Deleted are permanently removed after {days} days.",
 		retentionCheck: "I confirm that currently expired and future expired session logs will be permanently removed",
@@ -315,6 +313,17 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		errGeneric: "The operation failed",
 		clearSelection: "Clear selection",
 		details: "Details",
+		close: "Close",
+		filterLabel: "Status",
+		retentionControl: "Auto cleanup",
+		retentionShort: "{n} days",
+		retentionExplanation: "Session logs are permanently deleted after this retention period.",
+		batchActions: "Bulk actions",
+		operationDetails: "View result",
+		operationIdle: "Results",
+		scopeLabel: "Scope",
+		scopeTitle: "Session log scope",
+		refreshFailed: "Refresh failed",
 		files: "Recorded associated files",
 		loadFiles: "View associated files",
 		filesEmpty: "No recorded file locations found",
@@ -331,13 +340,10 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		selectionPruned: "Filters or session state changed; {n} hidden or unavailable entries were deselected.",
 		unknownResult: "Result unconfirmed. Refreshing to reconcile current state; the request will not be repeated automatically.",
 		staleList: "The list could not be refreshed. Refresh it before changing sessions.",
-		showAllReasons: "View all {n} reasons",
-		showLess: "Show fewer reasons",
 		runningLocked: "Running; actions unavailable",
 		logSize: "Log size",
 		resultSummary: "Done: {ok} succeeded, {fail} failed, {skip} skipped",
 		settings: "Settings",
-		retentionSummary: "Automatic cleanup: {value}",
 		retentionDisabled: "off",
 		retentionAfter: "after {n} days in Recently Deleted",
 		versionDetails: "Version details",
@@ -359,11 +365,9 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		releaseNotes: "Release notes",
 		checkedAt: "Checked at",
 		updateFailed: "Could not check for updates: {message}",
-		updateUnknown: "Update state unconfirmed. Check again.",
 		updateContinue: "View update progress or recover installation",
 		updatePreparing: "Preparing an independent update page…",
 		updateHandoff: "Confirm the target version and review results in the independent update page.",
-		versionChecking: "Page v{version} · awaiting version verification",
 		updateBusy: "Plugin update in progress; session changes are unavailable",
 		filesFailed: "Could not read file locations: {message}",
 		noWorkspace: "No workspace location recorded",
@@ -540,8 +544,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	}
 	var CSS = [
 		".am-page{--am-text-primary:var(--dsw-alias-label-primary,#0f1115);--am-text-secondary:var(--dsw-alias-label-secondary,#545557);--am-text-tertiary:var(--dsw-alias-label-tertiary,#65676b);--am-surface:var(--dsw-alias-bg-layer-1,#fff);--am-accent:var(--dsw-static-blue-600,#2563eb);--am-accent-soft:rgba(37,99,235,.09);--am-success:#147d45;--am-danger:#b42318;--am-warning:#a15c00;display:flex;flex-direction:column;gap:20px;max-width:1080px;padding:6px 0 40px;font-size:13px;color:var(--am-text-primary)}",
-		".am-head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px}",
-		".am-head-text{flex:1 1 auto;min-width:0}",
 		".am-title{font-size:18px;line-height:1.4;font-weight:600}",
 		".am-sub{font-size:13px;line-height:1.75;color:var(--am-text-secondary);margin-top:6px;max-width:760px}",
 		"body[data-ds-dark-theme] .am-page{--am-text-primary:var(--dsw-static-neutral-bluish-50,#f9fafb);--am-text-secondary:var(--dsw-static-neutral-bluish-200,#e1e5ee);--am-text-tertiary:var(--dsw-static-neutral-bluish-400,#adb2b8);--am-accent:var(--dsw-static-blue-300,#93c5fd);--am-accent-soft:rgba(147,197,253,.16);--am-success:var(--dsw-static-green-400,#4ed17e);--am-danger:#ff9c8f;--am-warning:var(--dsw-static-amber-400,#f7ad31)}",
@@ -566,11 +568,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-tab{height:32px;padding:0 16px;border-radius:7px;border:none;background:transparent;color:var(--am-text-secondary);font-size:12px;cursor:pointer}",
 		".am-tab:hover{color:var(--am-text-primary)}",
 		".am-tab.active{background:var(--dsw-alias-bg-l2,rgba(127,127,127,.16));color:var(--am-text-primary);font-weight:600}",
-		".am-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:11px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));background:transparent}",
-		".am-toolbar-group{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
-		".am-spacer{flex:1 1 auto}",
-		".am-stats{font-size:12px;line-height:1.5;color:var(--am-text-secondary)}",
-		".am-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12))}",
 		".am-search{display:flex;align-items:center;gap:8px;flex:1 1 260px;min-width:200px;height:34px;padding:0 10px;border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.28));border-radius:8px;background:transparent;color:var(--am-text-primary)}",
 		".am-search:focus-within{border-color:var(--am-accent);box-shadow:0 0 0 2px var(--am-accent-soft)}",
 		".am-search input{flex:1 1 auto;min-width:0;border:0;outline:0;background:transparent;color:inherit;font-size:13px;appearance:none}",
@@ -578,10 +575,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-search-icon{display:flex;flex:none;color:var(--am-text-secondary)}",
 		".am-search-clear{width:20px;height:20px;border:0;border-radius:50%;background:var(--dsw-alias-bg-l2,rgba(127,127,127,.16));color:var(--am-text-secondary);font-size:13px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0}",
 		".am-search-clear:hover{color:var(--am-text-primary)}",
-		".am-filter{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18));border-radius:9px;background:var(--dsw-alias-bg-l1,rgba(127,127,127,.05))}",
-		".am-chip{height:28px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:var(--am-text-secondary);font-size:12px;cursor:pointer;display:inline-flex;align-items:center;gap:5px}",
-		".am-chip.active{background:var(--dsw-alias-bg-l2,rgba(127,127,127,.16));color:var(--am-text-primary);font-weight:600}",
-		".am-chip-count{font-size:11px;opacity:.8;font-variant-numeric:tabular-nums}",
 		".am-sort{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--am-text-secondary);white-space:nowrap}",
 		".am-select{position:relative;display:inline-flex;min-width:0;font-size:12px}",
 		".am-select-trigger{height:32px;min-width:104px;padding:0 8px 0 10px;border:1px solid var(--dsw-alias-border-l2,rgba(127,127,127,.28));border-radius:7px;background:transparent;color:var(--am-text-primary);font-size:12px;display:inline-flex;align-items:center;justify-content:space-between;gap:8px;cursor:pointer;white-space:nowrap;transition:border-color .12s ease,background .12s ease}",
@@ -599,17 +592,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-select-option:focus-visible{outline:2px solid var(--am-accent);outline-offset:-2px}",
 		".am-select-option.selected,.am-select-option.selected:hover,.am-select-option.selected:focus-visible{background:var(--am-accent-soft);color:var(--am-accent);font-weight:600}",
 		".am-select-check{font-size:11px;line-height:1}",
-		".am-scope{font-size:12px;line-height:1.65;color:var(--am-text-tertiary);padding:12px 14px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));border-radius:0 0 13px 13px;background:var(--dsw-alias-bg-l1,rgba(127,127,127,.025))}",
 		".am-meta-label{text-decoration:underline dotted;text-underline-offset:2px;cursor:help}",
-		".am-report{display:flex;flex-direction:column;gap:7px;padding:12px 14px;border-bottom:1px solid rgba(232,178,91,.3);background:rgba(232,178,91,.06)}",
-		".am-report-title{font-size:13px;font-weight:600;color:var(--am-warning)}",
-		".am-report-list{display:flex;flex-direction:column;gap:3px;font-size:12px;line-height:1.55;color:var(--am-text-secondary)}",
-		".am-report-item{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-		".am-report-actions{display:flex;justify-content:flex-end}",
-		".am-retention{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 14px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));background:var(--dsw-alias-bg-l1,rgba(127,127,127,.035));font-size:12px;line-height:1.6;color:var(--am-text-secondary)}",
-		".am-retention-label{font-weight:600;color:var(--am-text-primary)}",
-		".am-retention-hint{flex:1 1 300px;min-width:220px}",
-		".am-retention-warn{color:var(--am-warning);font-weight:500}",
 		".am-empty-actions{display:flex;gap:8px;margin-top:2px}",
 		".am-list{display:flex;flex-direction:column;overflow:hidden}",
 		".am-row{display:grid;grid-template-columns:24px minmax(0,1fr) auto;align-items:center;gap:14px;padding:14px 16px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));background:transparent}",
@@ -635,7 +618,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-check:disabled{cursor:not-allowed;opacity:.5}",
 		".am-checkline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--am-text-primary);cursor:pointer}",
 		".am-empty-card{display:flex;flex-direction:column;align-items:center;gap:9px;padding:44px 20px;text-align:center;background:var(--dsw-alias-bg-l1,rgba(127,127,127,.025))}",
-		".am-empty-icon{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--dsw-alias-bg-l2,rgba(127,127,127,.12));color:var(--am-text-secondary)}",
 		".am-empty-title{font-size:14px;font-weight:600}",
 		".am-empty-hint{font-size:12px;line-height:1.7;color:var(--am-text-secondary);max-width:460px}",
 		".am-empty{font-size:13px;line-height:1.7;color:var(--am-text-secondary);padding:18px 12px;text-align:center}",
@@ -647,28 +629,26 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-modal-summary{font-size:13px;line-height:1.6;color:var(--am-text-secondary)}",
 		".am-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}",
 		".am-modal-actions .am-btn{height:32px;padding:0 16px}",
-		".am-preview{display:flex;flex-direction:column;gap:9px;padding-block:2px;max-height:42vh;overflow:auto;min-height:0}.am-preview-set{flex-shrink:0}.am-preview:focus-visible{outline:2px solid var(--am-accent);outline-offset:2px}.am-preview-set{border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.22));padding:8px 12px;border-radius:8px;line-height:1.55;overflow-wrap:anywhere}.am-preview-set ul{padding-inline-start:18px;margin:4px 0 0}.am-toast{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px;line-height:1.55;padding:9px 12px;border-radius:9px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18))}",
-		".am-toast.ok{color:var(--am-success)}",
-		".am-toast.bad{color:var(--am-danger)}",
-		".am-error-card{display:flex;flex-direction:column;align-items:center;gap:10px;padding:40px 20px;border:1px solid color-mix(in srgb,var(--am-danger) 25%,transparent);border-radius:12px;background:color-mix(in srgb,var(--am-danger) 5%,transparent);text-align:center}",
-		".am-error-icon{display:flex;color:var(--am-danger)}",
-		".am-error-text{font-size:13px;line-height:1.7;color:var(--am-danger);max-width:560px}",
-		".am-loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:48px 0;font-size:13px;color:var(--am-text-secondary)}",
-		".am-spinner{width:16px;height:16px;border-radius:50%;border:2px solid var(--dsw-alias-border-l2,rgba(127,127,127,.28));border-top-color:var(--am-accent);animation:am-spin .8s linear infinite}",
+		".am-preview{display:flex;flex-direction:column;gap:9px;padding-block:2px;max-height:42vh;overflow:auto;min-height:0}.am-preview-set{flex-shrink:0}.am-preview:focus-visible{outline:2px solid var(--am-accent);outline-offset:2px}.am-preview-set{border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.22));padding:8px 12px;border-radius:8px;line-height:1.55;overflow-wrap:anywhere}.am-preview-set ul{padding-inline-start:18px;margin:4px 0 0}",
 		"@keyframes am-spin{to{transform:rotate(360deg)}}",
 		"@keyframes am-fade{from{opacity:0}to{opacity:1}}",
 		"@keyframes am-pop{from{opacity:0;transform:translateY(6px) scale(.98)}to{opacity:1;transform:none}}",
 		"@keyframes am-menu{from{opacity:0;transform:translateY(-4px) scale(.98)}to{opacity:1;transform:none}}",
-		"@media (prefers-reduced-motion:reduce){.am-modal,.am-modal-backdrop,.am-spinner,.am-select-menu,.am-refresh-icon.spinning{animation:none}}",
-		"@media (max-width:860px){.am-row{grid-template-columns:24px minmax(0,1fr)}.am-row-actions{grid-column:2;justify-self:start;padding-top:6px}}",
-		"@media (max-width:720px){.am-search{flex-basis:100%}.am-sort{margin-left:auto}}",
-		".am-page{gap:14px;min-width:0}.am-workbench{container-type:inline-size}",
-		".am-head{flex-wrap:wrap;gap:12px}.am-head-text{flex:1 1 270px}.am-version{flex:0 1 420px;min-width:0;font-size:12px;line-height:1.6}.am-version-line,.am-update-result{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.am-version-label{font-weight:600}.am-version-details{margin-top:8px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));border-radius:8px}.am-version a{color:var(--am-accent);text-decoration:underline}.am-update-result{margin-top:6px}.am-help{font-size:12px;line-height:1.6;color:var(--am-text-secondary)}",
-		".am-summary{display:flex;gap:14px;flex-wrap:wrap;padding:9px 14px;color:var(--am-text-secondary);font-size:12px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12))}.am-toolbar{gap:8px}.am-selected-count{font-size:12px;font-weight:700;color:var(--am-accent)}.am-batch-limit{flex-basis:100%;color:var(--am-warning);font-size:12px}.am-notice{padding:9px 14px;font-size:12px;color:var(--am-text-secondary);border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12))}",
-		".am-list{overflow:visible}.am-row{grid-template-columns:28px minmax(120px,1fr) minmax(64px,90px) auto;gap:12px;padding:14px}.am-row-title{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;white-space:normal;overflow:hidden;overflow-wrap:anywhere;border:0;padding:0;background:transparent;color:var(--am-text-primary);text-align:left;cursor:pointer;font:inherit;font-size:14px;font-weight:500;line-height:1.5}.am-row-title:focus-visible,.am-page summary:focus-visible,.am-search-clear:focus-visible{outline:2px solid var(--am-accent);outline-offset:3px}.am-titleline{align-items:flex-start}.am-check-target{display:flex;width:28px;min-height:28px;align-items:center;justify-content:center;cursor:pointer}.am-check{margin:0}.am-log-size{display:flex;flex-direction:column;gap:2px;align-items:flex-end;font-size:12px;font-variant-numeric:tabular-nums}.am-log-size strong{font-weight:500}.am-badge{font-size:12px}.am-row-actions{gap:6px;max-width:100%}",
-		".am-warning-text{color:var(--am-warning);overflow-wrap:anywhere}.am-select-option:disabled{color:var(--am-text-tertiary);cursor:not-allowed}.am-details{grid-column:2/-1;min-width:0;padding-top:10px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));font-size:12px;line-height:1.6}.am-path{overflow-wrap:anywhere;white-space:pre-wrap;user-select:text}.am-file-list{display:flex;flex-direction:column;gap:8px;margin-top:12px}.am-file-list p{margin:0}.am-file{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:10px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));border-radius:8px;min-width:0}.am-file>div{max-width:100%}.am-report-item{white-space:normal;overflow-wrap:anywhere;overflow:visible}.am-report-actions{gap:8px;flex-wrap:wrap}.am-retention-settings{display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex-basis:100%}.am-retention-hint{min-width:0}.am-search{min-width:0}.am-modal{background:var(--am-surface)}.am-modal-actions{flex-wrap:wrap}.am-chip:disabled{cursor:not-allowed;color:var(--am-text-tertiary)}",
-		"@container (max-width:820px){.am-row{grid-template-columns:28px minmax(0,1fr) auto}.am-row-actions{grid-column:2/-1;justify-self:start;justify-content:flex-start;padding-top:2px}.am-log-size{grid-column:3;grid-row:1}.am-details{grid-column:2/-1}.am-search{flex-basis:100%}.am-controls{align-items:flex-start}.am-sort{margin-left:0}}",
-		"@container (max-width:480px){.am-row{grid-template-columns:28px minmax(0,1fr);gap:8px}.am-log-size{grid-column:2;grid-row:auto;flex-direction:row;gap:8px;align-items:baseline}.am-row-actions{grid-column:2;flex-wrap:wrap}.am-btn{white-space:normal;height:auto;min-height:32px;padding:6px 10px;line-height:1.4}.am-row-title{-webkit-line-clamp:3}.am-filter{flex-wrap:wrap}.am-viewbar{gap:6px}.am-tab{padding:0 10px}.am-head{display:block}.am-version{margin-top:10px}.am-time{white-space:normal}.am-details{grid-column:1/-1}.am-modal-backdrop{padding:12px}}",
+		"@media (prefers-reduced-motion:reduce){.am-modal,.am-modal-backdrop,.am-select-menu,.am-refresh-icon.spinning{animation:none}}",
+		".am-page{gap:14px;min-width:0}.am-head{display:grid;gap:8px}.am-workbench{container-type:inline-size}",
+		".am-version,.am-popover-anchor{position:relative;min-width:0}.am-version{width:max-content;max-width:100%;font-size:12px;line-height:1.6}.am-version-line{display:flex;align-items:center;gap:8px}.am-version-label{width:72px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.am-version-line .am-btn{flex:none}.am-version-line .am-btn[aria-disabled=true]{color:var(--am-text-tertiary);cursor:wait}.am-version a{color:var(--am-accent);text-decoration:underline}.am-update-result{display:grid;gap:6px;padding-top:6px;border-top:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18))}.am-update-result .am-btn{justify-self:start}",
+		".am-popover{display:grid;gap:5px;padding:10px 12px;min-width:0;width:max-content;max-width:290px;font-size:12px;line-height:1.6;overflow-wrap:anywhere}.am-version-details{width:284px}.am-popover-hint,.am-scope{margin:4px 0;color:var(--am-text-secondary);font-size:12px;line-height:1.55}.am-batch-menu .am-btn{justify-content:flex-start;text-align:start}.am-help{font-size:12px;line-height:1.55;color:var(--am-text-secondary)}",
+		".am-viewbar{flex-wrap:nowrap;gap:8px}.am-viewbar .am-tabs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);flex:0 1 284px;min-width:0}.am-tab{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-inline:8px}",
+		".am-controls{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,168px) minmax(0,138px);gap:8px;padding:8px 12px}.am-controls .am-select,.am-controls .am-select-trigger{width:100%;min-width:0}.am-context-control,.am-sort,.am-search{min-width:0}.am-search input::-webkit-search-cancel-button{appearance:none}.am-search-clear{flex:none}.am-select-menu{max-height:min(330px,56vh);overflow:auto;translate:var(--am-popover-shift,0px) 0}.am-select-menu .am-popover-hint{padding-inline:8px;white-space:normal}.am-select-option{white-space:normal}.am-select-option-label{min-width:0;overflow-wrap:anywhere}",
+		".am-summary,.am-toolbar{display:grid;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.12));font-size:12px}.am-summary{grid-template-columns:minmax(0,1.65fr) 53px minmax(0,1fr) 90px 92px;color:var(--am-text-secondary)}.am-summary-total,.am-summary-status,.am-selected-count,.am-stats{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.am-quiet,.am-quiet:disabled{border-color:transparent}.am-summary .am-btn,.am-batch>.am-btn{width:100%;min-width:0;padding-inline:5px}.am-empty-all span,.am-batch-purge span,.am-batch>.am-btn span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.am-invisible{visibility:hidden}",
+		".am-toolbar{grid-template-columns:max-content minmax(0,1fr) 113px 148px}.am-toolbar label{min-width:0;white-space:nowrap}.am-selected-count{font-weight:600;color:var(--am-accent)}.am-batch-purge{min-width:0;padding-inline:6px}.am-batch .am-popover{left:auto;right:0;width:max-content}",
+		".am-list-area,.am-empty-card{min-height:144px}.am-empty-card{box-sizing:border-box;justify-content:center;padding:15px 18px}",
+		".am-list{overflow:visible}.am-row{grid-template-columns:28px minmax(120px,1fr) minmax(64px,90px) auto;gap:12px;padding:10px 12px}.am-row-title{display:block;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;border:0;padding:0;background:transparent;color:var(--am-text-primary);text-align:left;cursor:pointer;font:inherit;font-size:14px;font-weight:500;line-height:1.5}.am-row-title:hover{text-decoration:underline}.am-row-title:focus-visible,.am-search-clear:focus-visible,.am-info-scroll:focus-visible{outline:2px solid var(--am-accent);outline-offset:2px}.am-titleline{align-items:center}.am-check-target{display:flex;width:28px;min-height:28px;align-items:center;justify-content:center;cursor:pointer}.am-check{margin:0}.am-log-size{display:flex;flex-direction:column;gap:2px;align-items:flex-end;font-size:12px;font-variant-numeric:tabular-nums}.am-log-size strong{font-weight:500}.am-badge{flex:none;font-size:12px}.am-row-actions{gap:6px;max-width:100%}",
+		".am-warning-text{color:var(--am-warning);overflow-wrap:anywhere}.am-select-option:disabled{color:var(--am-text-tertiary);cursor:not-allowed}.am-details,.am-report{display:grid;gap:6px;min-width:0;font-size:12px;line-height:1.6}.am-report p{margin:0}.am-report-list{display:grid;gap:4px;padding-inline-start:18px;margin:4px 0 0}.am-report-item,.am-path{white-space:pre-wrap;overflow-wrap:anywhere}.am-path{user-select:text}.am-info-scroll{overflow:auto;min-height:0;padding:3px}.am-info-modal .am-modal-actions{flex:none}.am-file-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}.am-file-list p{margin:0}.am-file{display:flex;flex-direction:column;align-items:flex-start;gap:5px;padding:9px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.16));border-radius:8px;min-width:0}.am-file>div{max-width:100%}.am-modal{background:var(--am-surface)}.am-modal-actions{flex-wrap:wrap}",
+		"@container (max-width:820px){.am-row{grid-template-columns:28px minmax(0,1fr) auto}.am-row-actions{grid-column:2/-1;justify-self:start;justify-content:flex-start;padding-top:2px}.am-log-size{grid-column:3;grid-row:1}}",
+		"@container (max-width:520px){.am-controls{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.am-search{grid-column:1/-1}.am-summary{grid-template-columns:minmax(0,1fr) 53px 90px 92px;grid-template-rows:32px 18px;gap:3px 5px}.am-summary-status{grid-row:2;grid-column:1/-1}.am-toolbar{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:28px 32px;gap:4px 6px}.am-toolbar .am-stats,.am-toolbar .am-selected-count{justify-self:end}.am-viewbar .am-refresh{width:34px;padding:0;flex:none}.am-refresh span{display:none}}",
+		"@container (max-width:380px){.am-summary{grid-template-columns:minmax(0,1fr) 44px 73px 79px;grid-template-rows:32px 24px;padding-inline:8px}.am-summary-total{grid-column:1/3;grid-row:1}.am-scope-anchor{grid-column:2;grid-row:2}.am-summary-status{grid-column:1;grid-row:2}.am-result{grid-column:3;grid-row:1}.am-empty-all{grid-column:4;grid-row:1}.am-controls,.am-toolbar,.am-viewbar{padding-inline:8px}.am-row{grid-template-columns:24px minmax(0,1fr);gap:6px}.am-log-size{grid-column:2;grid-row:auto;flex-direction:row;gap:7px;align-items:baseline}.am-row-actions{grid-column:2}.am-row-actions .am-btn{padding-inline:6px}.am-row .am-titleline{gap:4px}}",
+		"@media (max-width:520px){.am-modal-backdrop{padding:12px}.am-version-line{gap:5px}.am-version-label{width:56px}.am-version-line .am-btn{padding-inline:8px}}",
 	].join("\n");
 
 	var stylesInjected = false;
@@ -746,22 +726,17 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		var updatePhase = updatePhaseState[0], setUpdatePhase = updatePhaseState[1];
 		var filesState = useState({});
 		var files = filesState[0], setFiles = filesState[1];
-		var expandedState = useState({});
-		var expanded = expandedState[0], setExpanded = expandedState[1];
-		var reportAllState = useState(false);
-		var reportAll = reportAllState[0], setReportAll = reportAllState[1];
+		var infoState = useState(null);
+		var info = infoState[0], setInfo = infoState[1];
 		var selectionNoticeState = useState("");
 		var selectionNotice = selectionNoticeState[0], setSelectionNotice = selectionNoticeState[1];
-		var retentionExpandedState = useState(false);
-		var retentionExpanded = retentionExpandedState[0], setRetentionExpanded = retentionExpandedState[1];
 		var operationCountState = useState(0);
 		var operationCount = operationCountState[0], setOperationCount = operationCountState[1];
 		var updateErrorState = useState("");
 		var updateError = updateErrorState[0], setUpdateError = updateErrorState[1];
 		var removedWarningsState = useState([]);
 		var removedWarnings = removedWarningsState[0], setRemovedWarnings = removedWarningsState[1];
-		var versionDetailsState = useState(false);
-		var versionDetails = versionDetailsState[0], setVersionDetails = versionDetailsState[1];
+		var dialogOpen = confirm !== null || info !== null;
 		var locked = busy || Boolean(update && update.busy) || updatePhase === "preparing" || phase !== "ready";
 		var actionRef = React.useRef(false);
 		var updateRef = React.useRef(false);
@@ -772,6 +747,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		var removedAllRef = React.useRef(null);
 		var pendingFocusRef = React.useRef(false);
 		var loadRef = React.useRef(false);
+		var hasSnapshotRef = React.useRef(false);
 		var confirmRef = React.useRef(null);
 		var menuRef = React.useRef(null);
 		var menuTriggerRef = React.useRef(null);
@@ -786,10 +762,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			if (loadRef.current) return Promise.resolve();
 			loadRef.current = true;
 			setPhase("loading");
-			if (silent !== true) {
-				setError(null);
-				setReport(null);
-			}
+			if (silent !== true) setError(null);
 			return Promise.all([
 				request("/list"),
 				request("/settings").catch(function () { return null; })
@@ -799,6 +772,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				var settingsData = pair[1];
 				var nextItems = Array.isArray(data.items) ? data.items : [];
 				var nextRemoved = Array.isArray(data.removed) ? data.removed : [];
+				hasSnapshotRef.current = true;
 				setItems(nextItems);
 				setRemoved(nextRemoved);
 				setRemovedWarnings(Array.isArray(data.removedWarnings) ? data.removedWarnings : []);
@@ -817,7 +791,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				setPhase("ready");
 			}).catch(function (failure) {
 				setError(String(failure && failure.message ? failure.message : failure));
-				setPhase(items.length > 0 || removed.length > 0 ? "stale" : "failed");
+				setPhase(hasSnapshotRef.current ? "stale" : "failed");
 			}).finally(function () {
 				loadRef.current = false;
 			});
@@ -828,26 +802,19 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}, []);
 
 		useEffect(function () {
-			if (toast === null) return undefined;
-			var timer = setTimeout(function () { setToast(null); }, 6000);
-			return function () { clearTimeout(timer); };
-		}, [toast]);
-
-		useEffect(function () {
-			if (confirm !== null || busy === true) setMenu(null);
-		}, [confirm, busy]);
+			if (dialogOpen || busy) setMenu(null);
+		}, [dialogOpen, busy]);
 
 		useEffect(function () {
 			if (menu === null) return;
-			if (menu === "sort" && (tab !== "archived" || items.length === 0)) setMenu(null);
-			else if (menu === "removedSort" && (tab !== "removed" || removed.length === 0)) setMenu(null);
-			else if (menu === "retention" && tab !== "removed") setMenu(null);
-		}, [menu, tab, items.length, removed.length]);
+			if (locked && menu !== "version" && menu !== "scope") setMenu(null);
+		}, [menu, locked]);
 
 		useEffect(function () {
 			if (menu === null || !menuRef.current) return;
 			var target = menuRef.current.querySelector('[aria-selected="true"]')
-				|| menuRef.current.querySelector('[role="option"]');
+				|| menuRef.current.querySelector('[role="option"]')
+				|| (menu === "batch" ? menuRef.current.querySelector("button:not(:disabled)") : null);
 			if (target && typeof target.focus === "function") target.focus();
 		}, [menu]);
 
@@ -856,7 +823,21 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			function onDown(event) {
 				if (menuRef.current && menuRef.current.contains(event.target)) return;
 				if (menuTriggerRef.current && menuTriggerRef.current.contains(event.target)) return;
+				if (menu === "version" && event.target.closest(".am-version-line")) return;
 				setMenu(null);
+			}
+			function position() {
+				var popup = menuRef.current;
+				if (!popup) return;
+				var page = popup.closest(".am-page");
+				if (!page) return;
+				var bounds = page.getBoundingClientRect();
+				popup.style.maxWidth = Math.min(290, Math.max(0, bounds.width - 12)) + "px";
+				popup.style.setProperty("--am-popover-shift", "0px");
+				var rect = popup.getBoundingClientRect();
+				var shift = rect.left < bounds.left + 5 ? bounds.left + 5 - rect.left
+					: rect.right > bounds.right - 5 ? bounds.right - 5 - rect.right : 0;
+				popup.style.setProperty("--am-popover-shift", shift + "px");
 			}
 			function onKey(event) {
 				if (event.key !== "Escape") return;
@@ -868,19 +849,30 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				}
 			}
 			document.addEventListener("mousedown", onDown);
-			document.addEventListener("keydown", onKey);
+			// Catch Escape before the enclosing DSH Settings dialog handles it.
+			window.addEventListener("keydown", onKey, true);
+			window.addEventListener("resize", position);
+			position();
+			var observer = menuRef.current && typeof window.ResizeObserver === "function" ? new window.ResizeObserver(position) : null;
+			if (observer) observer.observe(menuRef.current);
 			return function () {
+				if (observer) observer.disconnect();
 				document.removeEventListener("mousedown", onDown);
-				document.removeEventListener("keydown", onKey);
+				window.removeEventListener("keydown", onKey, true);
+				window.removeEventListener("resize", position);
 			};
 		}, [menu]);
 
 		useEffect(function () {
-			if (confirm === null) return undefined;
+			if (!dialogOpen) return undefined;
 			function onKey(event) {
-				if (event.key === "Escape" && !actionRef.current) {
+				if (event.key === "Escape") {
 					event.preventDefault();
-					setConfirm(null);
+					event.stopPropagation();
+					if (!actionRef.current || info !== null) {
+						setConfirm(null);
+						setInfo(null);
+					}
 					return;
 				}
 				if (event.key !== "Tab" || !confirmRef.current) return;
@@ -904,18 +896,18 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 					first.focus();
 				}
 			}
-			document.addEventListener("keydown", onKey);
+			window.addEventListener("keydown", onKey, true);
 			if (cancelRef.current && typeof cancelRef.current.focus === "function") cancelRef.current.focus();
 			return function () {
-				document.removeEventListener("keydown", onKey);
+				window.removeEventListener("keydown", onKey, true);
 				pendingFocusRef.current = true;
 			};
-		}, [confirm !== null]);
+		}, [dialogOpen, info !== null]);
 
 		// Closing a submitted dialog often coincides with a list refresh. Wait
 		// until a connected target is enabled; focusing disabled buttons is a no-op.
 		useEffect(function () {
-			if (!pendingFocusRef.current || confirm !== null || busy || update && update.busy || updatePhase === "preparing") return;
+			if (!pendingFocusRef.current || dialogOpen || busy || update && update.busy || updatePhase === "preparing") return;
 			var candidates = [returnFocusRef.current, tab === "removed" ? removedAllRef.current : archivedAllRef.current, refreshRef.current];
 			for (var index = 0; index < candidates.length; index++) {
 				var target = candidates[index];
@@ -925,12 +917,12 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 					return;
 				}
 			}
-		}, [confirm !== null, phase, busy, Boolean(update && update.busy), updatePhase, tab]);
+		}, [dialogOpen, phase, busy, Boolean(update && update.busy), updatePhase, tab]);
 
 		useEffect(function () {
 			var last = 0;
 			function refresh() {
-				if (locked || actionRef.current || confirm !== null) return;
+				if (locked || actionRef.current || dialogOpen) return;
 				var now = Date.now();
 				if (now - last < 5000) return;
 				last = now;
@@ -947,7 +939,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				document.removeEventListener("visibilitychange", onVisibility);
 				clearInterval(timer);
 			};
-		}, [locked, confirm]);
+		}, [locked, dialogOpen]);
 
 		function itemText(item) {
 			return [
@@ -960,7 +952,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		function entryText(entry) {
 			return [
 				entry && entry.title ? entry.title : "",
-				entry && entry.workspace ? entry.workspace : "",
+				entry && entry.workspace ? typeof entry.workspace === "object" ? entry.workspace.title || "" : entry.workspace : "",
 				entry && entry.id ? entry.id : ""
 			].join(" ").toLowerCase();
 		}
@@ -1150,8 +1142,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			actionRef.current = true;
 			setBusy(true);
 			setOperationCount(count);
+			setToast(null);
 			setReport(null);
-			setReportAll(false);
 			setMenu(null);
 			return true;
 		}
@@ -1256,7 +1248,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function openConfirm(kind, entries, options) {
-			if (locked || actionRef.current || confirm !== null) return;
+			if (locked || actionRef.current || dialogOpen) return;
 			var plan = localPlan(kind, entries);
 			var global = kind === "empty" || kind === "retention";
 			if (!global && plan.targets.length > MAX_BATCH) {
@@ -1269,7 +1261,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				runPlan(plan);
 				return;
 			}
-			returnFocusRef.current = document.activeElement;
+			returnFocusRef.current = options && options.trigger || document.activeElement;
 			setMenu(null);
 			if (!serverPreview) {
 				setConfirm(plan);
@@ -1392,14 +1384,14 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function details(item, removedItem) {
-			var key = fileKey(item);
-			if (!expanded[key]) return null;
 			var workspace = item.workspace && typeof item.workspace === "object" ? item.workspace.path : item.workspacePath;
-			return h("div", { key: "details", className: "am-details", id: "am-detail-" + key.replace(/[^a-zA-Z0-9_-]/g, "-") }, [
-				h("div", { key: "title", className: "am-path" }, item.title || tr("noTitle")),
+			var actions = removedItem ? ["restore", "discard"] : item.missing ? ["forget"] : ["purge"];
+			var blockers = actions.map(function (action) { return capability(item, action); }).filter(function (access) { return access !== true; })
+				.map(function (access) { return errorText(access.code, access.reason); });
+			var warnings = Array.from(new Set([item.protectionReason, item.sizeWarning].concat(blockers).filter(Boolean)));
+			return h("div", { key: "details", className: "am-details" }, [
 				h("div", { key: "id", className: "am-path" }, "ID：" + item.id),
-				item.protectionReason ? h("div", { key: "protection", className: "am-warning-text" }, item.protectionReason) : null,
-				item.sizeWarning && item.sizeWarning !== item.protectionReason ? h("div", { key: "sizeWarning", className: "am-warning-text" }, item.sizeWarning) : null,
+				warnings.map(function (warning) { return h("div", { key: warning, className: "am-warning-text" }, warning); }),
 				workspace ? h("div", { key: "workspace", className: "am-path" }, tr("workspacePath") + "：" + workspace) : null,
 				h("div", { key: "times", className: "am-row-meta am-row-times" }, removedItem
 					? timeItem("moved", tr("movedAt"), tr("tipMovedAtLabel"), fmtTime(item.movedAt))
@@ -1408,20 +1400,16 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			]);
 		}
 		function rowMain(item, removedItem) {
-			var key = fileKey(item), open = Boolean(expanded[key]);
 			var workspace = item.workspace && typeof item.workspace === "object" ? item.workspace.title : item.workspace;
 			var access = capability(item, removedItem ? "discard" : "purge");
 			var restoreAccess = removedItem ? capability(item, "restore") : true;
 			var blocked = access !== true ? access : restoreAccess !== true ? restoreAccess : null;
-			var blockedReason = blocked && errorText(blocked.code, blocked.reason);
 			return h("div", { key: "main", className: "am-main" }, [
 				h("div", { key: "titleline", className: "am-titleline" }, [
-					h("button", { key: "title", type: "button", className: "am-row-title", title: item.title || item.id, "aria-expanded": open, "aria-controls": open ? "am-detail-" + key.replace(/[^a-zA-Z0-9_-]/g, "-") : undefined, onClick: function () { setExpanded(function (current) { var next = Object.assign({}, current); next[key] = !current[key]; return next; }); } }, item.title || tr("noTitle")),
-					item.running ? h("span", { key: "running", className: "am-badge danger" }, tr("running")) : item.missing ? h("span", { key: "missing", className: "am-badge warn" }, tr("missing")) : blocked ? h("span", { key: "protected", className: "am-badge warn" }, tr(blocked.code === "occupied" ? "occupied" : "protectedReason")) : null
+					h("button", { key: "title", type: "button", className: "am-row-title", title: item.title || item.id, "aria-haspopup": "dialog", onClick: function (event) { openInfo({ item: item, removed: removedItem }, event.currentTarget); } }, item.title || tr("noTitle")),
+					item.running ? h("span", { key: "running", className: "am-badge danger" }, tr("running")) : item.missing ? h("span", { key: "missing", className: "am-badge warn" }, tr("missing")) : blocked ? h("span", { key: "protected", className: "am-badge warn", title: errorText(blocked.code, blocked.reason) }, tr(blocked.code === "occupied" ? "occupied" : "protectedReason")) : null
 				]),
-				h("div", { key: "meta", className: "am-row-meta", title: workspace || "" }, (workspace || "—") + " · " + (removedItem ? tr("movedAt") : tr("lastUsedLabel")) + " " + (typeof (removedItem ? item.movedAt : item.lastUsedAt) === "number" ? fmtAge(removedItem ? item.movedAt : item.lastUsedAt) : tr("unknownTime"))),
-				blockedReason && !item.running && !item.missing ? h("div", { key: "blocked", className: "am-help am-warning-text" }, blockedReason) : null,
-				h("span", { key: "hint", className: "am-help" }, tr("details") + (open ? " ▴" : " ▾"))
+				h("div", { key: "meta", className: "am-row-meta", title: workspace || "" }, (workspace || "—") + " · " + (removedItem ? tr("movedAt") : tr("lastUsedLabel")) + " " + (typeof (removedItem ? item.movedAt : item.lastUsedAt) === "number" ? fmtAge(removedItem ? item.movedAt : item.lastUsedAt) : tr("unknownTime")))
 			]);
 		}
 
@@ -1445,7 +1433,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				h("label", { key: "check", className: "am-check-target" }, h("input", { type: "checkbox", className: "am-check", checked: checked, disabled: locked || Boolean(item.running), onChange: function () { if (!item.running) toggle(item.id); }, "aria-label": item.title || item.id })),
 				rowMain(item, false),
 				h("div", { key: "size", className: "am-log-size" }, [h("span", { key: "label", className: "am-help" }, tr("logSize")), h("strong", { key: "value" }, logSizeText(item, false))]),
-				h("div", { key: "actions", className: "am-row-actions" }, actions), details(item, false)
+				h("div", { key: "actions", className: "am-row-actions" }, actions)
 			]);
 		}
 		function removedRow(entry) {
@@ -1457,8 +1445,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				h("label", { key: "check", className: "am-check-target" }, h("input", { type: "checkbox", className: "am-check", checked: checked, disabled: locked, onChange: function () { toggleRemoved(key); }, "aria-label": entry.title || entry.id })),
 				rowMain(entry, true),
 				h("div", { key: "size", className: "am-log-size" }, [h("span", { key: "label", className: "am-help" }, tr("logSize")), h("strong", { key: "value" }, logSizeText(entry, true))]),
-				h("div", { key: "actions", className: "am-row-actions" }, actions),
-				details(entry, true)
+				h("div", { key: "actions", className: "am-row-actions" }, actions)
 			]);
 		}
 
@@ -1473,7 +1460,9 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function updateStatus() {
-			return request("/update/status").then(function (data) { setUpdate(function (current) { return Object.assign({}, current || {}, data); }); setUpdateError(""); }).catch(function () { setUpdateError(tr("updateUnknown")); });
+			return request("/update/status").then(function (data) {
+				setUpdate(function (current) { return Object.assign({}, current || {}, data); });
+			}).catch(function () { /* an explicit check reports its own error */ });
 		}
 		useEffect(function () {
 			void updateStatus();
@@ -1482,8 +1471,10 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			var timer = setInterval(check, 5000);
 			return function () { window.removeEventListener("focus", check); clearInterval(timer); };
 		}, []);
-		function checkUpdate() {
-			if (updateRef.current) return;
+		function checkUpdate(trigger) {
+			if (updateRef.current || update && update.busy) return;
+			menuTriggerRef.current = trigger;
+			setMenu("version");
 			updateRef.current = true;
 			setUpdatePhase("checking"); setUpdateError("");
 			request("/update/check", {}).then(function (data) { setUpdate(data); }).catch(function (error) { setUpdateError(tr("updateFailed", { message: error.message || error })); }).finally(function () { updateRef.current = false; setUpdatePhase(""); });
@@ -1497,37 +1488,61 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				window.open(data.controlUrl, "_blank", "noopener,noreferrer");
 			}).catch(function (error) { setUpdateError(error.message || String(error)); }).finally(function () { updateRef.current = false; setUpdatePhase(""); void updateStatus(); });
 		}
+		function togglePopover(id, trigger) {
+			menuTriggerRef.current = trigger;
+			setMenu(menu === id ? null : id);
+		}
+
+		function popover(id, label, content, className) {
+			return menu === id ? h("div", {
+				key: "popover", id: "am-popover-" + id, ref: menuRef, role: "region", "aria-label": label,
+				className: "am-select-menu am-popover" + (className ? " " + className : "")
+			}, content) : null;
+		}
+
 		function versionPanel() {
 			var mismatch = update && ((update.runtimeVersion && update.runtimeVersion !== CLIENT_VERSION) || (update.installedVersion && update.installedVersion !== CLIENT_VERSION));
-			var confirmed = update && update.runtimeVersion === CLIENT_VERSION && update.installedVersion === CLIENT_VERSION;
 			var source = update && update.sourceKind;
 			var sourceText = source === "link" ? tr("localSource") : source === "release" ? tr("releaseSource") : source === "missing" ? tr("missingSource") : tr("unknownSource");
 			var release = update && update.release;
 			var control = update && (update.controlUrl || update.job && update.job.controlUrl);
+			var currentVersion = "v" + CLIENT_VERSION;
+			var version = mismatch ? tr("pendingUpdate") : currentVersion;
+			var detailsLabel = tr("versionDetails");
 			return h("div", { key: "version", className: "am-version" }, [
 				h("div", { key: "line", className: "am-version-line" }, [
-					h("span", { key: "version", className: "am-version-label" }, mismatch ? tr("pendingUpdate") : confirmed ? "v" + CLIENT_VERSION : tr("versionChecking", { version: CLIENT_VERSION })),
-					h("button", { key: "details-toggle", type: "button", className: "am-btn am-version-toggle", "aria-expanded": versionDetails, "aria-controls": "am-version-details", onClick: function () { setVersionDetails(!versionDetails); } }, tr("versionDetails")),
-					source === "link" ? h("span", { key: "source", className: "am-badge muted" }, tr("localSource")) : null,
-					button("check", updatePhase === "checking" ? tr("checkingUpdate") : tr("checkUpdate"), checkUpdate, updatePhase !== "" || Boolean(update && update.busy))
+					h("span", { key: "version", className: "am-version-label", title: mismatch ? currentVersion + " · " + version : currentVersion }, version),
+					h("button", {
+						key: "details-toggle", type: "button", className: "am-btn am-version-toggle", "aria-expanded": menu === "version", "aria-controls": "am-popover-version",
+						onClick: function (event) { togglePopover("version", event.currentTarget); }
+					}, detailsLabel),
+					h("button", {
+						key: "check", type: "button", className: "am-btn am-check-update", "aria-controls": "am-popover-version",
+						"aria-expanded": menu === "version", "aria-disabled": Boolean(updatePhase || update && update.busy),
+						onClick: function (event) { checkUpdate(event.currentTarget); }
+					}, tr("checkUpdate"))
 				]),
-				versionDetails ? h("div", { key: "details", id: "am-version-details", className: "am-version-details" }, [
-					h("div", { key: "page" }, tr("pageVersion") + "：v" + CLIENT_VERSION),
+				popover("version", detailsLabel, [
+					h("strong", { key: "title" }, detailsLabel),
+					h("div", { key: "page" }, tr("pageVersion") + "：" + currentVersion),
 					h("div", { key: "runtime" }, tr("serviceVersion") + "：" + (update && update.runtimeVersion || tr("notProvided"))),
 					h("div", { key: "installed" }, tr("installedVersion") + "：" + (update && update.installedVersion || tr("notProvided"))),
-					h("div", { key: "source" }, tr("source") + "：" + sourceText)
-				]) : null,
-				updateError ? h("div", { key: "error", className: "am-warning-text", role: "status" }, updateError) : null,
-				update && update.busy ? h("div", { key: "busy", role: "status" }, tr("updateBusy")) : null,
-				release ? h("div", { key: "release", className: "am-update-result" }, [
-					h("span", { key: "relation" }, update.relation === "same" ? tr("latestRelease", { version: release.version }) : update.relation === "older" ? tr("aheadRelease", { version: release.version }) : tr("checkedRelease", { version: release.version })),
-					release.htmlUrl && /^https:\/\/github\.com\/chen1pengvincent\/dsh-archived-manager\/releases\//.test(release.htmlUrl) ? h("a", { key: "notes", href: release.htmlUrl, target: "_blank", rel: "noopener noreferrer" }, tr("releaseNotes")) : null,
-					update.checkedAt ? h("span", { key: "checked", className: "am-help" }, tr("checkedAt") + " " + fmtTime(typeof update.checkedAt === "number" ? update.checkedAt : Date.parse(update.checkedAt))) : null,
-					(source === "link" || update.relation === "newer") && update.relation !== "older" ? button("install", updatePhase === "preparing" ? tr("updatePreparing") : source === "link" ? tr("switchRelease") : tr("updateTo", { version: release.version }), prepareUpdate, locked || !update.canUpdate || updatePhase !== "") : null,
-					!update.canUpdate && update.capabilityReason ? h("div", { key: "reason", className: "am-help" }, update.capabilityReason) : null
-				]) : null,
-				validControlUrl(control) ? h("div", { key: "control", className: "am-update-result" }, [h("a", { key: "link", href: control, target: "_blank", rel: "noopener noreferrer" }, tr("updateContinue")), h("span", { key: "hint", className: "am-help" }, tr("updateHandoff"))]) : null,
-				update && update.job && update.job.error ? h("div", { key: "jobError", className: "am-warning-text", role: "status" }, update.job.error) : null
+					h("div", { key: "source" }, tr("source") + "：" + sourceText),
+					h("div", { key: "check-status", role: "status", className: updateError ? "am-warning-text" : "am-help" },
+						updatePhase === "checking" ? tr("checkingUpdate") : updateError || (update && update.busy ? tr("updateBusy") : "")),
+					release && updatePhase !== "checking" && !updateError ? h("div", { key: "release", className: "am-update-result" }, [
+						h("div", { key: "relation", role: "status" }, update.relation === "same" ? tr("latestRelease", { version: release.version }) : update.relation === "older" ? tr("aheadRelease", { version: release.version }) : tr("checkedRelease", { version: release.version })),
+						release.htmlUrl && /^https:\/\/github\.com\/chen1pengvincent\/dsh-archived-manager\/releases\//.test(release.htmlUrl) ? h("a", { key: "notes", href: release.htmlUrl, target: "_blank", rel: "noopener noreferrer" }, tr("releaseNotes")) : null,
+						update.checkedAt ? h("div", { key: "checked", className: "am-help" }, tr("checkedAt") + " " + fmtTime(typeof update.checkedAt === "number" ? update.checkedAt : Date.parse(update.checkedAt))) : null,
+						(source === "link" || update.relation === "newer") && update.relation !== "older" ? button("install", updatePhase === "preparing" ? tr("updatePreparing") : source === "link" ? tr("switchRelease") : tr("updateTo", { version: release.version }), prepareUpdate, locked || !update.canUpdate || updatePhase !== "") : null,
+						!update.canUpdate && update.capabilityReason ? h("div", { key: "reason", className: "am-help" }, update.capabilityReason) : null
+					]) : null,
+					validControlUrl(control) ? h("div", { key: "control", className: "am-update-result" }, [
+						h("a", { key: "link", href: control, target: "_blank", rel: "noopener noreferrer" }, tr("updateContinue")),
+						h("div", { key: "hint", className: "am-help" }, tr("updateHandoff"))
+					]) : null,
+					update && update.job && update.job.error ? h("div", { key: "jobError", className: "am-warning-text", role: "status" }, update.job.error) : null
+				], "am-version-details")
 			]);
 		}
 
@@ -1562,21 +1577,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 
 		function emptyCard(key, title, hint, action) {
 			return h("div", { key: key, className: "am-empty-card" }, [
-				h("div", { key: "icon", className: "am-empty-icon", "aria-hidden": "true" },
-					h("svg", {
-						width: 22,
-						height: 22,
-						viewBox: "0 0 24 24",
-						fill: "none",
-						stroke: "currentColor",
-						strokeWidth: 1.6,
-						"stroke-linecap": "round",
-						"stroke-linejoin": "round"
-					}, [
-						h("path", { key: "box", d: "M4 8h16v11a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8z" }),
-						h("path", { key: "lid", d: "M3 4h18v4H3z" })
-					])
-				),
 				h("div", { key: "title", className: "am-empty-title" }, title),
 				h("div", { key: "hint", className: "am-empty-hint" }, hint),
 				action ? h("div", { key: "actions", className: "am-empty-actions" }, action) : null
@@ -1683,21 +1683,9 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			);
 		}
 
-		function filterChip(id, label, count) {
-			return h("button", {
-				key: id,
-				type: "button",
-				className: "am-chip" + (filter === id ? " active" : ""),
-				"aria-pressed": filter === id,
-				disabled: locked,
-				onClick: function () { if (!locked && !actionRef.current) setFilter(id); }
-			}, [
-				h("span", { key: "label" }, label),
-				h("span", { key: "count", className: "am-chip-count" }, String(count))
-			]);
-		}
-
-		function dropdown(id, value, options, onChange, ariaLabel, alignRight) {
+		function dropdown(id, value, options, onChange, ariaLabel, presentation) {
+			var style = presentation || {};
+			var disabled = locked || style.disabled;
 			var current = options.filter(function (option) { return String(option.value) === String(value); })[0];
 			var open = menu === id;
 
@@ -1709,13 +1697,13 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			}
 
 			function choose(next) {
-				if (locked || actionRef.current) return;
+				if (disabled || actionRef.current) return;
 				closeAndFocus();
 				onChange(next);
 			}
 
 			function toggle(event) {
-				if (locked || actionRef.current) return;
+				if (disabled || actionRef.current) return;
 				if (open) {
 					setMenu(null);
 					if (typeof event.currentTarget.focus === "function") event.currentTarget.focus();
@@ -1726,7 +1714,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			}
 
 			function onTriggerKey(event) {
-				if (locked || actionRef.current) return;
+				if (disabled || actionRef.current) return;
 				if (event.key === "ArrowDown") {
 					event.preventDefault();
 					menuTriggerRef.current = event.currentTarget;
@@ -1773,7 +1761,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 
 			return h("div", {
 				key: id,
-				className: "am-select" + (alignRight ? " am-select-right" : ""),
+				className: "am-select" + (style.alignRight ? " am-select-right" : ""),
 				onBlur: onBlur
 			}, [
 				h("button", {
@@ -1788,30 +1776,31 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 					onClick: toggle,
 					onKeyDown: onTriggerKey
 				}, [
-					h("span", { key: "value", className: "am-select-value" }, current ? current.label : ""),
+					h("span", { key: "value", className: "am-select-value" }, style.label || (current ? current.label : "")),
 					chevron
 				]),
 				open ? h("div", {
 					key: "menu",
 					className: "am-select-menu",
-					role: "listbox",
-					"aria-label": ariaLabel,
 					ref: menuRef,
 					onKeyDown: onMenuKey
-				}, options.map(function (option) {
-					var selected = String(option.value) === String(value);
-					return h("button", {
-						key: String(option.value),
-						type: "button",
-						role: "option",
-						"aria-selected": selected,
-						className: "am-select-option" + (selected ? " selected" : ""),
-						onClick: function () { choose(option.value); }
-					}, [
-						h("span", { key: "label", className: "am-select-option-label" }, option.label),
-						selected ? h("span", { key: "check", className: "am-select-check", "aria-hidden": "true" }, "✓") : null
-					]);
-				})) : null
+				}, [
+					h("div", { key: "options", role: "listbox", "aria-label": ariaLabel }, options.map(function (option) {
+						var selected = String(option.value) === String(value);
+						return h("button", {
+							key: String(option.value),
+							type: "button",
+							role: "option",
+							"aria-selected": selected,
+							className: "am-select-option" + (selected ? " selected" : ""),
+							onClick: function () { choose(option.value); }
+						}, [
+							h("span", { key: "label", className: "am-select-option-label" }, option.label),
+							selected ? h("span", { key: "check", className: "am-select-check", "aria-hidden": "true" }, "✓") : null
+						]);
+					})),
+					style.hint ? h("p", { key: "hint", className: "am-popover-hint" }, style.hint) : null
+				]) : null
 			]);
 		}
 
@@ -1819,100 +1808,225 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			var entries = isRemoved ? selectedRemovedEntries : selectedItems;
 			var count = entries.length;
 			var total = isRemoved ? sortedRemoved.length : selectable.length;
-			var filesCount = entries.filter(function (entry) { return !entry.missing; }).length;
 			var actions = [];
-			var exceeded = false;
-			function add(kind, label, danger) {
+			var primaryKind = isRemoved ? "discard" : "purge";
+			var primaryCount = localPlan(primaryKind, entries).targets.length;
+			var exceeded = primaryCount > MAX_BATCH;
+			var filesCount = entries.filter(function (entry) { return !entry.missing; }).length;
+			function add(kind, label) {
 				var eligible = localPlan(kind, entries).targets.length;
 				if (!eligible) return;
 				if (eligible > MAX_BATCH) exceeded = true;
 				actions.push(button(kind, tr(label) + " (" + eligible + ")", function () {
-					openConfirm(kind, entries);
-				}, locked || eligible > MAX_BATCH, danger));
+					openConfirm(kind, entries, { trigger: menuTriggerRef.current });
+				}, locked || eligible > MAX_BATCH));
 			}
 			if (count > 0) {
-				actions.push(button("clear", tr("clearSelection"), function () { if (actionRef.current) return; if (isRemoved) setRemovedSelected([]); else setSelected([]); }, locked));
-				if (isRemoved) {
-					add("restore", "restore");
-					add("discard", "purge", true);
-				} else {
+				if (isRemoved) add("restore", "restore");
+				else {
 					add("unarchive", "unarchive");
 					add("hide", "hide");
 					add("cleanup", "cleanup");
-					add("purge", "purge", true);
 				}
+				actions.push(button("clear", tr("clearSelection"), function () {
+					if (actionRef.current) return;
+					setMenu(null);
+					if (isRemoved) setRemovedSelected([]);
+					else setSelected([]);
+					var checkbox = isRemoved ? removedAllRef.current : archivedAllRef.current;
+					if (checkbox) checkbox.focus();
+				}, locked));
 			}
+			if (exceeded) {
+				actions.push(h("p", { key: "limit", className: "am-popover-hint" }, tr("batchLimit")));
+			}
+			var batchLabel = tr("batchActions");
+			var summary = isRemoved ? tr("removedSelected", { n: count }) : tr("selectedSplit", { n: count, files: filesCount, missing: count - filesCount });
 			return h("div", { key: "toolbar", className: "am-toolbar" }, [
-				h("div", { key: "selection", className: "am-toolbar-group" }, [
-					h("label", { key: "all", className: "am-checkline" }, [h("input", { key: "box", type: "checkbox", className: "am-check", ref: isRemoved ? syncRemovedRef : syncAllRef, checked: isRemoved ? allRemovedSelected : allSelected, "aria-checked": count > 0 && !(isRemoved ? allRemovedSelected : allSelected) ? "mixed" : isRemoved ? allRemovedSelected : allSelected, disabled: locked || total === 0, onChange: isRemoved ? toggleAllRemoved : toggleAll }), h("span", { key: "text" }, tr("selectAll"))]),
-					h("span", { key: "count", className: count > 0 ? "am-selected-count" : "am-stats", role: "status" }, count > 0 ? isRemoved ? tr("removedSelected", { n: count }) : tr("selectedSplit", { n: count, files: filesCount, missing: count - filesCount }) : tr("selectHint")),
-					count > 0 ? h("span", { key: "bytes", className: "am-help" }, summarySize(entries, isRemoved)) : null
+				h("label", { key: "all", className: "am-checkline" }, [
+					h("input", { key: "box", type: "checkbox", className: "am-check", ref: isRemoved ? syncRemovedRef : syncAllRef, checked: isRemoved ? allRemovedSelected : allSelected, "aria-checked": count > 0 && !(isRemoved ? allRemovedSelected : allSelected) ? "mixed" : isRemoved ? allRemovedSelected : allSelected, disabled: locked || total === 0, onChange: isRemoved ? toggleAllRemoved : toggleAll }),
+					h("span", { key: "text" }, tr("selectAll"))
 				]),
-				actions.length ? h("div", { key: "actions", className: "am-toolbar-group" }, actions) : null,
-				exceeded ? h("div", { key: "limit", className: "am-batch-limit", role: "status" }, tr("batchLimit")) : null
+				h("span", { key: "count", className: count > 0 ? "am-selected-count" : "am-stats", role: "status", title: summary + " · " + summarySize(entries, isRemoved) }, tr("selected", { n: count })),
+				h("div", { key: "batch", className: "am-popover-anchor am-batch" }, [
+					h("button", {
+						key: "trigger", type: "button", className: "am-btn", "aria-expanded": menu === "batch", "aria-controls": "am-popover-batch", disabled: locked || !count,
+						onClick: function (event) { togglePopover("batch", event.currentTarget); }
+					}, [h("span", { key: "label" }, batchLabel), h("span", { key: "arrow", "aria-hidden": "true" }, "▾")]),
+					popover("batch", batchLabel, [
+						h("p", { key: "selection", className: "am-popover-hint" }, summary + " · " + summarySize(entries, isRemoved)),
+						actions
+					], "am-batch-menu")
+				]),
+				h("button", {
+					key: "purge", type: "button", className: "am-btn danger am-batch-purge",
+					title: primaryCount > MAX_BATCH ? tr("batchLimit") : tr("purge"),
+					disabled: locked || !primaryCount || primaryCount > MAX_BATCH,
+					onClick: function () { openConfirm(primaryKind, entries); }
+				}, h("span", null, tr("purge") + (primaryCount > 0 ? " (" + primaryCount + ")" : "")))
 			]);
 		}
-		function reportPanel() {
-			if (!report) return null;
-			var reasons = Array.isArray(report.failures) ? report.failures : [];
-			return h("div", { key: "report", className: "am-report", role: "status" }, [
-				h("div", { key: "title", className: "am-report-title" }, report.title),
-				h("div", { key: "reasons", className: "am-report-list" }, (reportAll ? reasons : reasons.slice(0, 4)).map(function (failure, index) { return h("div", { key: index, className: "am-report-item" }, failure.title + " · " + failure.reason); })),
-				h("div", { key: "actions", className: "am-report-actions" }, [reasons.length > 4 ? button("all", reportAll ? tr("showLess") : tr("showAllReasons", { n: reasons.length }), function () { setReportAll(!reportAll); }, false) : null, button("dismiss", tr("reportDismiss"), function () { setReport(null); }, false)])
-			]);
+
+		function openInfo(value, trigger) {
+			if (dialogOpen) return;
+			returnFocusRef.current = trigger;
+			setMenu(null);
+			setInfo(value);
 		}
+
+		function infoPanel() {
+			if (info === null) return null;
+			var item = info.item;
+			var title = item ? item.title || tr("noTitle") : tr("operationIdle");
+			var reasons = report ? report.failures : [];
+			var loadError = phase === "failed" || phase === "stale";
+			var warnings = info.showWarnings ? removedWarnings : [];
+			var content = item ? details(item, info.removed) : h("div", { className: "am-report" }, [
+				loadError ? h("p", { key: "error", className: "am-warning-text", role: "alert" }, tr("staleList") + " " + tr("failed", { message: error || "" })) : null,
+				report ? h("strong", { key: "report" }, report.title) : null,
+				toast && (!report || toast.text !== report.title) ? h("p", { key: "toast" }, toast.text) : null,
+				reasons.length ? h("ul", { key: "reasons", className: "am-report-list" }, reasons.map(function (entry, index) {
+					return h("li", { key: index, className: "am-report-item" }, entry.title + " · " + entry.reason);
+				})) : null,
+				warnings.length ? h("div", { key: "warnings" }, [
+					h("strong", { key: "title" }, tr("removedWarningsTitle", { n: warnings.length })),
+					h("p", { key: "hint" }, tr("removedWarningsHint")),
+					h("ul", { key: "reasons", className: "am-report-list" }, warnings.map(function (entry, index) {
+						return h("li", { key: index, className: "am-report-item" }, entry.batch + " · " + entry.reason);
+					}))
+				]) : null
+			]);
+			return h("div", {
+				key: "info", className: "am-modal-backdrop",
+				onMouseDown: function (event) { if (event.currentTarget === event.target) setInfo(null); }
+			}, h("div", {
+				className: "am-modal am-info-modal", ref: confirmRef, tabIndex: -1, role: "dialog", "aria-modal": "true", "aria-label": title
+			}, [
+				h("div", { key: "title", className: "am-modal-title am-path" }, title),
+				h("div", { key: "body", className: "am-info-scroll", tabIndex: 0 }, content),
+				h("div", { key: "actions", className: "am-modal-actions" }, [
+					!item && toast && toast.showRemoved && tab !== "removed" ? button("viewRemoved", tr("viewRemoved"), function () {
+						setInfo(null);
+						setTab("removed");
+					}, locked) : null,
+					!item && loadError ? button("retry", tr("retry"), function () {
+						setInfo(null);
+						void load({ keepSelection: true });
+					}, busy || Boolean(update && update.busy)) : null,
+					h("button", { key: "close", type: "button", ref: cancelRef, className: "am-btn", onClick: function () { setInfo(null); } }, tr("close"))
+				])
+			]));
+		}
+
 		function controls(isRemoved) {
 			var value = isRemoved ? removedQuery : query;
+			var filterOptions = [
+				{ value: "all", label: tr("filterAll") + " (" + items.length + ")" },
+				{ value: "files", label: tr("filterFiles") + " (" + filesCount + ")" },
+				{ value: "missing", label: tr("filterMissing") + " (" + missingCount + ")" }
+			];
+			var days = settings.trashRetentionDays || 0;
+			var autoLabel = tr("retentionControl");
+			var filterLabel = tr("filterLabel");
+			var sortOptions = [{ value: isRemoved ? "movedAt" : "lastUsed", label: tr(isRemoved ? "sortMoved" : "sortLastUsed") }];
+			if (!isRemoved) sortOptions.push({ value: "archived", label: tr("sortArchived") });
+			sortOptions.push({ value: "size", label: tr("sortSize") }, { value: "title", label: tr("sortTitle") });
 			return h("div", { key: "controls", className: "am-controls" }, [
-				h("div", { key: "search", className: "am-search" }, [searchGlyph(), h("input", { key: "input", type: "text", value: value, disabled: locked, placeholder: tr(isRemoved ? "removedSearchPlaceholder" : "searchPlaceholder"), "aria-label": tr(isRemoved ? "removedSearchPlaceholder" : "searchAria"), onChange: function (event) { if (locked || actionRef.current) return; if (isRemoved) setRemovedQuery(event.target.value); else setQuery(event.target.value); } }), value !== "" ? h("button", { key: "clear", type: "button", className: "am-search-clear", disabled: locked, "aria-label": tr("clearSearch"), onClick: function () { if (locked || actionRef.current) return; if (isRemoved) setRemovedQuery(""); else setQuery(""); } }, "×") : null]),
-				!isRemoved ? h("div", { key: "filter", className: "am-filter", role: "group", "aria-label": tr("filterAll") }, [filterChip("all", tr("filterAll"), items.length), filterChip("files", tr("filterFiles"), filesCount), filterChip("missing", tr("filterMissing"), missingCount)]) : null,
-				h("div", { key: "sort", className: "am-sort" }, [h("span", { key: "label" }, tr("sortLabel")), dropdown(isRemoved ? "removedSort" : "sort", isRemoved ? removedSort : sort, isRemoved ? [{ value: "movedAt", label: tr("sortMoved") }, { value: "size", label: tr("sortSize") }, { value: "title", label: tr("sortTitle") }] : [{ value: "lastUsed", label: tr("sortLastUsed") }, { value: "archived", label: tr("sortArchived") }, { value: "size", label: tr("sortSize") }, { value: "title", label: tr("sortTitle") }], function (next) { if (isRemoved) setRemovedSort(next); else setSort(next); }, tr("sortLabel"), true)])
-			]);
-		}
-		function retentionPanel() {
-			return h("div", { key: "retention", className: "am-retention" }, [
-				h("span", { key: "summary", className: "am-retention-label" }, tr("retentionSummary", { value: settings.unavailable ? tr("notProvided") : settings.trashRetentionDays > 0 ? tr("retentionAfter", { n: settings.trashRetentionDays }) : tr("retentionDisabled") })),
-				button("settings", tr("settings"), function () { setRetentionExpanded(!retentionExpanded); }, locked || settings.unavailable),
-				removed.length > 0 ? button("empty", tr("emptyTrash") + " (" + removed.length + ")", function () { openConfirm("empty", []); }, locked, true) : null,
-				retentionExpanded ? h("div", { key: "settingsPanel", className: "am-retention-settings" }, [h("span", { key: "title" }, tr("retentionTitle")), dropdown("retention", String(settings.trashRetentionDays || 0), [{ value: "0", label: tr("retentionNever") }, { value: "7", label: tr("retentionDays", { n: 7 }) }, { value: "30", label: tr("retentionDays", { n: 30 }) }, { value: "90", label: tr("retentionDays", { n: 90 }) }], changeRetention, tr("retentionLabel"), false), h("span", { key: "hint", className: "am-retention-hint" }, tr("retentionHint"))]) : null
+				h("div", { key: "search", className: "am-search" }, [
+					searchGlyph(),
+					h("input", { key: "input", type: "search", value: value, disabled: locked, placeholder: tr("searchPlaceholder"), "aria-label": tr(isRemoved ? "removedSearchPlaceholder" : "searchAria"), onChange: function (event) { if (locked || actionRef.current) return; if (isRemoved) setRemovedQuery(event.target.value); else setQuery(event.target.value); } }),
+					h("button", { key: "clear", type: "button", className: "am-search-clear" + (value ? "" : " am-invisible"), disabled: locked || !value, "aria-label": tr("clearSearch"), onClick: function () { if (locked || actionRef.current) return; if (isRemoved) setRemovedQuery(""); else setQuery(""); } }, "×")
+				]),
+				h("div", { key: "context", className: "am-context-control" }, isRemoved
+					? dropdown("retention", String(days), [0, 7, 30, 90].map(function (number) {
+						return { value: String(number), label: number === 0 ? tr("retentionNever") : tr("retentionAfter", { n: number }) };
+					}), changeRetention, autoLabel, {
+						alignRight: false, disabled: settings.unavailable,
+						label: autoLabel + " · " + (settings.unavailable ? tr("notProvided") : days ? tr("retentionShort", { n: days }) : tr("retentionDisabled")),
+						hint: tr("retentionExplanation")
+					})
+					: dropdown("filter", filter, filterOptions, setFilter, filterLabel, {
+						label: filterLabel + " · " + tr(filter === "all" ? "filterAll" : filter === "files" ? "filterFiles" : "filterMissing")
+					})),
+				h("div", { key: "sort", className: "am-sort" }, dropdown(isRemoved ? "removedSort" : "sort", isRemoved ? removedSort : sort, sortOptions, function (next) {
+					if (isRemoved) setRemovedSort(next);
+					else setSort(next);
+				}, tr("sortLabel"), { alignRight: true }))
 			]);
 		}
 
-		var children = [];
-		var workspace = [];
-		children.push(h("div", { key: "head", className: "am-head" }, [h("div", { key: "text", className: "am-head-text" }, [h("div", { key: "title", className: "am-title" }, tr("title")), h("div", { key: "sub", className: "am-sub" }, tr("subtitle"))]), versionPanel()]));
-		if (toast) children.push(h("div", { key: "toast", className: "am-toast " + (toast.kind === "ok" ? "ok" : "bad"), role: "status", "aria-live": "polite" }, [
-			h("span", { key: "text" }, toast.text),
-			toast.showRemoved && tab !== "removed" ? button("viewRemoved", tr("viewRemoved"), function () { setTab("removed"); }, locked) : null
-		]));
-		workspace.push(h("div", { key: "viewbar", className: "am-viewbar" }, [h("div", { key: "tabs", className: "am-tabs", role: "tablist", "aria-label": tr("title") }, [
-			h("button", { key: "archived", type: "button", role: "tab", "aria-selected": tab === "archived", className: "am-tab" + (tab === "archived" ? " active" : ""), disabled: busy || updatePhase === "preparing", onClick: function () { if (actionRef.current) return; setTab("archived"); setMenu(null); } }, tr("tabArchived") + " (" + items.length + ")"),
-			h("button", { key: "removed", type: "button", role: "tab", "aria-selected": tab === "removed", className: "am-tab" + (tab === "removed" ? " active" : ""), disabled: busy || updatePhase === "preparing", onClick: function () { if (actionRef.current) return; setTab("removed"); setMenu(null); } }, removedWarnings.length > 0 ? tr("knownTabCount", { label: tr("tabRemoved"), n: removed.length }) : tr("tabRemoved") + " (" + removed.length + ")")]), refreshButton()]));
-		if (phase === "loading") workspace.push(h("div", { key: "loading", className: "am-loading", role: "status" }, tr("loading")));
-		if (phase === "failed" || phase === "stale") workspace.push(h("div", { key: "error", className: "am-report", role: "alert" }, [h("span", { key: "text" }, tr("staleList") + " " + tr("failed", { message: error || "" })), button("retry", tr("retry"), function () { void load({ keepSelection: true }); }, busy || Boolean(update && update.busy))]));
-		if (busy) workspace.push(h("div", { key: "progress", className: "am-notice", role: "status" }, operationCount ? tr("processing", { n: operationCount }) : tr("busy")));
-		if (selectionNotice) workspace.push(h("div", { key: "selectionNotice", className: "am-notice", role: "status" }, selectionNotice));
-		if (report) workspace.push(reportPanel());
-		var hasSnapshot = phase === "ready" || phase === "stale" || items.length > 0 || removed.length > 0 || removedWarnings.length > 0;
-		if (hasSnapshot) {
-			var isRemoved = tab === "removed", all = isRemoved ? removed : items, visible = isRemoved ? sortedRemoved : sortedItems;
-			if (all.length > 0) workspace.push(controls(isRemoved));
-			var totalSize = summarySize(visible, isRemoved);
-			workspace.push(h("div", { key: "summary", className: "am-summary" }, [h("span", { key: "count" }, tr("showing", { shown: visible.length, total: all.length })), h("span", { key: "bytes" }, totalSize), !isRemoved && visible.some(function (item) { return item.running; }) ? h("span", { key: "running" }, tr("running") + " " + visible.filter(function (item) { return item.running; }).length) : null, !isRemoved && visible.some(function (item) { return item.missing; }) ? h("span", { key: "missing" }, tr("missing") + " " + visible.filter(function (item) { return item.missing; }).length) : null]));
-			if (isRemoved && removedWarnings.length > 0) workspace.push(h("div", { key: "removedWarnings", className: "am-report am-removed-warnings", role: "status" }, [
-				h("div", { key: "title", className: "am-report-title" }, tr("removedWarningsTitle", { n: removedWarnings.length })),
-				h("div", { key: "hint", className: "am-help" }, tr("removedWarningsHint")),
-				h("div", { key: "reasons", className: "am-report-list" }, removedWarnings.map(function (warning, index) { return h("div", { key: index, className: "am-report-item" }, warning.batch + " · " + warning.reason); }))
-			]));
-			if (isRemoved) workspace.push(retentionPanel());
-			if (visible.length > 0) workspace.push(selectionBar(isRemoved));
-			workspace.push(all.length === 0 ? emptyCard("empty", tr(isRemoved ? removedWarnings.length > 0 ? "removedUnlistedTitle" : "emptyRemovedTitle" : "emptyTitle"), tr(isRemoved ? removedWarnings.length > 0 ? "removedUnlistedHint" : "emptyRemovedHint" : "emptyHint")) : visible.length === 0 ? emptyCard("filtered", tr(isRemoved ? "removedEmptyFilter" : "filteredEmpty"), tr("filteredEmptyHint"), button("clear", tr("clearFilters"), isRemoved ? clearRemovedFilters : clearFilters, locked)) : h("div", { key: "list", className: "am-list", role: "list" }, visible.map(isRemoved ? removedRow : archivedRow)));
-			workspace.push(h("div", { key: "scope", className: "am-scope" }, tr("scopeNote", { size: fmtSize(attachments.bytes), files: attachments.files })));
+		function summaryBar(isRemoved, all, visible) {
+			var hasSnapshot = hasSnapshotRef.current || phase === "ready" || phase === "stale" || items.length > 0 || removed.length > 0;
+			var total = hasSnapshot ? tr("showing", { shown: visible.length, total: all.length }) + " · " + summarySize(visible, isRemoved) : tr("logSize") + " —";
+			var failed = phase === "failed" || phase === "stale";
+			var hasWarnings = isRemoved && removedWarnings.length > 0;
+			var canView = Boolean(failed || report || toast || hasWarnings);
+			var status = failed ? tr("refreshFailed")
+				: busy ? operationCount ? tr("processing", { n: operationCount }) : tr("busy")
+				: phase === "loading" ? tr("loading")
+				: hasWarnings ? tr("removedWarningsTitle", { n: removedWarnings.length })
+				: selectionNotice || (toast ? toast.text : report ? report.title : "");
+			var scopeLabel = tr("scopeLabel");
+			return h("div", { key: "summary", className: "am-summary" }, [
+				h("span", { key: "total", className: "am-summary-total", title: total }, total),
+				h("div", { key: "scope", className: "am-popover-anchor am-scope-anchor" }, [
+					h("button", { key: "trigger", type: "button", className: "am-btn am-quiet", disabled: !hasSnapshot, "aria-expanded": menu === "scope", "aria-controls": "am-popover-scope",
+						onClick: function (event) { togglePopover("scope", event.currentTarget); }
+					}, scopeLabel),
+					popover("scope", tr("scopeTitle"), [
+						h("strong", { key: "title" }, tr("scopeTitle")),
+						h("p", { key: "note", className: "am-scope" }, tr("scopeNote", { size: fmtSize(attachments.bytes), files: attachments.files })),
+						h("p", { key: "totals", className: "am-help" }, total)
+					])
+				]),
+				h("span", { key: "status", className: "am-summary-status" + (failed || hasWarnings || toast && toast.kind === "bad" ? " am-warning-text" : ""), role: failed ? "alert" : "status", title: status }, status),
+				h("button", { key: "result", type: "button", className: "am-btn am-quiet am-result", "aria-haspopup": "dialog", disabled: !canView,
+					onClick: function (event) { openInfo({ showWarnings: hasWarnings }, event.currentTarget); }
+				}, tr(canView ? "operationDetails" : "operationIdle")),
+				h("button", { key: "empty", type: "button", className: "am-btn danger am-empty-all" + (isRemoved ? "" : " am-invisible"),
+					disabled: !isRemoved || removed.length === 0 || locked,
+					title: tr("emptyTrash") + " (" + removed.length + ")",
+					onClick: function () { openConfirm("empty", []); }
+				}, h("span", null, tr("emptyTrash") + (removed.length > 0 ? " (" + removed.length + ")" : "")))
+			]);
 		}
-		children.push(h("section", { key: "workbench", className: "am-workbench", role: "region", "aria-label": tr("title") }, workspace));
-		children.push(confirmPanel());
-		return h("div", { className: "am-page", "aria-busy": busy || Boolean(update && update.busy) }, children);
 
+		var isRemoved = tab === "removed";
+		var all = isRemoved ? removed : items;
+		var visible = isRemoved ? sortedRemoved : sortedItems;
+		var tabNames = [
+			{ id: "archived", label: tr("tabArchived") + " (" + items.length + ")" },
+			{ id: "removed", label: removedWarnings.length ? tr("knownTabCount", { label: tr("tabRemoved"), n: removed.length }) : tr("tabRemoved") + " (" + removed.length + ")" }
+		];
+		return h("div", { className: "am-page", "aria-busy": busy || Boolean(update && update.busy) }, [
+			h("div", { key: "head", className: "am-head" }, [
+				h("div", { key: "text", className: "am-head-text" }, [h("div", { key: "title", className: "am-title" }, tr("title")), h("div", { key: "sub", className: "am-sub" }, tr("subtitle"))]),
+				versionPanel()
+			]),
+			h("section", { key: "workbench", className: "am-workbench", role: "region", "aria-label": tr("title") }, [
+				h("div", { key: "viewbar", className: "am-viewbar" }, [
+					h("div", { key: "tabs", className: "am-tabs", role: "tablist", "aria-label": tr("title") }, tabNames.map(function (entry) {
+						return h("button", {
+							key: entry.id, type: "button", role: "tab", "aria-selected": tab === entry.id, title: entry.label,
+							className: "am-tab" + (tab === entry.id ? " active" : ""), disabled: busy || updatePhase === "preparing",
+							onClick: function () { if (actionRef.current) return; setTab(entry.id); setMenu(null); }
+						}, entry.label);
+					})), refreshButton()
+				]),
+				controls(isRemoved),
+				summaryBar(isRemoved, all, visible),
+				selectionBar(isRemoved),
+				h("div", { key: "list-area", className: "am-list-area", "aria-busy": phase === "loading" }, visible.length > 0
+					? h("div", { className: "am-list", role: "list" }, visible.map(isRemoved ? removedRow : archivedRow))
+					: phase === "loading" ? emptyCard("loading", tr("loading"), "")
+					: phase === "failed" ? emptyCard("failed", tr("refreshFailed"), "")
+					: all.length === 0 ? emptyCard("empty", tr(isRemoved ? removedWarnings.length > 0 ? "removedUnlistedTitle" : "emptyRemovedTitle" : "emptyTitle"), tr(isRemoved ? removedWarnings.length > 0 ? "removedUnlistedHint" : "emptyRemovedHint" : "emptyHint"))
+					: emptyCard("filtered", tr(isRemoved ? "removedEmptyFilter" : "filteredEmpty"), tr("filteredEmptyHint"), button("clear", tr("clearFilters"), isRemoved ? clearRemovedFilters : clearFilters, locked))
+				)
+			]),
+			confirmPanel(),
+			infoPanel()
+		]);
 	}
 
 	/**

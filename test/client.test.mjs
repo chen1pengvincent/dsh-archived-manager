@@ -132,7 +132,7 @@ function pageValues(overrides) {
     'archived', [], [], 'ready', null, [], null, false, null,
     [], '', 'all', 'lastUsed', '', 'movedAt', null,
     { trashRetentionDays: 0 }, { bytes: 0, files: 0 }, null,
-    null, '', {}, {}, false, '', false, 0, '', [], false,
+    null, '', {}, null, '', 0, '', [],
   ];
   return base.map((value, index) => Object.prototype.hasOwnProperty.call(overrides, index) ? overrides[index] : value);
 }
@@ -265,37 +265,30 @@ test('client survives a shell without a settings domain', async () => {
   assert.doesNotThrow(() => client.apply(ctx));
 });
 
-test('the empty page keeps a compact overview inside the workbench', async () => {
-  const values = ['archived', [], [], 'ready', null, [], null, false, null];
-  const client = await loadClient(makeReact(values));
-  let component;
-  const ctx = {
-    inject(names, callback) {
-      callback({
-        slots: {
-          inject(name, factory) { factory(); },
-          register(spec, rendered) { component = rendered; return () => {}; },
-        },
-      });
-    },
-  };
-  client.apply(ctx);
-  const tree = component();
-  assert.notEqual(findByClass(tree, 'am-workbench'), undefined);
-  assert.equal(findByClass(tree, 'am-stats-grid'), undefined);
-  assert.notEqual(findByClass(tree, 'am-summary'), undefined);
-  assert.equal(findAll(tree, (node) => node.props && node.props.className === 'am-stat').length, 0);
-  assert.equal(findByClass(tree, 'am-toolbar'), undefined);
-  assert.equal(findByClass(tree, 'am-controls'), undefined);
-  assert.notEqual(findByClass(tree, 'am-empty-card'), undefined);
-  assert.notEqual(findByClass(tree, 'am-scope'), undefined);
-  const head = findByClass(tree, 'am-head');
-  assert.notEqual(head, undefined);
-  assert.equal(findByClass(head, 'am-refresh'), undefined);
-  const viewbar = findByClass(tree, 'am-viewbar');
-  assert.notEqual(viewbar, undefined);
-  assert.notEqual(findByClass(viewbar, 'am-refresh'), undefined);
-  assert.ok(textOf(tree).includes('暂无已归档会话'));
+
+test('the workbench keeps its controls and list area across tabs, empty, loading and stale states', async () => {
+  const structuralSlots = ['am-viewbar', 'am-controls', 'am-summary', 'am-toolbar', 'am-list-area'];
+  for (const tab of ['archived', 'removed']) {
+    const querySlot = tab === 'archived' ? 10 : 13;
+    for (const values of [
+      { 3: 'ready' },
+      { 1: [ITEM], 2: [REMOVED], [querySlot]: 'no-match' },
+      { 3: 'loading' },
+      { 3: 'stale', 1: [ITEM], 2: [REMOVED] },
+    ]) {
+      const tree = await renderPage(pageValues({ 0: tab, ...values }));
+      const workbench = findByClass(tree, 'am-workbench');
+      assert.deepEqual(workbench.children.map((node) => node.props.className), structuralSlots);
+      assert.equal(findByClass(tree, 'am-stats-grid'), undefined);
+      assert.ok(findByClass(workbench, 'am-refresh'));
+      assert.ok(buttonNamed(workbench, '范围'));
+      assert.ok(buttonNamed(workbench, '批量操作 ▾'));
+    }
+  }
+  const empty = await renderPage(pageValues({}));
+  assert.ok(textOf(findByClass(empty, 'am-list-area')).includes('暂无已归档会话'));
+  assert.equal(checkboxOf(findByClass(empty, 'am-toolbar')).props.disabled, true);
+  assert.equal(buttonNamed(findByClass(empty, 'am-toolbar'), '彻底删除').props.disabled, true);
 });
 
 test('loading and initial failure do not show fake zero-value scope data', async () => {
@@ -315,6 +308,9 @@ test('loading and initial failure do not show fake zero-value scope data', async
     const tree = component();
     assert.equal(findByClass(tree, 'am-stats-grid'), undefined);
     assert.equal(findByClass(tree, 'am-scope'), undefined);
+    const summary = findByClass(tree, 'am-summary');
+    assert.ok(summary);
+    assert.equal(textOf(summary).includes('0 B'), false);
     const viewbar = findByClass(tree, 'am-viewbar');
     assert.notEqual(viewbar, undefined);
     assert.notEqual(findByClass(viewbar, 'am-refresh'), undefined);
@@ -398,7 +394,7 @@ test('with only stale rows selected only the applicable cleanup action is offere
   const purge = buttons.find((node) => textOf(node) === '彻底删除');
   const hide = buttons.find((node) => textOf(node) === '移到最近删除');
   const cleanup = buttons.find((node) => textOf(node).indexOf('清理失效记录') === 0);
-  assert.equal(purge, undefined);
+  assert.equal(purge.props.disabled, true, 'the permanent action stays in its fixed position');
   assert.equal(hide, undefined);
   assert.notEqual(cleanup, undefined);
   assert.equal(cleanup.props.disabled, false);
@@ -406,7 +402,7 @@ test('with only stale rows selected only the applicable cleanup action is offere
 
 test('the quarantine tab offers bulk restore, individual discard and retention controls', async () => {
   const client = await loadClient(makeReact(pageValues({
-    0: 'removed', 2: [REMOVED], 16: { trashRetentionDays: 30 }, 17: { bytes: 6500000, files: 37 },
+    0: 'removed', 2: [REMOVED], 16: { trashRetentionDays: 30 }, 17: { bytes: 6500000, files: 37 }, 18: 'scope',
   })));
   let component;
   const ctx = {
@@ -422,14 +418,14 @@ test('the quarantine tab offers bulk restore, individual discard and retention c
   client.apply(ctx);
   const tree = component();
   const text = textOf(tree);
-  assert.ok(text.includes('自动清理：移入满 30 天'), text);
+  assert.ok(text.includes('自动清理 · 30 天'), text);
   assert.ok(text.includes('30 天'), text);
   assert.ok(text.includes('附件'), text);
   const buttons = findAll(tree, (node) => node.type === 'button');
   assert.notEqual(buttons.find((node) => textOf(node) === '恢复到侧栏'), undefined);
   assert.notEqual(buttons.find((node) => textOf(node) === '彻底删除'), undefined);
   assert.notEqual(buttons.find((node) => textOf(node) === '清空全部 (1)'), undefined);
-  assert.notEqual(findByClass(tree, 'am-retention'), undefined);
+  assert.ok(findAll(tree, (node) => node.props['aria-label'] === '自动清理').some((node) => node.type === 'button'));
 });
 
 test('search narrows the list and the showing counter follows it', async () => {
@@ -476,30 +472,22 @@ test('the retention confirmation is a danger modal with its own checkbox', async
   assert.equal(go.props.disabled, true);
 });
 
-test('a partial failure report renders the failed session and reason', async () => {
-  const client = await loadClient(makeReact(pageValues({
+
+test('a partial failure exposes the failed session and reason in the result dialog', async () => {
+  const render = await pageRenderer(pageValues({
     1: [ITEM],
-    15: { title: '部分完成：成功 1 个，失败 1 个', failures: [{ title: '测试会话', reason: '会话正在运行' }], more: 0 },
-  })));
-  let component;
-  const ctx = {
-    inject(names, callback) {
-      callback({
-        slots: {
-          inject(name, factory) { factory(); },
-          register(spec, rendered) { component = rendered; return () => {}; },
-        },
-      });
-    },
-  };
-  client.apply(ctx);
-  const tree = component();
-  assert.notEqual(findByClass(tree, 'am-report'), undefined);
-  assert.ok(textOf(tree).includes('测试会话 · 会话正在运行'), textOf(tree));
+    15: { title: '部分完成：成功 1 个，失败 1 个', failures: [{ title: '测试会话', reason: '会话正在运行' }] },
+  }));
+  const tree = render();
+  assert.equal(findByClass(tree, 'am-report'), undefined);
+  assert.ok(textOf(findByClass(tree, 'am-summary')).includes('部分完成'));
+  const dialog = openResults(render);
+  assert.ok(textOf(dialog).includes('测试会话 · 会话正在运行'));
+  assert.equal(listRows(render()).length, 1);
 });
 
 test('archived rows expose native unarchive before the quarantine action', async () => {
-  const client = await loadClient(makeReact(pageValues({ 1: [ITEM], 5: [ITEM.id] })));
+  const client = await loadClient(makeReact(pageValues({ 1: [ITEM], 5: [ITEM.id], 18: 'batch' })));
   let component;
   const ctx = {
     inject(names, callback) {
@@ -632,7 +620,7 @@ test('quarantine select-all clicks also drive per-row highlights and partial sel
 
 test('a selected quarantine entry enables bulk restore and bulk delete', async () => {
   const key = REMOVED.batch + '/' + REMOVED.id;
-  const client = await loadClient(makeReact(pageValues({ 0: 'removed', 2: [REMOVED], 9: [key] })));
+  const client = await loadClient(makeReact(pageValues({ 0: 'removed', 2: [REMOVED], 9: [key], 18: 'batch' })));
   let component;
   const ctx = {
     inject(names, callback) {
@@ -646,9 +634,9 @@ test('a selected quarantine entry enables bulk restore and bulk delete', async (
   };
   client.apply(ctx);
   const tree = component();
-  assert.ok(textOf(tree).includes('已选 1 条会话'), textOf(tree));
+  assert.ok(textOf(findByClass(tree, 'am-toolbar')).includes('已选 1 条'));
   const buttons = findAll(tree, (node) => node.type === 'button');
-  const restore = buttons.find((node) => textOf(node) === '恢复到侧栏');
+  const restore = buttons.find((node) => textOf(node) === '恢复到侧栏 (1)');
   const discard = buttons.find((node) => textOf(node) === '彻底删除 (1)');
   assert.notEqual(restore, undefined);
   assert.equal(restore.props.disabled, false);
@@ -686,46 +674,23 @@ test('discarding a quarantine entry uses the danger modal and names the scope', 
   assert.equal(go.props.disabled, true);
 });
 
-test('sort and retention use in-app dropdowns, and times are not collapsed', async () => {
-  const client = await loadClient(makeReact(pageValues({
-    1: [ITEM],
-    18: 'sort', 22: { [ITEM.id]: true },
-  })));
-  let component;
-  const ctx = {
-    inject(names, callback) {
-      callback({
-        slots: {
-          inject(name, factory) { factory(); },
-          register(spec, rendered) { component = rendered; return () => {}; },
-        },
-      });
-    },
-  };
-  client.apply(ctx);
-  const tree = component();
+
+test('sorting uses an in-app dropdown and the details dialog shows full timestamps', async () => {
+  const render = await pageRenderer(pageValues({ 1: [ITEM], 18: 'sort' }));
+  const tree = render();
   assert.equal(findAll(tree, (node) => node.type === 'select').length, 0);
-  const trigger = findByClass(tree, 'am-select-trigger');
-  assert.notEqual(trigger, undefined);
+  const trigger = findAll(tree, (node) => node.type === 'button' && node.props['aria-label'] === '排序')[0];
   assert.equal(trigger.props['aria-haspopup'], 'listbox');
   assert.equal(trigger.props['aria-expanded'], true);
   const menu = findByClass(tree, 'am-select-menu');
-  assert.notEqual(menu, undefined);
-  const menuText = textOf(menu);
-  assert.ok(menuText.includes('最后使用'), menuText);
-  assert.ok(menuText.includes('首次发现归档'), menuText);
-  assert.ok(menuText.includes('体积'), menuText);
-  assert.ok(menuText.includes('标题'), menuText);
-  const times = findByClass(tree, 'am-row-times');
-  assert.notEqual(times, undefined);
-  const timeText = textOf(times);
-  assert.ok(timeText.includes('最后使用'), timeText);
-  assert.ok(timeText.includes('首次发现归档'), timeText);
-  assert.ok(timeText.includes('2026'), timeText);
-  assert.equal(findAll(tree, (node) => {
-    const className = node.props && typeof node.props.className === 'string' ? node.props.className : '';
-    return className.includes('am-row-meta') && className.includes('am-row-times');
-  }).length, 1);
+  for (const label of ['最后使用', '首次发现归档', '体积', '标题']) assert.ok(textOf(menu).includes(label));
+  assert.equal(findByClass(tree, 'am-row-times'), undefined);
+  buttonNamed(listRows(tree)[0], ITEM.title).props.onClick(event());
+  assert.equal(findByClass(render(), 'am-select-menu'), undefined);
+  const times = findByClass(findByClass(render(), 'am-info-modal'), 'am-row-times');
+  assert.ok(textOf(times).includes('最后使用'));
+  assert.ok(textOf(times).includes('首次发现归档'));
+  assert.ok(textOf(times).includes('2026'));
 });
 
 test('the quarantine retention picker is also an in-app dropdown', async () => {
@@ -733,7 +698,7 @@ test('the quarantine retention picker is also an in-app dropdown', async () => {
     0: 'removed',
     2: [REMOVED],
     16: { trashRetentionDays: 30 },
-    18: 'retention', 25: true,
+    18: 'retention',
   })));
   let component;
   const ctx = {
@@ -766,13 +731,25 @@ const response = (data, status = 200) => Promise.resolve({ ok: status >= 200 && 
 const buttonNamed = (tree, name) => findAll(tree, (node) => node.type === 'button' && textOf(node) === name)[0];
 const checkboxOf = (tree) => findAll(tree, (node) => node.type === 'input' && node.props.type === 'checkbox')[0];
 const event = () => ({ currentTarget: { focus() {}, isConnected: true }, preventDefault() {}, stopPropagation() {} });
+function selectBatchAction(render, label, trigger) {
+  const open = event();
+  if (trigger) open.currentTarget = trigger;
+  buttonNamed(render(), '批量操作 ▾').props.onClick(open);
+  buttonNamed(findByClass(render(), 'am-batch-menu'), label).props.onClick(event());
+}
+
+function openResults(render) {
+  buttonNamed(render(), '查看结果').props.onClick(event());
+  return findByClass(render(), 'am-info-modal');
+}
+
 const manyItems = (count, extra = {}) => Array.from({ length: count }, (_, index) => ({ ...ITEM, id: 'session-item-' + index, title: '会话 ' + index, ...extra }));
 
 test('each bulk action enforces 200 targets, while a mixed selection may exceed 200 in total', async () => {
   for (const count of [200, 201]) {
     const items = manyItems(count);
     const calls = [];
-    const render = await pageRenderer(pageValues({ 1: items, 5: items.map((item) => item.id) }), { fetch: (url) => { calls.push(url); return new Promise(() => {}); } });
+    const render = await pageRenderer(pageValues({ 1: items, 5: items.map((item) => item.id), 18: 'batch' }), { fetch: (url) => { calls.push(url); return new Promise(() => {}); } });
     const tree = render();
     const action = buttonNamed(tree, '取消归档 (' + count + ')');
     assert.equal(action.props.disabled, count > 200);
@@ -785,7 +762,7 @@ test('each bulk action enforces 200 targets, while a mixed selection may exceed 
   }
   const files = manyItems(200);
   const missing = { ...ITEM, id: 'missing', missing: true };
-  const tree = await renderPage(pageValues({ 1: [...files, missing], 5: [...files.map((item) => item.id), missing.id] }));
+  const tree = await renderPage(pageValues({ 1: [...files, missing], 5: [...files.map((item) => item.id), missing.id], 18: 'batch' }));
   assert.equal(buttonNamed(tree, '取消归档 (200)').props.disabled, false);
   assert.equal(buttonNamed(tree, '清理失效记录 (1)').props.disabled, false);
   assert.equal(textOf(tree).includes('单次最多处理 200 条'), false);
@@ -797,7 +774,7 @@ test('running and hidden entries never contribute to selected count, highlights,
   const render = await pageRenderer(pageValues({ 1: [ITEM, running, hidden], 5: [ITEM.id, running.id, hidden.id], 10: '测试' }));
   let tree = render();
   assert.equal(listRows(tree).length, 1);
-  assert.ok(textOf(tree).includes('已选 1 条（有文件 1 · 失效 0）'));
+  assert.ok(textOf(findByClass(tree, 'am-toolbar')).includes('已选 1 条'));
   render.state[10] = '';
   tree = render();
   assertRowSelection(listRows(tree).find((row) => textOf(row).includes('running')), false, 'running row');
@@ -807,7 +784,7 @@ test('running and hidden entries never contribute to selected count, highlights,
 test('in-flight mutation freezes selection and filtering and rejects duplicate submit before rerender', async () => {
   const calls = [];
   const render = await pageRenderer(pageValues({ 1: [ITEM], 5: [ITEM.id] }), { fetch: (url) => { calls.push(url); return new Promise(() => {}); } });
-  buttonNamed(render(), '取消归档 (1)').props.onClick(event());
+  selectBatchAction(render, '取消归档 (1)');
   const action = buttonNamed(findByClass(render(), 'am-modal'), '取消归档');
   action.props.onClick(event());
   action.props.onClick(event());
@@ -815,10 +792,10 @@ test('in-flight mutation freezes selection and filtering and rejects duplicate s
   let tree = render();
   assert.ok(textOf(tree).includes('正在处理 1 条'));
   assert.equal(checkboxOf(listRows(tree)[0]).props.disabled, true);
-  assert.equal(findAll(tree, (node) => node.type === 'input' && node.props.type === 'text')[0].props.disabled, true);
+  assert.equal(findAll(tree, (node) => node.type === 'input' && node.props.type === 'search')[0].props.disabled, true);
   checkboxOf(listRows(tree)[0]).props.onChange();
   checkboxOf(findByClass(tree, 'am-toolbar')).props.onChange();
-  buttonNamed(tree, '取消选择').props.onClick(event());
+  assert.equal(buttonNamed(tree, '批量操作 ▾').props.disabled, true);
   tree = render();
   assertRowSelection(listRows(tree)[0], true, 'still selected while processing');
 });
@@ -833,17 +810,15 @@ test('all failure reasons remain available after partial success and the other t
     if (url.endsWith('/settings')) return response({ settings: { trashRetentionDays: 0 } });
     throw new Error('unexpected ' + url);
   } });
-  buttonNamed(render(), '取消归档 (7)').props.onClick(event());
+  selectBatchAction(render, '取消归档 (7)');
   buttonNamed(findByClass(render(), 'am-modal'), '取消归档').props.onClick(event());
   await tick();
   let tree = render();
   assert.equal(listRows(tree).length, 6);
-  assert.equal(findAll(findByClass(tree, 'am-report'), (node) => node.props.className === 'am-report-item').length, 4);
-  assert.equal(textOf(findByClass(tree, 'am-report')).includes('原因 6'), false);
-  buttonNamed(tree, '查看全部 6 条原因').props.onClick(event());
-  tree = render();
-  assert.equal(findAll(findByClass(tree, 'am-report'), (node) => node.props.className === 'am-report-item').length, 6);
-  assert.ok(textOf(tree).includes('原因 6'));
+  assert.equal(findByClass(tree, 'am-report'), undefined);
+  const dialog = openResults(render);
+  assert.equal(findAll(dialog, (node) => node.props.className === 'am-report-item').length, 6);
+  assert.ok(textOf(dialog).includes('原因 6'));
   assert.equal(render.state[9][0], removedKey);
   assert.deepEqual([...render.state[5]], items.slice(1).map((item) => item.id));
 });
@@ -856,7 +831,7 @@ test('cleaning only stale records preserves selected file-backed records', async
     if (url.endsWith('/settings')) return response({ settings: { trashRetentionDays: 0 } });
     throw new Error(url);
   } });
-  buttonNamed(render(), '清理失效记录 (1)').props.onClick(event());
+  selectBatchAction(render, '清理失效记录 (1)');
   buttonNamed(findByClass(render(), 'am-modal'), '清理记录').props.onClick(event());
   await tick();
   assert.deepEqual([...render.state[5]], [ITEM.id]);
@@ -870,16 +845,18 @@ test('lost mutation response reconciles once, retains the last list and blocks c
     if (url.endsWith('/settings')) return response({ settings: { trashRetentionDays: 0 } });
     return Promise.reject(new Error('connection lost'));
   } });
-  buttonNamed(render(), '取消归档 (1)').props.onClick(event());
+  selectBatchAction(render, '取消归档 (1)');
   buttonNamed(findByClass(render(), 'am-modal'), '取消归档').props.onClick(event());
   await tick();
   const tree = render();
   assert.equal(calls.filter((url) => url.endsWith('/unarchive')).length, 1);
   assert.equal(calls.filter((url) => url.endsWith('/list')).length, 1);
-  assert.ok(textOf(tree).includes('结果未确认'));
-  assert.ok(textOf(tree).includes('列表尚未刷新'));
+  assert.ok(textOf(findByClass(tree, 'am-summary')).includes('刷新失败'));
+  const dialog = openResults(render);
+  assert.ok(textOf(dialog).includes('结果未确认'));
+  assert.ok(textOf(dialog).includes('列表尚未刷新'));
   assert.equal(listRows(tree).length, 1);
-  assert.equal(buttonNamed(tree, '取消归档 (1)').props.disabled, true);
+  assert.equal(buttonNamed(tree, '批量操作 ▾').props.disabled, true);
   assertRowSelection(listRows(tree)[0], true, 'uncertain result retains selection');
 });
 
@@ -893,7 +870,7 @@ test('quarantine global clear includes hidden entries, freezes the full snapshot
     return new Promise(() => {});
   } });
   const tree = render();
-  assert.equal(findByClass(tree, 'am-toolbar'), undefined);
+  assert.equal(checkboxOf(findByClass(tree, 'am-toolbar')).props.disabled, true);
   buttonNamed(tree, '清空全部 (2)').props.onClick(event());
   await tick();
   let modal = findByClass(render(), 'am-modal');
@@ -925,13 +902,15 @@ test('every destructive confirmation appears once and names its actual target co
 
 test('recorded files load only on demand and use exact archived or quarantine identities for folder opens', async () => {
   for (const entry of [ITEM, REMOVED]) {
-    const isRemoved = Boolean(entry.batch), key = isRemoved ? entry.batch + '/' + entry.id : entry.id;
+    const isRemoved = Boolean(entry.batch);
     const calls = [];
     const fileData = { ok: true, coverage: 'recorded-only', files: [{ path: '/tmp/output/a.txt', name: 'a.txt', directory: '/tmp/output', sources: ['write'], status: 'file-missing', reason: '文件已不存在', canOpen: true }, { path: '/tmp/gone/b.txt', name: 'b.txt', directory: '/tmp/gone', status: 'parent-missing', reason: '父目录已不存在', canOpen: false }], workspace: { path: '/tmp/work', status: 'available', canOpen: true } };
-    const render = await pageRenderer(pageValues({ 0: isRemoved ? 'removed' : 'archived', 1: isRemoved ? [] : [entry], 2: isRemoved ? [entry] : [], 22: { [key]: true } }), { fetch: (url, options) => { calls.push({ url, body: JSON.parse(options.body) }); return response(url.endsWith('/files') ? fileData : { ok: true }); } });
+    const render = await pageRenderer(pageValues({ 0: isRemoved ? 'removed' : 'archived', 1: isRemoved ? [] : [entry], 2: isRemoved ? [entry] : [] }), { fetch: (url, options) => { calls.push({ url, body: JSON.parse(options.body) }); return response(url.endsWith('/files') ? fileData : { ok: true }); } });
     let tree = render();
     assert.equal(calls.length, 0);
-    buttonNamed(tree, '查看关联文件').props.onClick(event());
+    buttonNamed(listRows(tree)[0], entry.title).props.onClick(event());
+    assert.equal(calls.length, 0, 'opening details does not fetch file locations');
+    buttonNamed(findByClass(render(), 'am-info-modal'), '查看关联文件').props.onClick(event());
     await tick();
     tree = render();
     assert.ok(textOf(tree).includes('文件已不存在'));
@@ -978,11 +957,11 @@ test('version label distinguishes runtime mismatch and a local source can explic
 test('update installation is unavailable during a data operation, during update, or when a downgrade would be required', async () => {
   const status = { runtimeVersion: '0.3.1', installedVersion: '0.3.1', sourceKind: 'release', canUpdate: true, release: { id: 1, version: '0.4.0' }, relation: 'newer' };
   for (const changes of [{ 7: true }, { 19: { ...status, busy: true } }]) {
-    const tree = await renderPage(pageValues({ 1: [ITEM], 19: status, ...changes }));
+    const tree = await renderPage(pageValues({ 1: [ITEM], 18: 'version', 19: status, ...changes }));
     assert.equal(buttonNamed(tree, '更新到 v0.4.0').props.disabled, true);
     assert.equal(buttonNamed(tree, '取消归档').props.disabled, true);
   }
-  const tree = await renderPage(pageValues({ 19: { ...status, sourceKind: 'link', relation: 'older', release: { version: '0.2.6' } } }));
+  const tree = await renderPage(pageValues({ 18: 'version', 19: { ...status, sourceKind: 'link', relation: 'older', release: { version: '0.2.6' } } }));
   assert.equal(buttonNamed(tree, '切换为发布版'), undefined);
   assert.ok(textOf(tree).includes('不会自动降级'));
 });
@@ -990,19 +969,30 @@ test('update installation is unavailable during a data operation, during update,
 test('unknown sizes are shown as unconfirmed and excluded from list, selection and confirmation totals', async () => {
   const unknown = { ...ITEM, id: 'unknown', title: '不可核对会话', sizeKnown: false, sizeBytes: 0, sizeWarning: '无法确认会话日志大小，未计入日志占用', protected: true, protectionReason: '含异常链接，未处理' };
   const known = { ...ITEM, sizeKnown: true, sizeWarning: '存在未读取的非会话文件或不支持的日志格式' };
-  const tree = await renderPage(pageValues({ 1: [known, unknown], 5: [known.id, unknown.id], 22: { [unknown.id]: true, [known.id]: true }, 6: preview('purge', [known, { ...unknown, sizeBytes: undefined }]) }));
+  const tree = await renderPage(pageValues({ 1: [known, unknown], 5: [known.id, unknown.id], 18: 'batch' }));
   const rows = listRows(tree);
   const unknownRow = rows.find((row) => textOf(row).includes('不可核对会话'));
   const knownRow = rows.find((row) => textOf(row).includes('测试会话'));
   assert.equal(textOf(findByClass(unknownRow, 'am-log-size')), '日志占用 未确认');
   assert.equal(textOf(findByClass(knownRow, 'am-log-size')), '日志占用 121 KB');
-  assert.ok(textOf(unknownRow).includes('含异常链接，未处理'));
-  assert.ok(textOf(knownRow).includes('存在未读取的非会话文件'));
-  for (const className of ['am-summary', 'am-toolbar', 'am-modal-summary']) {
+  const detailRender = await pageRenderer(pageValues({ 1: [known, unknown] }));
+  for (const item of [known, unknown]) {
+    buttonNamed(detailRender(), item.title).props.onClick(event());
+    const details = findByClass(detailRender(), 'am-info-modal');
+    assert.ok(textOf(details).includes(item.protectionReason || item.sizeWarning));
+    buttonNamed(details, '关闭').props.onClick(event());
+  }
+  for (const className of ['am-summary', 'am-batch-menu']) {
     const text = textOf(findByClass(tree, className));
     assert.ok(text.includes('121 KB'), className + ' ' + text);
     assert.ok(text.includes('1 条日志大小未确认，未计入合计'), className + ' ' + text);
   }
+  const confirmation = await renderPage(pageValues({
+    1: [known, unknown], 6: preview('purge', [known, { ...unknown, sizeBytes: undefined }]),
+  }));
+  const confirmationSize = textOf(findByClass(confirmation, 'am-modal-summary'));
+  assert.ok(confirmationSize.includes('121 KB'));
+  assert.ok(confirmationSize.includes('1 条日志大小未确认，未计入合计'));
   const onlyUnknown = await renderPage(pageValues({ 0: 'removed', 2: [{ ...REMOVED, sizeKnown: false, bytes: 0, sizeWarning: '未能读取日志' }] }));
   assert.equal(textOf(findByClass(listRows(onlyUnknown)[0], 'am-log-size')), '日志占用 未确认');
   assert.ok(textOf(findByClass(onlyUnknown, 'am-summary')).includes('日志占用 未确认'));
@@ -1012,12 +1002,14 @@ test('dialog focus waits through refresh, then falls back to a current enabled s
   for (const nextPhase of ['ready', 'stale']) {
     let focused = 'body';
     const original = { isConnected: true, disabled: false, focus() { focused = 'original'; } };
-    const render = await pageRenderer(pageValues({ 1: [ITEM], 5: [ITEM.id] }), { document: { activeElement: original, addEventListener() {}, removeEventListener() {} } });
-    buttonNamed(render(), '移到最近删除 (1)').props.onClick(event());
+    const render = await pageRenderer(pageValues({ 1: [ITEM], 5: [ITEM.id] }), {
+      document: { activeElement: original }, window: { addEventListener() {}, removeEventListener() {} },
+    });
+    selectBatchAction(render, '移到最近删除 (1)', original);
     let tree = render();
     const cancel = buttonNamed(findByClass(tree, 'am-modal'), '取消');
     cancel.props.ref.current = { isConnected: true, disabled: false, focus() { focused = 'cancel'; } };
-    const dialogEffect = render.effects.find((entry) => entry.deps.length === 1 && entry.deps[0] === true);
+    const dialogEffect = render.effects.findLast((entry) => entry.deps.length === 2 && entry.deps[0] === true && entry.deps[1] === false);
     const cleanup = dialogEffect.fn();
     assert.equal(focused, 'cancel');
     original.isConnected = false;
@@ -1045,15 +1037,17 @@ test('dialog focus waits through refresh, then falls back to a current enabled s
 
 test('unreadable quarantine batches remain visible as warnings and never imply the entire quarantine is empty', async () => {
   const warnings = [{ batch: 'legacy-corrupt', reason: '隔离清单无法读取，内容已保留' }];
-  let tree = await renderPage(pageValues({ 0: 'removed', 28: warnings }));
-  assert.equal(findAll(tree, (node) => String(node.props.className || '').split(' ').includes('am-removed-warnings')).length, 1);
+  const render = await pageRenderer(pageValues({ 0: 'removed', 26: warnings }));
+  let tree = render();
+  assert.ok(textOf(findByClass(tree, 'am-summary')).includes('无法确认的批次'));
   assert.ok(textOf(tree).includes('没有可显示的最近删除会话'));
   assert.ok(textOf(tree).includes('最近删除（已知 0）'));
-  assert.ok(textOf(tree).includes('已知会话数量不包含这些内容'));
-  assert.ok(textOf(tree).includes('legacy-corrupt · 隔离清单无法读取，内容已保留'));
+  const details = openResults(render);
+  assert.ok(textOf(details).includes('已知会话数量不包含这些内容'));
+  assert.ok(textOf(details).includes('legacy-corrupt · 隔离清单无法读取，内容已保留'));
   assert.equal(textOf(tree).includes('最近删除为空'), false);
-  assert.equal(findByClass(tree, 'am-toolbar'), undefined);
-  tree = await renderPage(pageValues({ 0: 'removed', 2: [REMOVED], 28: warnings }));
+  assert.equal(checkboxOf(findByClass(tree, 'am-toolbar')).props.disabled, true);
+  tree = await renderPage(pageValues({ 0: 'removed', 2: [REMOVED], 26: warnings }));
   assert.equal(listRows(tree).length, 1);
   assert.ok(textOf(tree).includes('最近删除（已知 1）'));
   assert.equal(buttonNamed(tree, '恢复到侧栏').props.disabled, false, 'a warning does not lock verified entries');
@@ -1069,16 +1063,16 @@ test('list refresh stores quarantine warnings returned alongside known entries',
   findByClass(render(), 'am-refresh').props.onClick(event());
   await tick();
   const tree = render();
-  assert.ok(textOf(tree).includes('unknown-batch · 无法核对，已保留'));
+  assert.ok(textOf(openResults(render)).includes('unknown-batch · 无法核对，已保留'));
   assert.ok(textOf(tree).includes('没有可显示的最近删除会话'));
   assert.equal(textOf(tree).includes('最近删除为空'), false);
 });
 
 test('version details toggle shares the version row and exposes its keyboard-accessible disclosure state', async () => {
-  const render = await pageRenderer(pageValues({ 19: { runtimeVersion: '0.3.4', installedVersion: '0.3.4', sourceKind: 'link', busy: false } }));
+  const render = await pageRenderer(pageValues({ 19: { runtimeVersion: '0.3.5', installedVersion: '0.3.5', sourceKind: 'link', busy: false } }));
   let tree = render();
   const line = findByClass(tree, 'am-version-line');
-  assert.ok(textOf(line).includes('v0.3.4'));
+  assert.ok(textOf(line).includes('v0.3.5'));
   const toggle = buttonNamed(line, '版本详情');
   assert.notEqual(toggle, undefined, 'the disclosure button is on the version row');
   assert.equal(toggle.props.type, 'button');
@@ -1089,8 +1083,8 @@ test('version details toggle shares the version row and exposes its keyboard-acc
   tree = render();
   const panel = findByClass(tree, 'am-version-details');
   assert.equal(panel.props.id, toggle.props['aria-controls']);
-  assert.ok(textOf(panel).includes('页面版本：v0.3.4'));
-  assert.ok(textOf(panel).includes('服务版本：0.3.4'));
+  assert.ok(textOf(panel).includes('页面版本：v0.3.5'));
+  assert.ok(textOf(panel).includes('服务版本：0.3.5'));
   assert.equal(buttonNamed(tree, '版本详情').props['aria-expanded'], true);
   buttonNamed(tree, '版本详情').props.onClick(event());
   assert.equal(findByClass(render(), 'am-version-details'), undefined);
@@ -1154,7 +1148,7 @@ test('delete preview uses host targets and retains skipped selections when scope
   const protectedRow = listRows(tree).find((row) => textOf(row).includes('受保护会话'));
   assert.equal(buttonNamed(protectedRow, '取消归档').props.disabled, false);
   assert.equal(buttonNamed(protectedRow, '彻底删除').props.disabled, true);
-  assert.ok(textOf(protectedRow).includes('日志目录包含独立文件'));
+  assert.equal(findByClass(protectedRow, 'am-badge').props.title, '日志目录包含独立文件');
   buttonNamed(tree, '彻底删除 (2)').props.onClick(event());
   assert.ok(textOf(findByClass(render(), 'am-modal')).includes('正在核对操作范围'));
   assert.deepEqual(calls[0].body, { action: 'purge', ids: [allowed.id, changed.id] });
@@ -1170,7 +1164,7 @@ test('delete preview uses host targets and retains skipped selections when scope
   await tick();
   assert.deepEqual(calls[1].body, { ids: [allowed.id], confirm: 'PURGE', previewToken: 'exact-purge' });
   assert.deepEqual([...render.state[5]], [changed.id, protectedItem.id]);
-  assert.ok(textOf(findByClass(render(), 'am-report')).includes('跳过 2 条'));
+  assert.ok(textOf(openResults(render)).includes('跳过 2 条'));
 });
 
 test('one-click move uses a host preview before committing and opens Recently Deleted from the result', async () => {
@@ -1192,7 +1186,7 @@ test('one-click move uses a host preview before committing and opens Recently De
   await tick();
   assert.deepEqual(calls[0].body, { action: 'hide', ids: [ITEM.id] });
   assert.deepEqual(calls[1].body, { ids: [ITEM.id], previewToken: 'exact-move' });
-  buttonNamed(render(), '查看最近删除').props.onClick(event());
+  buttonNamed(openResults(render), '查看最近删除').props.onClick(event());
   assert.equal(render.state[0], 'removed');
 });
 
@@ -1200,7 +1194,7 @@ test('automatic cleanup submits the selected policy with the acknowledged exact 
   const old = { ...REMOVED, title: '到期的会话' };
   const calls = [];
   const render = await pageRenderer(pageValues({
-    0: 'removed', 2: [old], 16: { trashRetentionDays: 0 }, 18: 'retention', 25: true,
+    0: 'removed', 2: [old], 16: { trashRetentionDays: 0 }, 18: 'retention',
   }), { fetch: (url, options) => {
     const body = options.body && JSON.parse(options.body);
     calls.push({ url, body });
@@ -1210,7 +1204,7 @@ test('automatic cleanup submits the selected policy with the acknowledged exact 
     if (url.endsWith('/settings')) return response({ settings: { trashRetentionDays: 7 } });
     throw new Error(url);
   } });
-  const option = findAll(render(), (node) => node.props.role === 'option' && textOf(node).startsWith('7 天'))[0];
+  const option = findAll(render(), (node) => node.props.role === 'option' && textOf(node).startsWith('移入满 7 天'))[0];
   option.props.onClick(event());
   assert.deepEqual(calls[0].body, { action: 'retention', trashRetentionDays: 7 });
   await tick();
