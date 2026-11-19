@@ -6,13 +6,13 @@
 
 [中文文档](#dsh-archived-manager) · [English](#english) · [Releases](https://github.com/chen1pengvincent/dsh-archived-manager/releases)
 
-当前版本 **0.3.5**。归档和即时撤销由 DSH 原生侧栏提供。插件管理归档后的检索、恢复、清理和文件定位。
+当前版本 **0.4.0**。归档和即时撤销由 DSH 原生侧栏提供。插件管理归档后的检索、恢复、清理和文件定位。
 
 ## 功能
 
 - **取消归档**：调用 DSH 原生 `unarchiveSession`，会话回到侧栏，日志文件原地保留。
 - **移到最近删除**：移走会话日志，可单独或批量恢复到侧栏。
-- **彻底删除**：经明确确认后永久删除会话日志；项目文件和共享附件不在删除范围内。
+- **彻底删除**：经明确确认后永久删除会话日志；项目文件和共享附件不在删除范围内。若会话仍被 DSH 加载，会直接说明原因并给出退出、重开、重新检测的步骤，不会误报为普通失败。
 - **清理失效记录**：日志目录已不存在时，只移除归档记录，不触碰其他文件。
 - **批量与检索**：单选、全选当前筛选结果，按标题/工作区/ID 搜索，按状态筛选，按时间、体积或标题排序。
 - **自动清理**：在「最近删除」直接选择关闭、7、30 或 90 天。修改期限前可核对当前会受影响的会话。
@@ -28,7 +28,7 @@
 2. 输入以下 spec：
 
    ```text
-   github:chen1pengvincent/dsh-archived-manager#v0.3.5
+   github:chen1pengvincent/dsh-archived-manager#v0.4.0
    ```
 
 3. 安装后**完全退出并重新打开 DSH**，再硬刷新页面（macOS：`Cmd+Shift+R`）。
@@ -38,7 +38,7 @@
 
 ```json
 {"action":"remove_bundle","target":"dsh-archived-manager"}
-{"action":"install_bundle","target":"github:chen1pengvincent/dsh-archived-manager#v0.3.5"}
+{"action":"install_bundle","target":"github:chen1pengvincent/dsh-archived-manager#v0.4.0"}
 ```
 
 v0.3.0 起可在会话管理页手动检查稳定版并更新。更新控制页会固定目标版本，在卸载前下载并校验安装包；旧插件卸载后，该页仍可展示安装结果，并在失败时提供重试或恢复入口。安装成功后按提示重新打开页面或重启 DSH。
@@ -79,6 +79,18 @@ link:/absolute/path/to/dsh-archived-manager
 | 移到最近删除 | 移动已通过校验的日志，移入时磁盘占用不变 |
 | 彻底删除 | 确认后永久删除本次列出的会话日志 |
 | 清理失效记录 | 日志已经缺失时，仅清除归档记录 |
+
+### 彻底删除被 DSH 占用时
+
+DSH 会在会话被加载后一直持有 `session.lock` 写入锁，即使当前没有运行回合；停止回合、任务或子代理不会释放它，只有完全退出 DSH 进程才会释放。因此「会话管理」遇到这类会话时，不会把它当作普通失败，而是显示 **需重启 DSH**，并在「处理」里给出可执行的步骤：
+
+1. 保存需要保留的内容。彻底删除不可恢复。
+2. 完全退出 DSH：macOS 按 `Cmd+Q`（或菜单栏、程序坞退出）；Windows 从托盘或任务管理器退出。确认没有 DSH 窗口或后台进程。
+3. 重新打开 DSH，进入 **设置 → 会话管理**。不要先打开要删除的会话。
+4. 点「重新检测」。若仍显示已加载，先打开另一个会话，再完全退出并重开，避免 DSH 启动时又加载它；锁释放后点「继续删除」，仍会先预览并二次确认。
+5. 若仍被其他进程占用，按提示的进程名/PID 退出对应 DSH；不要手动删除 `session.lock`，锁由系统在进程退出时释放。
+
+也可以点「记录并在重启后继续」：插件只保存会话 ID、标题、时间和失败原因，不含日志内容；重启后列表顶部会出现待删提示，可分别继续「已归档」或「最近删除」的删除。记录在删除成功后自动移除，也可手动清除。
 
 列表提供搜索、状态筛选和排序。行内标明会话占用、日志缺失或目录受保护。点会话标题可查看具体原因。列表显示的是日志占用，删除预览显示本次可清理的日志。归档首次发现时间由插件记录。
 
@@ -130,6 +142,7 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 | 最近删除清单 | 每个批次目录中的 `manifest.json` |
 | 归档首次观测时间 | `<DSH_HOME>/archived-manager/archive-times.json` |
 | 保留策略 | `<DSH_HOME>/archived-manager/settings.json` |
+| 待删记录（仅元数据） | `<DSH_HOME>/archived-manager/pending-purges.json` |
 | 手动更新状态 | `<DSH_HOME>/archived-manager/update-state.json` |
 | 会话日志 | `<DSH_HOME>/sessions/` |
 | 共享附件 | `<DSH_HOME>/attachments/` |
@@ -141,6 +154,11 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 | 方法 | 路径 | 用途 |
 |---|---|---|
 | GET | `/archived-manager/list` | 归档和最近删除列表、操作资格与日志体积 |
+| POST | `/archived-manager/diagnose` `{items:[{id,batch?}]}` | 诊断加载/运行/活动/写入锁及占用进程 |
+| GET | `/archived-manager/pending` | 读取待彻底删除记录 |
+| POST | `/archived-manager/pending/add` `{items,reason}` | 记录待删会话（只存 ID/标题/时间/原因） |
+| POST | `/archived-manager/pending/forget` `{items}` | 移除指定待删记录 |
+| POST | `/archived-manager/pending/clear` | 清空待删记录 |
 | POST | `/archived-manager/preview` `{action,ids?,items?,trashRetentionDays?}` | 预览目标、跳过原因、日志体积，并返回 `previewToken` |
 | POST | `/archived-manager/unarchive` `{ids}` | 原生取消归档 |
 | POST | `/archived-manager/hide` `{ids,previewToken?}` | 移到最近删除 |
@@ -164,7 +182,7 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 
 ## 界面预览
 
-以下图片为 v0.3.5 在真实 DSH 中管理测试会话时的界面：
+以下图片为真实 DSH 中管理测试会话时的界面：
 
 ![归档会话工作台（浅色）](docs/ui-preview.jpg)
 
@@ -173,6 +191,14 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 配色使用 DSH 主题令牌并适配深浅主题。可访问性目标、排版和对比度说明见 [docs/accessibility.md](docs/accessibility.md)。
 
 ## 更新记录
+
+### v0.4.0
+
+- 修复「彻底删除」被 DSH 占用时只报「进程占用」、没有可执行路径的问题。已加载但空闲的会话现在会在列表中标记 **需重启 DSH**，并说明写入锁的生命周期。
+- 新增占用诊断与引导：区分运行中、活动、当前进程加载、其他进程占用、日志缺失和锁状态未知；给出退出/重开/重新检测步骤，不提供自动停止活动按钮。
+- 新增待删记录：只保存 ID、标题、时间和失败原因，不保存日志内容；重启后可从顶部横幅继续删除，成功后自动移除，也可手动清除。
+- 新增「重新检测」和「继续删除」；继续后仍执行预览与二次确认，不会静默删除。
+- 服务端新增 `/diagnose` 与 `/pending*` 路由；补充占用、待删和引导测试。
 
 ### v0.3.5
 
@@ -241,18 +267,22 @@ npm pack
 Open **DSH → Settings → Plugins → Install** and enter:
 
 ```text
-github:chen1pengvincent/dsh-archived-manager#v0.3.5
+github:chen1pengvincent/dsh-archived-manager#v0.4.0
 ```
 
 Fully restart DSH after installation, hard-refresh the Web UI, then open **Settings → Session Manager**. Node.js 24+ is needed only for development and tests.
 
-### Workspace layout in 0.3.5
+### Workspace layout in 0.4.0
 
 Search, sort, the log summary, operation results, and bulk selection stay in place when you switch tabs, refresh, or have no results. The dropdown beside search filters archived sessions or sets retention in Recently Deleted. Version details and update status share an anchored panel. Session details and operation results open over the list.
 
 The bulk **Delete permanently** action uses the current selection. **Empty all** previews Recently Deleted, including entries hidden by search. Each action has its own confirmation. The layout adapts to narrower windows and follows the DSH theme.
 
 The manager previews the sessions an action will affect and shows why any will be skipped. Restore reports log recovery separately from workspace reattachment. Cleanup respects DSH activity and write ownership, and scheduled cleanup reads the current retention setting before acting. The list uses lightweight file metadata, with full verification before moving or removing logs.
+
+### If DSH still holds the session
+
+DSH keeps the `session.lock` write lock for every loaded session until the process exits, even when no turn is running. Stopping a turn, job, or subagent does not release it. The manager marks such rows **Restart DSH** and explains the exact steps: save your work, fully quit DSH (on macOS `Cmd+Q`; on Windows quit from the tray or Task Manager), reopen it (do not open the session you want to delete), click **Recheck**, then **Continue deletion**. If it still says loaded, open a different session, fully quit and reopen so DSH does not load the target at startup. The normal preview and second confirmation still apply. If another process holds the lock, the guide shows its name and PID; do not delete `session.lock` by hand. **Remember and continue after restart** stores only the session id, title, time, and reason - never log content - and shows a resume banner after restart.
 
 ### Selection feedback
 

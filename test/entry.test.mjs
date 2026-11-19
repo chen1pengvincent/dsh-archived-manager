@@ -37,6 +37,7 @@ test('the plugin entry registers all exact routes once webServer is available', 
   const paths = registered.map((route) => route.path).sort();
   assert.equal(new Set(paths).size, paths.length, 'every exact route path must be unique');
   assert.deepEqual(paths, [
+    '/archived-manager/diagnose',
     '/archived-manager/discard',
     '/archived-manager/empty-trash',
     '/archived-manager/files',
@@ -45,6 +46,10 @@ test('the plugin entry registers all exact routes once webServer is available', 
     '/archived-manager/hide',
     '/archived-manager/list',
     '/archived-manager/open-folder',
+    '/archived-manager/pending',
+    '/archived-manager/pending/add',
+    '/archived-manager/pending/clear',
+    '/archived-manager/pending/forget',
     '/archived-manager/preview',
     '/archived-manager/purge',
     '/archived-manager/removed',

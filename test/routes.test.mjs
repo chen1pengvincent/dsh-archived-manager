@@ -22,7 +22,7 @@ async function makeHome() {
   return home;
 }
 
-function fakeCtx(home) {
+function fakeCtx(home, options = {}) {
   const state = { archived: [A] };
   const entity = { id: 'ws', path: '/tmp/proj', title: '工作', sessionIds: [A], async detachSession(id) { entity.sessionIds = entity.sessionIds.filter((value) => value !== id); } };
   const registry = {
@@ -36,7 +36,7 @@ function fakeCtx(home) {
       if (name === 'workspaceRegistry') return registry;
       if (name === 'sessionPersistence') return { list: async () => [{ header: { id: A, cwd: '/tmp/proj', createdAt: 1 }, sizeBytes: 7 }] };
       if (name === 'sessions') return { get: () => undefined };
-      if (name === 'agents') return { get: () => undefined };
+      if (name === 'agents') return { get: () => (options.loaded ? { status: 'idle' } : undefined) };
       return undefined;
     },
   };
@@ -135,6 +135,42 @@ test('purge without the confirmation body is refused', async () => {
     body: { ids: [A] },
   });
   assert.equal(result.status, 409);
+});
+
+test('purge with confirmation but no preview token is refused', async () => {
+  const home = await makeHome();
+  const routes = createRoutes(fakeCtx(home));
+  const result = await call(route(routes, '/archived-manager/purge'), {
+    method: 'POST',
+    headers: { 'x-archived-manager': '1' },
+    body: { ids: [A], confirm: 'PURGE' },
+  });
+  assert.equal(result.status, 409);
+  assert.equal(result.json.code, 'confirm');
+});
+
+test('the pending route returns an empty queue', async () => {
+  const home = await makeHome();
+  const routes = createRoutes(fakeCtx(home));
+  const result = await call(route(routes, '/archived-manager/pending'), { method: 'GET', headers: {} });
+  assert.equal(result.status, 200);
+  assert.equal(result.json.ok, true);
+  assert.deepEqual(result.json.items, []);
+});
+
+test('diagnose reports a loaded idle session as restart-required', async () => {
+  const home = await makeHome();
+  const routes = createRoutes(fakeCtx(home, { loaded: true }));
+  const result = await call(route(routes, '/archived-manager/diagnose'), {
+    method: 'POST',
+    headers: { 'x-archived-manager': '1' },
+    body: { ids: [A] },
+  });
+  assert.equal(result.status, 200);
+  assert.equal(result.json.items[0].id, A);
+  assert.equal(result.json.items[0].state, 'loaded');
+  assert.equal(result.json.items[0].loaded, true);
+  assert.equal(result.json.items[0].running, false);
 });
 
 test('health reports the home directory and package version', async () => {

@@ -90,7 +90,8 @@ test('legacy v0 rejects a packed row whose covered range does not line up', () =
 
 test('purge deletes a legacy v0 session that has no isSeeded header field', async (t) => {
   const f = await fixture(t);
-  const result = await f.manager.purge([A], 'PURGE');
+  const review = await f.manager.preview({ action: 'purge', ids: [A] });
+  const result = await f.manager.purge([A], 'PURGE', review.previewToken);
   assert.equal(result[0].ok, true, JSON.stringify(result[0]));
   await assert.rejects(fs.stat(f.dir), { code: 'ENOENT' });
   assert.deepEqual(f.state.archived, []);
@@ -99,8 +100,7 @@ test('purge deletes a legacy v0 session that has no isSeeded header field', asyn
 test('legacy v0 sessions still refuse directories with extra files', async (t) => {
   const f = await fixture(t);
   await fs.writeFile(join(f.dir, 'notes.txt'), 'user file');
-  const result = await f.manager.purge([A], 'PURGE');
-  assert.equal(result[0].ok, false);
-  assert.equal(result[0].code, 'protected-content');
+  const review = await f.manager.preview({ action: 'purge', ids: [A] });
+  assert.equal(review.blocked[0].code, 'protected-content');
   assert.equal(await fs.readFile(join(f.dir, 'notes.txt'), 'utf8'), 'user file');
 });

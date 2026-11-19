@@ -14,6 +14,17 @@ const B = 'session-22222222-2222-4222-8222-222222222222';
 const C = 'session-33333333-3333-4333-8333-333333333333';
 const LAST_PROMPT = 1700000000123;
 
+async function purgeConfirmed(manager, ids) {
+  const review = await manager.preview({ action: 'purge', ids });
+  return manager.purge(ids, 'PURGE', review.previewToken);
+}
+
+async function discardConfirmed(manager, items) {
+  const review = await manager.preview({ action: 'discard', items });
+  return manager.discard(items, 'DISCARD', review.previewToken);
+}
+
+
 async function makeHome(ids) {
   const home = await fs.mkdtemp(join(tmpdir(), 'am-test-'));
   const project = join(home, 'sessions', '--proj--');
@@ -74,7 +85,7 @@ function fakeCtx(home, archivedIds, options = {}) {
       if (name === 'workspaceRegistry') return registry;
       if (name === 'sessionPersistence') return { list: async () => snapshots };
       if (name === 'sessions') return { get: () => (options.resident ? { id: 'x' } : undefined) };
-      if (name === 'agents') return { get: () => (options.running ? { status: 'running' } : undefined) };
+      if (name === 'agents') return { get: () => (options.running ? { status: 'running' } : options.loaded ? { status: 'idle' } : undefined) };
       if (name === 'schedule') return options.schedule;
       return undefined;
     },
@@ -180,7 +191,9 @@ test('purge requires the PURGE confirmation and removes the directory and its ar
   const { ctx, calls } = fakeCtx(home, [A]);
   const manager = createManager(ctx);
   await assert.rejects(() => manager.purge([A], 'nope'), (error) => error instanceof ManagerError && error.code === 'confirm');
-  const results = await manager.purge([A], 'PURGE');
+  await assert.rejects(() => manager.purge([A], 'PURGE'), (error) => error instanceof ManagerError && error.code === 'confirm');
+  const review = await manager.preview({ action: 'purge', ids: [A] });
+  const results = await manager.purge([A], 'PURGE', review.previewToken);
   assert.equal(results[0].ok, true);
   assert.equal(results[0].action, 'purge');
   assert.equal(await fs.stat(join(home, 'sessions', '--proj--', A)).catch(() => undefined), undefined);
@@ -228,11 +241,11 @@ test('a missing directory requires an explicit record-only action', async () => 
   const { ctx, calls } = fakeCtx(home, [C]);
   const manager = createManager(ctx);
   await manager.list();
-  for (const result of [await manager.hide([C]), await manager.purge([C], 'PURGE')]) {
-    assert.equal(result[0].ok, false);
-    assert.equal(result[0].code, 'files-missing');
-    assert.deepEqual(calls.unarchive, []);
-  }
+  const hidden = await manager.hide([C]);
+  assert.equal(hidden[0].ok, false);
+  assert.equal(hidden[0].code, 'files-missing');
+  assert.deepEqual(calls.unarchive, []);
+  await assert.rejects(() => manager.purge([C], 'PURGE'), (error) => error instanceof ManagerError && error.code === 'confirm');
   const result = await manager.forget([C]);
   assert.equal(result[0].action, 'forget');
   assert.deepEqual(calls.unarchive, [C]);
@@ -245,7 +258,8 @@ test('emptyTrash removes every batch and reports bytes', async () => {
   const manager = createManager(ctx);
   await manager.hide([A]);
   await manager.hide([B]);
-  const result = await manager.emptyTrash('EMPTY', await manager.listRemoved());
+  const review = await manager.preview({ action: 'empty' });
+  const result = await manager.emptyTrash('EMPTY', review.targets, review.previewToken);
   assert.equal(result.removed, 2);
   assert.ok(result.bytes > 0);
   assert.deepEqual(await fs.readdir(join(home, 'archived-manager', 'trash')), []);
@@ -323,7 +337,9 @@ test('discard permanently removes one quarantine entry only after confirmation',
   const removed = await manager.listRemoved();
   const target = removed.find((entry) => entry.id === A);
   await assert.rejects(() => manager.discard([{ batch: target.batch, id: A }], 'nope'), (error) => error instanceof ManagerError && error.code === 'confirm');
-  const results = await manager.discard([{ batch: target.batch, id: A }], 'DISCARD');
+  await assert.rejects(() => manager.discard([{ batch: target.batch, id: A }], 'DISCARD'), (error) => error instanceof ManagerError && error.code === 'confirm');
+  const review = await manager.preview({ action: 'discard', items: [{ batch: target.batch, id: A }] });
+  const results = await manager.discard([{ batch: target.batch, id: A }], 'DISCARD', review.previewToken);
   assert.equal(results[0].ok, true);
   assert.equal(results[0].action, 'discard');
   assert.ok(results[0].bytes > 0);
@@ -343,9 +359,8 @@ test('discard refuses a manifest directory that escapes its batch', async () => 
   const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
   manifest.entries[0].dir = '../escape';
   await fs.writeFile(manifestPath, JSON.stringify(manifest));
-  const results = await manager.discard([{ batch: removed[0].batch, id: A }], 'DISCARD');
-  assert.equal(results[0].ok, false);
-  assert.equal(results[0].code, 'invalid');
+  const review = await manager.preview({ action: 'discard', items: [{ batch: removed[0].batch, id: A }] });
+  assert.equal(review.blocked[0].code, 'invalid');
 });
 
 test('settings default to off and sweep only entries older than the retention window', async () => {
@@ -418,8 +433,8 @@ test('repairing a stale manifest entry does not touch session files', async () =
   const removed = await manager.listRemoved();
   const target = join(home, 'archived-manager', 'trash', removed[0].batch, removed[0].dir);
   await fs.rm(target, { recursive: true, force: true });
-  const [refused] = await manager.discard([{ batch: removed[0].batch, id: A }], 'DISCARD');
-  assert.equal(refused.ok, false);
+  const review = await manager.preview({ action: 'discard', items: [{ batch: removed[0].batch, id: A }] });
+  assert.equal(review.blocked[0].code, 'files-missing');
   const [repaired] = await manager.repair(removed);
   assert.equal(repaired.ok, true);
   assert.deepEqual(await manager.listRemoved(), []);
@@ -545,12 +560,12 @@ test('discard partial progress remains visible and requires explicit repair befo
     return unlink(path);
   };
   let result;
-  try { [result] = await manager.discard(entries, 'DISCARD'); } finally { fs.unlink = unlink; }
+  try { [result] = await discardConfirmed(manager, entries); } finally { fs.unlink = unlink; }
   assert.equal(result.partial, true);
   assert.ok(result.bytes > 0);
   assert.equal((await manager.listRemoved())[0].capabilities.discard.code, 'repair-required');
   assert.equal((await manager.repair(entries))[0].ok, true);
-  assert.equal((await manager.discard(entries, 'DISCARD'))[0].ok, true);
+  assert.equal((await discardConfirmed(manager, entries))[0].ok, true);
 });
 
 
@@ -569,7 +584,7 @@ test('repair after an incomplete direct purge releases untouched remaining logs 
     return unlink(path);
   };
   let result;
-  try { [result] = await manager.purge([A], 'PURGE'); } finally { fs.unlink = unlink; }
+  try { [result] = await purgeConfirmed(manager, [A]); } finally { fs.unlink = unlink; }
   assert.equal(result.partial, true);
   assert.ok(result.bytes > 0);
   await assert.rejects(fs.stat(legacy), { code: 'ENOENT' });
@@ -595,7 +610,7 @@ test('direct purge repair clears only the registry after logs are gone and prese
     return rmdir(path);
   };
   let result;
-  try { [result] = await manager.purge([A], 'PURGE'); } finally { fs.rmdir = rmdir; }
+  try { [result] = await purgeConfirmed(manager, [A]); } finally { fs.rmdir = rmdir; }
   assert.equal(result.partial, true);
   assert.ok(result.bytes > 0);
   const report = await manager.list();
@@ -621,7 +636,7 @@ test('discard repair keeps an independent file after the verified logs are gone'
     return rmdir(path);
   };
   let result;
-  try { [result] = await manager.discard(entries, 'DISCARD'); } finally { fs.rmdir = rmdir; }
+  try { [result] = await discardConfirmed(manager, entries); } finally { fs.rmdir = rmdir; }
   assert.equal(result.partial, true);
   assert.ok(result.bytes > 0);
   const [repaired] = await manager.repair(entries);
@@ -631,4 +646,37 @@ test('discard repair keeps an independent file after the verified logs are gone'
   const removed = await manager.listRemoved();
   assert.deepEqual(removed, []);
   assert.ok(removed.warnings.length);
+});
+
+
+test('an idle but loaded session is reported as needing a DSH restart', async () => {
+  const home = await makeHome([A]);
+  const { ctx } = fakeCtx(home, [A], { loaded: true });
+  const manager = createManager(ctx);
+  const report = await manager.list();
+  const item = report.items[0];
+  assert.equal(item.loaded, true);
+  assert.equal(item.running, false);
+  assert.equal(item.capabilities.purge.code, 'restart-required');
+  assert.match(item.capabilities.purge.reason, /完全退出/);
+  const diagnosis = await manager.diagnose([A]);
+  assert.equal(diagnosis.items[0].state, 'loaded');
+  assert.equal(diagnosis.items[0].loaded, true);
+});
+
+test('pending deletion records are minimal, deduplicated and removable', async () => {
+  const home = await makeHome([A]);
+  const { ctx } = fakeCtx(home, [A]);
+  const manager = createManager(ctx);
+  await manager.addPending([{ id: A, scope: 'archived', title: '会话 A' }], { code: 'restart-required', message: '需要重启' });
+  await manager.addPending([{ id: A, scope: 'archived', title: '会话 A' }], { code: 'occupied', message: '仍被占用' });
+  const entries = await manager.pending();
+  assert.equal(entries.length, 1);
+  assert.equal(entries[0].lastCode, 'occupied');
+  assert.equal(entries[0].lastReason, '仍被占用');
+  assert.equal(entries[0].title, '会话 A');
+  const raw = await fs.readFile(manager.pendingPath, 'utf8');
+  assert.equal(raw.includes('session.v4'), false);
+  await manager.forgetPending([{ id: A }]);
+  assert.deepEqual(await manager.pending(), []);
 });

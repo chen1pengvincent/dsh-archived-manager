@@ -10,7 +10,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	var useEffect = React.useEffect;
 
 	var API = "/archived-manager";
-	var CLIENT_VERSION = "0.3.5";
+	var CLIENT_VERSION = "0.4.0";
+	var pendingWarning = null;
 	var MAX_BATCH = 200;
 	var LANG = typeof navigator !== "undefined" && navigator.language ? String(navigator.language).toLowerCase() : "";
 	var ZH = LANG.indexOf("zh") === 0;
@@ -198,6 +199,47 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		previewFileNote: "独立文件会保留。请先保存需要的文件位置；彻底删除日志后，无法再从此会话查看这些位置。",
 		protectedReason: "有操作暂不可用",
 		occupied: "宿主占用中",
+		errOccupied: "会话仍被 DSH 占用。请完全退出 DSH 后重新打开，再彻底删除。",
+		errRestartRequired: "会话仍由当前 DSH 进程加载。请完全退出 DSH 后重新打开再删除。",
+		restartBadge: "需重启 DSH",
+		restartAction: "处理",
+		guideOpen: "查看解决步骤",
+		guideTitle: "会话仍被 DSH 占用",
+		guideIntro: "DSH 会在会话被加载后一直持有写入锁，即使当前没有运行回合。停止回合或任务不会释放它，只有完全退出 DSH 进程才会释放。",
+		guideChecking: "正在检测占用…",
+		guideStepTitle: "请按顺序操作",
+		guideStep1: "1. 保存需要保留的内容。彻底删除后，会话日志无法恢复。",
+		guideStep2: "2. 完全退出 DSH：macOS 按 Cmd+Q（或菜单栏、程序坞退出）；Windows 从托盘或任务管理器退出。确认没有 DSH 窗口或后台进程。",
+		guideStep3: "3. 重新打开 DSH，回到「会话管理」。不要先打开要删除的会话。",
+		guideStep4: "4. 点击「重新检测」。若仍显示已加载，先打开另一个会话，再完全退出并重开，避免 DSH 启动时又加载它；锁释放后点「继续删除」，仍会先预览并二次确认。",
+		guideStep5: "5. 若仍提示被其他进程占用，按上方进程名和 PID 退出对应进程；不要手动删除 session.lock，锁由系统释放。",
+		guideClose: "关闭",
+		guideRecheck: "重新检测",
+		guideContinue: "继续删除",
+		guideRecord: "记录并在重启后继续",
+		guideRecorded: "已记录。请完全退出 DSH 后重新打开，列表顶部会出现继续入口。",
+		guideFree: "写入锁已释放，可以继续删除。",
+		guideLoaded: "当前 DSH 已加载该会话；空闲状态也会持有写入锁。",
+		guideRunning: "会话正在运行。请先在会话中停止当前回合；若仍被占用，完全退出 DSH 后重开。",
+		guideActivity: "仍有活动：{items}。请先结束这些活动；若仍被占用，完全退出 DSH 后重开。",
+		guideExternal: "另一个进程持有写入锁：{holder}。请退出该 DSH 进程后重试。",
+		guideSelf: "当前 DSH 进程（PID {pid}）持有写入锁；请完全退出 DSH。",
+		guideUnknown: "无法确认写入锁状态。请完全退出 DSH 后重开。",
+		guideMissing: "会话日志已缺失，无法删除；请使用「清理失效记录」。",
+		guideUnavailable: "无法核对该会话：{reason}",
+		guideNoHolder: "未能识别占用进程",
+		guideMixed: "同时包含已归档和最近删除会话，请在顶部待删提示中分别继续删除。",
+		guideEmpty: "没有需要处理的会话。",
+		pendingTitle: "有 {n} 个会话待彻底删除",
+		pendingBody: "上次操作因 DSH 占用未完成。记录会保留，不会自动删除；完全退出并重开 DSH 后可从这里继续。",
+		pendingArchived: "继续删除 {n} 个已归档会话",
+		pendingRemoved: "继续删除 {n} 个最近删除会话",
+		pendingClear: "清除待删记录",
+		pendingClearConfirm: "清除 {n} 条待删记录？只移除记录，不会删除任何文件。",
+		pendingCleared: "已清除待删记录",
+		pendingClearing: "正在清除…",
+		pendingFailed: "无法清除待删记录：{message}",
+		pendingAdded: "已加入待删记录",
 		viewRemoved: "查看最近删除",
 		partialReason: "部分完成：{reason}",
 		partialMoved: "日志已移到最近删除，请在该列表核对剩余步骤。{reason}",
@@ -395,6 +437,47 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		previewFileNote: "Independent files stay in place. Save any locations you need before permanently deleting the log, which also removes this session's record of those locations.",
 		protectedReason: "Some actions are unavailable",
 		occupied: "In use by DSH",
+		errOccupied: "DSH still has this session in use. Fully quit and reopen DSH before permanently deleting it.",
+		errRestartRequired: "DSH still has this session loaded. Fully quit and reopen DSH before deleting it.",
+		restartBadge: "Restart DSH",
+		restartAction: "Resolve",
+		guideOpen: "View steps",
+		guideTitle: "This session is still in use by DSH",
+		guideIntro: "DSH keeps a write lock for as long as it has the session loaded, even when no turn is running. Stopping a turn or task does not release it; only fully quitting the DSH process does.",
+		guideChecking: "Checking the lock…",
+		guideStepTitle: "Do these in order",
+		guideStep1: "1. Save anything you need. Permanently deleting a session log cannot be undone.",
+		guideStep2: "2. Fully quit DSH: on macOS press Cmd+Q (or quit from the menu bar or Dock); on Windows quit from the tray or Task Manager. Make sure no DSH window or background process remains.",
+		guideStep3: "3. Reopen DSH and return to Session Manager. Do not open the session you want to delete.",
+		guideStep4: "4. Click Recheck. If it still says loaded, open a different session, then fully quit and reopen so DSH does not load it at startup. Once the lock is released, click Continue deletion; you will still see a preview and a second confirmation.",
+		guideStep5: "5. If another process still holds the lock, quit the process named above by PID. Do not delete session.lock manually; the OS releases the lock.",
+		guideClose: "Close",
+		guideRecheck: "Recheck",
+		guideContinue: "Continue deletion",
+		guideRecord: "Remember and continue after restart",
+		guideRecorded: "Saved. Fully quit DSH and reopen it; a continue entry will appear at the top of the list.",
+		guideFree: "The write lock is released. You can continue.",
+		guideLoaded: "DSH currently has this session loaded; an idle session still holds the write lock.",
+		guideRunning: "A turn is running. Stop it in the session first; if the session is still locked, fully quit and reopen DSH.",
+		guideActivity: "Activity remains: {items}. Finish it first; if the session is still locked, fully quit and reopen DSH.",
+		guideExternal: "Another process holds the write lock: {holder}. Quit that DSH process and retry.",
+		guideSelf: "The current DSH process (PID {pid}) holds the write lock. Fully quit DSH.",
+		guideUnknown: "The write lock state could not be confirmed. Fully quit and reopen DSH.",
+		guideMissing: "The session log is already missing; there is nothing to delete. Use Clear stale record.",
+		guideUnavailable: "Could not check this session: {reason}",
+		guideNoHolder: "could not identify the holder",
+		guideMixed: "The selection mixes archived and recently deleted sessions. Continue them separately from the pending banner at the top.",
+		guideEmpty: "Nothing to resolve.",
+		pendingTitle: "{n} session(s) awaiting permanent deletion",
+		pendingBody: "The last attempt was blocked by DSH. The record is kept and nothing is deleted automatically. Fully quit and reopen DSH, then continue here.",
+		pendingArchived: "Continue deleting {n} archived session(s)",
+		pendingRemoved: "Continue deleting {n} recently deleted session(s)",
+		pendingClear: "Clear pending records",
+		pendingClearConfirm: "Clear {n} pending record(s)? This removes only the records; no files are deleted.",
+		pendingCleared: "Pending records cleared",
+		pendingClearing: "Clearing…",
+		pendingFailed: "Could not clear pending records: {message}",
+		pendingAdded: "Added to pending deletions",
 		viewRemoved: "View Recently Deleted",
 		partialReason: "Partially complete: {reason}",
 		partialMoved: "Logs moved to Recently Deleted. Check the remaining steps there. {reason}",
@@ -506,9 +589,14 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			confirm: "errConfirm",
 			storage: "errStorage",
 			schedule: "errSchedule",
+			occupied: "errOccupied",
+			"restart-required": "errRestartRequired",
 		};
 		var key = code && codes[code];
-		if (key) return tr(key);
+		/* The host knows which activity or process still holds this session. Prefer its
+		   precise reason over the generic occupied copy; fall back to the copy when a
+		   result only carries a code. */
+		if (key && !(code === "occupied" && typeof message === "string" && message.trim() !== "")) return tr(key);
 		if (typeof message === "string" && message.trim() !== "") return message;
 		return tr("errGeneric");
 	}
@@ -629,6 +717,20 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		".am-modal-summary{font-size:13px;line-height:1.6;color:var(--am-text-secondary)}",
 		".am-modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}",
 		".am-modal-actions .am-btn{height:32px;padding:0 16px}",
+		".am-pending-banner{display:grid;gap:9px;padding:11px 13px;border:1px solid color-mix(in srgb,var(--am-warning) 34%,transparent);border-radius:9px;background:color-mix(in srgb,var(--am-warning) 7%,transparent)}",
+		".am-pending-text strong{font-size:13px;font-weight:600}.am-pending-text p{margin:3px 0 0;font-size:12px;line-height:1.6;color:var(--am-text-secondary)}",
+		".am-pending-actions{display:flex;flex-wrap:wrap;gap:8px}",
+		".am-pending-actions .am-btn{height:30px;padding-inline:12px}",
+		".am-guide-modal{width:min(520px,100%)}",
+		".am-guide-scroll{display:grid;gap:10px;overflow:auto;min-height:0;padding:2px;font-size:13px;line-height:1.65}",
+		".am-guide-intro{margin:0;color:var(--am-text-secondary)}",
+		".am-guide-list{display:grid;gap:6px;margin:0;padding:0;list-style:none}",
+		".am-guide-list li{display:grid;gap:2px;padding:8px 10px;border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.18));border-radius:8px;min-width:0}",
+		".am-guide-state{font-size:12px;line-height:1.6;color:var(--am-warning);overflow-wrap:anywhere}",
+		".am-guide-steps-title{font-size:13px;font-weight:600}",
+		".am-guide-steps{display:grid;gap:6px;margin:0;padding-inline-start:20px;font-size:12px;color:var(--am-text-secondary)}",
+		".am-guide-steps li{padding-inline-start:2px}",
+		".am-guide-link{display:flex;justify-content:flex-start}",
 		".am-preview{display:flex;flex-direction:column;gap:9px;padding-block:2px;max-height:42vh;overflow:auto;min-height:0}.am-preview-set{flex-shrink:0}.am-preview:focus-visible{outline:2px solid var(--am-accent);outline-offset:2px}.am-preview-set{border:1px solid var(--dsw-alias-border-l1,rgba(127,127,127,.22));padding:8px 12px;border-radius:8px;line-height:1.55;overflow-wrap:anywhere}.am-preview-set ul{padding-inline-start:18px;margin:4px 0 0}",
 		"@keyframes am-spin{to{transform:rotate(360deg)}}",
 		"@keyframes am-fade{from{opacity:0}to{opacity:1}}",
@@ -736,7 +838,19 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		var updateError = updateErrorState[0], setUpdateError = updateErrorState[1];
 		var removedWarningsState = useState([]);
 		var removedWarnings = removedWarningsState[0], setRemovedWarnings = removedWarningsState[1];
-		var dialogOpen = confirm !== null || info !== null;
+		/* Keep these three slots after every pre-existing state. The test harness maps
+		   useState calls to a positional array, so inserting them earlier would shift
+		   unrelated controls and corrupt the fixture. */
+		var pendingState = useState([]);
+		var pending = pendingState[0];
+		var setPending = pendingState[1];
+		var pendingBusyState = useState(false);
+		var pendingBusy = pendingBusyState[0];
+		var setPendingBusy = pendingBusyState[1];
+		var guideState = useState(null);
+		var guide = guideState[0];
+		var setGuide = guideState[1];
+		var dialogOpen = confirm !== null || info !== null || guide !== null;
 		var locked = busy || Boolean(update && update.busy) || updatePhase === "preparing" || phase !== "ready";
 		var actionRef = React.useRef(false);
 		var updateRef = React.useRef(false);
@@ -745,12 +859,12 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		var refreshRef = React.useRef(null);
 		var archivedAllRef = React.useRef(null);
 		var removedAllRef = React.useRef(null);
-		var pendingFocusRef = React.useRef(false);
 		var loadRef = React.useRef(false);
 		var hasSnapshotRef = React.useRef(false);
 		var confirmRef = React.useRef(null);
 		var menuRef = React.useRef(null);
 		var menuTriggerRef = React.useRef(null);
+		var pendingFocusRef = React.useRef(false);
 
 		function keyOf(entry) {
 			return entry.batch + "/" + entry.id;
@@ -765,16 +879,20 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			if (silent !== true) setError(null);
 			return Promise.all([
 				request("/list"),
-				request("/settings").catch(function () { return null; })
+				Promise.resolve().then(function () { return request("/settings"); }).catch(function () { return null; }),
+				Promise.resolve().then(function () { return request("/pending"); }).catch(function () { return null; })
 			]).then(function (pair) {
 				var data = pair[0] || {};
 				if (!Array.isArray(data.items) || !Array.isArray(data.removed)) throw new Error("Incomplete session list response");
 				var settingsData = pair[1];
+				var pendingData = pair[2];
 				var nextItems = Array.isArray(data.items) ? data.items : [];
 				var nextRemoved = Array.isArray(data.removed) ? data.removed : [];
 				hasSnapshotRef.current = true;
 				setItems(nextItems);
 				setRemoved(nextRemoved);
+				pendingWarning = pendingData && typeof pendingData.warning === "string" ? pendingData.warning : null;
+				setPending(pendingData && Array.isArray(pendingData.items) ? pendingData.items : []);
 				setRemovedWarnings(Array.isArray(data.removedWarnings) ? data.removedWarnings : []);
 				setAttachments(data.attachments && typeof data.attachments === "object"
 					? { bytes: Number(data.attachments.bytes) || 0, files: Number(data.attachments.files) || 0 }
@@ -795,6 +913,212 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			}).finally(function () {
 				loadRef.current = false;
 			});
+		}
+
+		function guideEntry(item) {
+			return { id: item.id, batch: item.batch, title: item.title, missing: item.missing === true };
+		}
+
+		function diagnoseInto(entries, token) {
+			return request("/diagnose", { items: entries.map(targetOf) }).then(function (data) {
+				if (!Array.isArray(data.items)) throw new Error("Incomplete diagnosis response");
+				setGuide(function (current) {
+					return current && current.token === token
+						? Object.assign({}, current, { diagnosis: data.items, loading: false, error: null })
+						: current;
+				});
+			}).catch(function (error) {
+				setGuide(function (current) {
+					return current && current.token === token
+						? Object.assign({}, current, { loading: false, error: errorText(error.code, error.message) })
+						: current;
+				});
+			});
+		}
+
+		function openGuide(entries, options) {
+			var seen = new Set();
+			var list = (entries || []).filter(function (item) {
+				if (!item || !item.id) return false;
+				var key = (item.batch || "") + "/" + item.id;
+				if (seen.has(key)) return false;
+				seen.add(key);
+				return true;
+			});
+			if (!list.length) return;
+			var token = String(Date.now()) + ":" + Math.random();
+			returnFocusRef.current = options && options.trigger || document.activeElement;
+			setMenu(null);
+			var kinds = new Set(list.map(function (entry) { return entry.batch ? "discard" : "purge"; }));
+			setGuide({
+				token: token,
+				kind: kinds.size === 1 ? list[0].batch ? "discard" : "purge" : null,
+				entries: list.map(guideEntry),
+				diagnosis: null,
+				loading: true,
+				error: null
+			});
+			diagnoseInto(list, token);
+		}
+
+		function recheckGuide() {
+			if (!guide || guide.loading) return;
+			var token = guide.token;
+			setGuide(Object.assign({}, guide, { loading: true, error: null, diagnosis: null }));
+			diagnoseInto(guide.entries, token);
+		}
+
+		function holderText(holder) {
+			if (!holder) return tr("guideNoHolder");
+			return (holder.name ? holder.name + " " : "") + "(PID " + holder.pid + ")";
+		}
+
+		function activityText(activities) {
+			var labels = (activities || []).map(function (activity) {
+				var items = (activity.items || []).filter(function (item) { return typeof item === "string" && item; });
+				return activity.kind + (items.length ? " · " + items.join(" / ") : "");
+			});
+			return labels.join("；");
+		}
+
+		function diagnosisText(entry) {
+			if (!entry) return tr("guideUnknown");
+			switch (entry.state) {
+				case "free": return tr("guideFree");
+				case "missing": return tr("guideMissing");
+				case "unavailable": return tr("guideUnavailable", { reason: entry.reason || "—" });
+				case "running": return tr("guideRunning");
+				case "activity": return tr("guideActivity", { items: activityText(entry.activities) });
+				case "loaded": return tr("guideLoaded");
+				case "external":
+					if (entry.holder && entry.holder.self) return tr("guideSelf", { pid: entry.holder.pid });
+					return tr("guideExternal", { holder: holderText(entry.holder) });
+				default:
+					return tr("guideUnknown") + (entry.lock && entry.lock.reason ? " " + entry.lock.reason : "");
+			}
+		}
+
+		function guideAllFree() {
+			return Boolean(guide && !guide.loading && !guide.error && Array.isArray(guide.diagnosis) && guide.diagnosis.length > 0
+				&& guide.diagnosis.every(function (entry) { return entry.state === "free"; }));
+		}
+
+		function pendingActionItems(entries, kind) {
+			return (entries || []).map(function (entry) {
+				var item = { id: entry.id, title: entry.title || entry.id, capabilities: {} };
+				if (entry.batch) item.batch = entry.batch;
+				var action = kind || (entry.scope === "removed" ? "discard" : "purge");
+				item.capabilities[action] = true;
+				return item;
+			});
+		}
+
+		function continueGuide() {
+			if (!guide || !guide.kind || !guideAllFree()) return;
+			var kind = guide.kind;
+			var items = pendingActionItems(guide.entries, kind);
+			setGuide(null);
+			openConfirm(kind, items, { force: true });
+		}
+
+		function recordGuide() {
+			if (!guide || pendingBusy) return;
+			var items = guide.entries.map(function (entry) {
+				var item = { id: entry.id, scope: entry.batch ? "removed" : "archived", title: entry.title || entry.id };
+				if (entry.batch) item.batch = entry.batch;
+				return item;
+			});
+			setPendingBusy(true);
+			request("/pending/add", {
+				items: items,
+				reason: { code: "restart-required", message: tr("errRestartRequired") }
+			}).then(function (data) {
+				if (Array.isArray(data.items)) setPending(data.items);
+				setGuide(null);
+				setToast({ kind: "ok", text: tr("guideRecorded") });
+			}).catch(function (error) {
+				var message = errorText(error.code, error.message);
+				setGuide(function (current) { return current ? Object.assign({}, current, { error: message }) : current; });
+				setToast({ kind: "bad", text: message });
+			}).finally(function () {
+				setPendingBusy(false);
+			});
+		}
+
+		function clearPendingRecords() {
+			if (pendingBusy || pending.length === 0) return;
+			var accepted = true;
+			try { accepted = window.confirm(tr("pendingClearConfirm", { n: pending.length })); }
+			catch (error) { accepted = false; }
+			if (!accepted) return;
+			setPendingBusy(true);
+			request("/pending/clear", {}).then(function (data) {
+				setPending(Array.isArray(data.items) ? data.items : []);
+				setToast({ kind: "ok", text: tr("pendingCleared") });
+			}).catch(function (error) {
+				setToast({ kind: "bad", text: tr("pendingFailed", { message: errorText(error.code, error.message) }) });
+			}).finally(function () {
+				setPendingBusy(false);
+			});
+		}
+
+		function pendingBanner() {
+			if (pending.length === 0 && !pendingWarning) return null;
+			var archived = pending.filter(function (entry) { return entry.scope !== "removed"; });
+			var removedPending = pending.filter(function (entry) { return entry.scope === "removed"; });
+			return h("div", { key: "pending-banner", className: "am-pending-banner", role: "status", "aria-live": "polite" }, [
+				h("div", { key: "text", className: "am-pending-text" }, [
+					h("strong", { key: "title" }, tr("pendingTitle", { n: pending.length })),
+					h("p", { key: "body" }, tr("pendingBody")),
+					pendingWarning ? h("p", { key: "warning", className: "am-warning-text" }, pendingWarning) : null
+				]),
+				h("div", { key: "actions", className: "am-pending-actions" }, [
+					archived.length ? button("continue-archived", tr("pendingArchived", { n: archived.length }), function () {
+						openConfirm("purge", pendingActionItems(archived), { force: true });
+					}, locked || pendingBusy) : null,
+					removedPending.length ? button("continue-removed", tr("pendingRemoved", { n: removedPending.length }), function () {
+						openConfirm("discard", pendingActionItems(removedPending), { force: true });
+					}, locked || pendingBusy) : null,
+					button("clear-pending", tr("pendingClear"), clearPendingRecords, pendingBusy || locked)
+				])
+			]);
+		}
+
+		function guidePanel() {
+			if (guide === null) return null;
+			var allFree = guideAllFree();
+			var diagnosis = Array.isArray(guide.diagnosis) ? guide.diagnosis : [];
+			var labels = guide.entries.map(function (entry) { return entry.title || entry.id; });
+			return h("div", {
+				key: "guide", className: "am-modal-backdrop",
+				onMouseDown: function (event) { if (event.currentTarget === event.target && !pendingBusy) setGuide(null); }
+			}, h("div", {
+				className: "am-modal am-guide-modal", ref: confirmRef, tabIndex: -1, role: "dialog", "aria-modal": "true", "aria-label": tr("guideTitle")
+			}, [
+				h("div", { key: "title", className: "am-modal-title" }, tr("guideTitle")),
+				h("div", { key: "body", className: "am-guide-scroll", tabIndex: 0 }, [
+					h("p", { key: "intro", className: "am-guide-intro" }, tr("guideIntro")),
+					guide.loading ? h("p", { key: "checking", className: "am-guide-checking", role: "status" }, tr("guideChecking"))
+						: guide.error ? h("p", { key: "error", className: "am-warning-text", role: "alert" }, tr("guideUnavailable", { reason: guide.error }))
+						: h("ul", { key: "states", className: "am-guide-list" }, diagnosis.map(function (entry, index) {
+							return h("li", { key: entry.id + ":" + (entry.batch || "") + ":" + index }, [
+								h("strong", { key: "name" }, labels[index] || entry.id),
+								h("span", { key: "state", className: "am-guide-state" }, diagnosisText(entry))
+							]);
+						})),
+					h("strong", { key: "steps-title", className: "am-guide-steps-title" }, tr("guideStepTitle")),
+					h("ol", { key: "steps", className: "am-guide-steps" }, [
+						tr("guideStep1"), tr("guideStep2"), tr("guideStep3"), tr("guideStep4"), tr("guideStep5")
+					].map(function (step, index) { return h("li", { key: index }, step); }))
+				]),
+				h("div", { key: "actions", className: "am-modal-actions" }, [
+					h("button", { key: "guide-close", type: "button", ref: cancelRef, className: "am-btn", disabled: pendingBusy, onClick: function () { setGuide(null); } }, tr("guideClose")),
+					button("guide-recheck", tr("guideRecheck"), recheckGuide, guide.loading || pendingBusy),
+					button("guide-record", tr("guideRecord"), recordGuide, pendingBusy),
+					allFree && guide.kind ? button("guide-continue", tr("guideContinue"), continueGuide, pendingBusy) : null,
+					!guide.kind ? h("p", { key: "mixed-hint", className: "am-help" }, tr("guideMixed")) : null
+				])
+			]));
 		}
 
 		useEffect(function () {
@@ -869,9 +1193,11 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				if (event.key === "Escape") {
 					event.preventDefault();
 					event.stopPropagation();
-					if (!actionRef.current || info !== null) {
+					if (guide !== null && pendingBusy) return;
+					if (!actionRef.current || info !== null || guide !== null) {
 						setConfirm(null);
 						setInfo(null);
+						setGuide(null);
 					}
 					return;
 				}
@@ -902,7 +1228,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				window.removeEventListener("keydown", onKey, true);
 				pendingFocusRef.current = true;
 			};
-		}, [dialogOpen, info !== null]);
+		}, [dialogOpen, info !== null, guide !== null, pendingBusy]);
 
 		// Closing a submitted dialog often coincides with a list refresh. Wait
 		// until a connected target is enabled; focusing disabled buttons is a no-op.
@@ -1113,7 +1439,11 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			setReport(reasons.length ? {
 				title: resultTitle,
 				failures: reasons.map(function (entry) {
-					return { title: failureTitle(entry), reason: entry.warning || failureReason(entry) };
+					var code = entry.code || (entry.warning ? "protected-content" : undefined);
+					return Object.assign({
+						title: failureTitle(entry),
+						reason: entry.warning || failureReason(entry)
+					}, entry.id ? { id: entry.id } : {}, entry.batch ? { batch: entry.batch } : {}, code ? { code: code } : {});
 				})
 			} : null);
 			setToast({
@@ -1248,7 +1578,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function openConfirm(kind, entries, options) {
-			if (locked || actionRef.current || dialogOpen) return;
+			if (locked || actionRef.current || (dialogOpen && !(options && options.force))) return;
 			var plan = localPlan(kind, entries);
 			var global = kind === "empty" || kind === "retention";
 			if (!global && plan.targets.length > MAX_BATCH) {
@@ -1407,7 +1737,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			return h("div", { key: "main", className: "am-main" }, [
 				h("div", { key: "titleline", className: "am-titleline" }, [
 					h("button", { key: "title", type: "button", className: "am-row-title", title: item.title || item.id, "aria-haspopup": "dialog", onClick: function (event) { openInfo({ item: item, removed: removedItem }, event.currentTarget); } }, item.title || tr("noTitle")),
-					item.running ? h("span", { key: "running", className: "am-badge danger" }, tr("running")) : item.missing ? h("span", { key: "missing", className: "am-badge warn" }, tr("missing")) : blocked ? h("span", { key: "protected", className: "am-badge warn", title: errorText(blocked.code, blocked.reason) }, tr(blocked.code === "occupied" ? "occupied" : "protectedReason")) : null
+					item.running ? h("span", { key: "running", className: "am-badge danger" }, tr("running")) : item.missing ? h("span", { key: "missing", className: "am-badge warn" }, tr("missing")) : blocked ? h("span", { key: "protected", className: "am-badge warn", title: errorText(blocked.code, blocked.reason) }, tr(blocked.code === "occupied" ? "occupied" : blocked.code === "restart-required" ? "restartBadge" : "protectedReason")) : null
 				]),
 				h("div", { key: "meta", className: "am-row-meta", title: workspace || "" }, (workspace || "—") + " · " + (removedItem ? tr("movedAt") : tr("lastUsedLabel")) + " " + (typeof (removedItem ? item.movedAt : item.lastUsedAt) === "number" ? fmtAge(removedItem ? item.movedAt : item.lastUsedAt) : tr("unknownTime")))
 			]);
@@ -1421,13 +1751,20 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 
 		function archivedRow(item) {
 			var checked = selectedIds.has(item.id);
-			var actions = item.running ? h("span", { className: "am-help" }, tr("runningLocked")) : item.missing
+			var restart = capability(item, "purge");
+			var restartButton = restart && ["restart-required", "running"].includes(restart.code)
+				? button("guide", tr("restartAction"), function () { openGuide([item]); }, locked)
+				: null;
+			var actions = item.running
+				? [h("span", { key: "running-locked", className: "am-help" }, tr("runningLocked")), restartButton].filter(Boolean)
+				: item.missing
 				? actionButton(item, "cleanup", "cleanup", "cleanup")
 				: [
+					restartButton,
 					actionButton(item, "unarchive", "unarchive", "unarchive", true),
 					actionButton(item, "hide", "hide", "hide", true),
 					actionButton(item, "purge", "purge", "purge", false, true)
-				];
+				].filter(Boolean);
 			if (capability(item, "repair") === true) actions = [actionButton(item, "repair", "repair", "repair", true)];
 			return h("div", { key: item.id, className: "am-row" + (checked ? " selected" : ""), role: "listitem" }, [
 				h("label", { key: "check", className: "am-check-target" }, h("input", { type: "checkbox", className: "am-check", checked: checked, disabled: locked || Boolean(item.running), onChange: function () { if (!item.running) toggle(item.id); }, "aria-label": item.title || item.id })),
@@ -1438,9 +1775,13 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 		function removedRow(entry) {
 			var key = keyOf(entry), checked = removedKeys.has(key);
+			var restart = capability(entry, "discard");
+			var restartButton = restart && ["restart-required", "running"].includes(restart.code)
+				? button("guide", tr("restartAction"), function () { openGuide([entry]); }, locked)
+				: null;
 			var actions = capability(entry, "repair") === true
 				? [actionButton(entry, "repair", "repair", "repair", true)]
-				: [actionButton(entry, "restore", "restore", "restore", true), actionButton(entry, "discard", "discard", "purge", false, true)];
+				: [restartButton, actionButton(entry, "restore", "restore", "restore", true), actionButton(entry, "discard", "discard", "purge", false, true)].filter(Boolean);
 			return h("div", { key: key, className: "am-row" + (checked ? " selected" : ""), role: "listitem" }, [
 				h("label", { key: "check", className: "am-check-target" }, h("input", { type: "checkbox", className: "am-check", checked: checked, disabled: locked, onChange: function () { toggleRemoved(key); }, "aria-label": entry.title || entry.id })),
 				rowMain(entry, true),
@@ -1608,6 +1949,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			var label = tr(labels[kind], { n: count });
 			var ready = !confirm.loading && !confirm.error;
 			var scopeAllowsSubmit = ready && (count > 0 || isRetention);
+			var restartBlocked = blocked.filter(function (entry) { return entry.code === "restart-required" || entry.code === "occupied" || entry.code === "running" || entry.code === "occupancy-unavailable" || entry.code === "running"; });
 			var size = sizeInfo(targets, true);
 			var planContent = ready ? [
 				kind === "empty" ? h("div", { key: "all", className: "am-help" }, tr("previewAll")) : null,
@@ -1626,6 +1968,12 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 						return h("li", { key: index }, (failureTitle(entry)) + " · " + failureReason(entry));
 					}))
 				]) : null,
+				restartBlocked.length > 0 ? h("div", { key: "restart-guide", className: "am-guide-link" },
+					button("open-guide", tr("guideOpen"), function () {
+						var entries = restartBlocked.slice();
+						setConfirm(null);
+						openGuide(entries);
+					}, busy)) : null,
 				danger && count > 0 ? h("div", { key: "file-note", className: "am-help" }, tr("previewFileNote")) : null
 			] : h("div", { className: "am-modal-summary", role: "status" },
 				confirm.loading ? tr("previewLoading") : tr("previewFailed", { message: confirm.error }));
@@ -1881,6 +2229,12 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			var reasons = report ? report.failures : [];
 			var loadError = phase === "failed" || phase === "stale";
 			var warnings = info.showWarnings ? removedWarnings : [];
+			var guideTargets = item && ["restart-required", "running", "occupied", "occupancy-unavailable"].includes(capability(item, info.removed ? "discard" : "purge").code) ? [item]
+				: !item ? reasons.filter(function (entry) {
+					return entry.id && (entry.code === "restart-required" || entry.code === "occupied" || entry.code === "running" || entry.code === "occupancy-unavailable");
+				}).map(function (entry) {
+					return { id: entry.id, batch: entry.batch, title: entry.title };
+				}) : [];
 			var content = item ? details(item, info.removed) : h("div", { className: "am-report" }, [
 				loadError ? h("p", { key: "error", className: "am-warning-text", role: "alert" }, tr("staleList") + " " + tr("failed", { message: error || "" })) : null,
 				report ? h("strong", { key: "report" }, report.title) : null,
@@ -1905,6 +2259,11 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				h("div", { key: "title", className: "am-modal-title am-path" }, title),
 				h("div", { key: "body", className: "am-info-scroll", tabIndex: 0 }, content),
 				h("div", { key: "actions", className: "am-modal-actions" }, [
+					guideTargets.length ? button("guide", tr("guideOpen"), function () {
+						var entries = guideTargets.slice();
+						setInfo(null);
+						openGuide(entries);
+					}, busy) : null,
 					!item && toast && toast.showRemoved && tab !== "removed" ? button("viewRemoved", tr("viewRemoved"), function () {
 						setInfo(null);
 						setTab("removed");
@@ -2001,7 +2360,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		return h("div", { className: "am-page", "aria-busy": busy || Boolean(update && update.busy) }, [
 			h("div", { key: "head", className: "am-head" }, [
 				h("div", { key: "text", className: "am-head-text" }, [h("div", { key: "title", className: "am-title" }, tr("title")), h("div", { key: "sub", className: "am-sub" }, tr("subtitle"))]),
-				versionPanel()
+				versionPanel(),
+				pending.length ? pendingBanner() : null
 			]),
 			h("section", { key: "workbench", className: "am-workbench", role: "region", "aria-label": tr("title") }, [
 				h("div", { key: "viewbar", className: "am-viewbar" }, [
@@ -2025,7 +2385,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				)
 			]),
 			confirmPanel(),
-			infoPanel()
+			infoPanel(),
+			guidePanel()
 		]);
 	}
 

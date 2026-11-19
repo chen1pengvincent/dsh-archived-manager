@@ -11,6 +11,22 @@ const A = 'session-11111111-1111-4111-8111-111111111111';
 const B = 'session-22222222-2222-4222-8222-222222222222';
 const event = (type, data, extra = {}) => ({ type, data, ...extra });
 
+async function purgeAll(f, ids) {
+  const review = await f.manager.preview({ action: 'purge', ids });
+  return f.manager.purge(ids, 'PURGE', review.previewToken);
+}
+
+async function discardAll(f, items) {
+  const review = await f.manager.preview({ action: 'discard', items });
+  return f.manager.discard(items, 'DISCARD', review.previewToken);
+}
+
+async function emptyAll(f) {
+  const review = await f.manager.preview({ action: 'empty' });
+  return f.manager.emptyTrash('EMPTY', review.targets, review.previewToken);
+}
+
+
 async function fixture(t, ids = [A], events = [], overrides = {}) {
   const home = await fs.realpath(await fs.mkdtemp(join(tmpdir(), 'am-safety-')));
   t.after(() => fs.rm(home, { recursive: true, force: true }));
@@ -60,7 +76,8 @@ test('a single compressed frame containing header and events is preserved by cle
     { seq: 0, time: 1, type: 'session/title', data: { title: 'synthetic' } },
   ].map(JSON.stringify).join('\n') + '\n');
   const path = join(f.dir(), 'session.v4.jsonl.zstd'); await fs.writeFile(path, malformedContainer);
-  assert.equal((await f.manager.purge([A], 'PURGE'))[0].code, 'protected-content');
+  const review = await f.manager.preview({ action: 'purge', ids: [A] });
+  assert.equal(review.blocked[0].code, 'protected-content');
   assert.deepEqual(await fs.readFile(path), malformedContainer); assert.deepEqual(f.state.archived, [A]);
 });
 
@@ -71,8 +88,10 @@ test('purge deletes only verified chat data; independent outputs, modifications 
   await fs.writeFile(existing, 'user change retained');
   await fs.mkdir(dirname(attachment)); await fs.writeFile(attachment, 'shared');
   await fs.writeFile(join(f.dir(B), 'independent.csv'), 'must survive');
-  const result = await f.manager.purge([A, B], 'PURGE');
-  assert.equal(result[0].ok, true); assert.equal(result[1].code, 'protected-content');
+  const review = await f.manager.preview({ action: 'purge', ids: [A] });
+  const blocked = await f.manager.preview({ action: 'purge', ids: [B] });
+  const result = await f.manager.purge([A], 'PURGE', review.previewToken);
+  assert.equal(result[0].ok, true); assert.equal(blocked.blocked[0].code, 'protected-content');
   assert.deepEqual(f.state.archived, [B]);
   assert.equal(await fs.readFile(output, 'utf8'), 'a,b\n1,2\n');
   assert.equal(await fs.readFile(existing, 'utf8'), 'user change retained');
@@ -95,7 +114,8 @@ test('every archive mutation preserves unknown, linked, malformed and mismatched
     const f = await fixture(t); await mutate(f);
     const before = (await fs.readdir(f.dir())).sort();
     assert.equal((await f.manager.hide([A]))[0].ok, false);
-    assert.equal((await f.manager.purge([A], 'PURGE'))[0].ok, false);
+    const review = await f.manager.preview({ action: 'purge', ids: [A] });
+    assert.equal(review.blocked[0].code, 'protected-content');
     assert.deepEqual((await fs.readdir(f.dir())).sort(), before);
     assert.deepEqual(f.state.archived, [A]);
   });
@@ -111,8 +131,8 @@ test('discard, empty, save retention, scheduled sweep and restore all preserve q
     manifest.entries[0].movedAt = Date.now() - 100 * 86400000;
     await fs.writeFile(manifestPath, JSON.stringify(manifest));
     let result;
-    if (action === 'discard') result = (await f.manager.discard([entry], 'DISCARD'))[0];
-    if (action === 'empty') result = (await f.manager.emptyTrash('EMPTY', await f.manager.listRemoved())).results[0];
+    if (action === 'discard') { const r = await f.manager.preview({ action: 'discard', items: [entry] }); assert.equal(r.blocked[0].code, 'protected-content'); result = { ok: false, ...r.blocked[0] }; }
+    if (action === 'empty') { const r = await f.manager.preview({ action: 'empty' }); assert.equal(r.blocked[0].code, 'protected-content'); result = { ok: false, ...r.blocked[0] }; }
     if (action === 'settings' || action === 'sweep') {
       const review = await f.manager.preview({ action: 'retention', trashRetentionDays: 7 });
       assert.deepEqual(review.targets, []);
@@ -136,8 +156,10 @@ test('empty never recursively removes batch siblings or unreadable manifests', a
   const unknownBatch = join(f.manager.trashRoot, 'old-invalid');
   await fs.mkdir(unknownBatch); await fs.writeFile(join(unknownBatch, 'manifest.json'), 'invalid');
   await fs.writeFile(join(unknownBatch, 'report.txt'), 'retain invalid batch');
-  const result = await f.manager.emptyTrash('EMPTY', await f.manager.listRemoved());
-  assert.equal(result.removed, 2); assert.ok(result.failed >= 1);
+  const review = await f.manager.preview({ action: 'empty' });
+  assert.equal(review.targets.length, 2); assert.ok(review.blocked.length >= 1);
+  const result = await f.manager.emptyTrash('EMPTY', review.targets, review.previewToken);
+  assert.equal(result.removed, 2);
   assert.equal(await fs.readFile(join(batch, 'independent.bin'), 'utf8'), 'retain root sibling');
   assert.equal(await fs.readFile(join(unknownBatch, 'report.txt'), 'utf8'), 'retain invalid batch');
   assert.deepEqual(JSON.parse(await fs.readFile(join(batch, 'manifest.json'))).entries, []);
@@ -146,15 +168,16 @@ test('empty never recursively removes batch siblings or unreadable manifests', a
 test('symlinked session, quarantine entry and manifest cannot redirect operations', async (t) => {
   const f = await fixture(t, [A, B]);
   const moved = join(f.workspace, 'outside'); await fs.rename(f.dir(A), moved); await fs.symlink(moved, f.dir(A));
-  assert.equal((await f.manager.purge([A], 'PURGE'))[0].ok, false);
+  assert.equal((await f.manager.preview({ action: 'purge', ids: [A] })).blocked[0].code, 'protected-content');
   assert.equal((await f.manager.forget([A]))[0].ok, false);
   assert.deepEqual(f.state.archived, [A, B]);
   assert.equal((await f.manager.list()).items.find((item) => item.id === A).missing, false);
   await f.manager.hide([B]);
   const entry = (await f.manager.listRemoved())[0], target = join(f.manager.trashRoot, entry.batch, entry.dir);
   await fs.rm(target, { recursive: true }); await fs.symlink(moved, target);
-  assert.equal((await f.manager.discard([entry], 'DISCARD'))[0].ok, false);
-  assert.equal((await f.manager.emptyTrash('EMPTY', await f.manager.listRemoved())).removed, 0);
+  assert.equal((await f.manager.preview({ action: 'discard', items: [entry] })).blocked[0].code, 'protected-content');
+  const emptyReview = await f.manager.preview({ action: 'empty' });
+  assert.equal((await f.manager.emptyTrash('EMPTY', emptyReview.targets, emptyReview.previewToken)).removed, 0);
   assert.equal((await fs.lstat(target)).isSymbolicLink(), true);
   assert.ok(await fs.stat(join(moved, 'session.v4.jsonl.zstd')));
 });
@@ -216,7 +239,7 @@ test('recorded file list uses successful append-origin structured paths only, fo
   assert.equal(cold.coverage, 'recorded-only'); assert.equal(cold.workspace.path, f.workspace);
   await f.manager.hide([A]); const entry = (await f.manager.listRemoved())[0];
   assert.deepEqual((await f.manager.files(entry)).files.map((file) => file.path), cold.files.map((file) => file.path));
-  await f.manager.discard([entry], 'DISCARD');
+  await discardAll(f, [entry]);
   await assert.rejects(() => f.manager.files(entry));
 });
 
@@ -260,18 +283,20 @@ test('update gate waits for current mutation and rejects new operations until it
   assert.equal((await f.manager.list()).items.length, 1);
   release(); await pending;
   assert.equal(f.manager.isUpdating(), false);
-  assert.equal((await f.manager.purge([A], 'PURGE'))[0].ok, true);
+  assert.equal((await purgeAll(f, [A]))[0].ok, true);
 });
 
 test('empty rejects a changed confirmation snapshot before deleting any entry', async (t) => {
   const f = await fixture(t, [A, B]);
   await f.manager.hide([A]);
   const confirmed = await f.manager.listRemoved();
+  const review = await f.manager.preview({ action: 'empty' });
   await f.manager.hide([B]);
-  await assert.rejects(() => f.manager.emptyTrash('EMPTY', confirmed), { code: 'state-changed' });
+  await assert.rejects(() => f.manager.emptyTrash('EMPTY', confirmed, review.previewToken), { code: 'state-changed' });
   assert.equal((await f.manager.listRemoved()).length, 2);
   await assert.rejects(() => f.manager.emptyTrash('EMPTY'), { code: 'invalid' });
-  assert.equal((await f.manager.emptyTrash('EMPTY', await f.manager.listRemoved())).removed, 2);
+  const finalReview = await f.manager.preview({ action: 'empty' });
+  assert.equal((await f.manager.emptyTrash('EMPTY', finalReview.targets, finalReview.previewToken)).removed, 2);
 });
 
 test('listed log sizes exclude independent files and remeasure legacy quarantine byte totals', async (t) => {
