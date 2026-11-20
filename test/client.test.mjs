@@ -956,10 +956,10 @@ test('version label distinguishes runtime mismatch and a local source can explic
 });
 
 test('update installation is unavailable during a data operation, during update, or when a downgrade would be required', async () => {
-  const status = { runtimeVersion: '0.3.1', installedVersion: '0.3.1', sourceKind: 'release', canUpdate: true, release: { id: 1, version: '0.4.0' }, relation: 'newer' };
+  const status = { runtimeVersion: '0.3.1', installedVersion: '0.3.1', sourceKind: 'release', canUpdate: true, release: { id: 1, version: '0.4.1' }, relation: 'newer' };
   for (const changes of [{ 7: true }, { 19: { ...status, busy: true } }]) {
     const tree = await renderPage(pageValues({ 1: [ITEM], 18: 'version', 19: status, ...changes }));
-    assert.equal(buttonNamed(tree, '更新到 v0.4.0').props.disabled, true);
+    assert.equal(buttonNamed(tree, '更新到 v0.4.1').props.disabled, true);
     assert.equal(buttonNamed(tree, '取消归档').props.disabled, true);
   }
   const tree = await renderPage(pageValues({ 18: 'version', 19: { ...status, sourceKind: 'link', relation: 'older', release: { version: '0.2.6' } } }));
@@ -1070,10 +1070,10 @@ test('list refresh stores quarantine warnings returned alongside known entries',
 });
 
 test('version details toggle shares the version row and exposes its keyboard-accessible disclosure state', async () => {
-  const render = await pageRenderer(pageValues({ 19: { runtimeVersion: '0.4.0', installedVersion: '0.4.0', sourceKind: 'link', busy: false } }));
+  const render = await pageRenderer(pageValues({ 19: { runtimeVersion: '0.4.1', installedVersion: '0.4.1', sourceKind: 'link', busy: false } }));
   let tree = render();
   const line = findByClass(tree, 'am-version-line');
-  assert.ok(textOf(line).includes('v0.4.0'));
+  assert.ok(textOf(line).includes('v0.4.1'));
   const toggle = buttonNamed(line, '版本详情');
   assert.notEqual(toggle, undefined, 'the disclosure button is on the version row');
   assert.equal(toggle.props.type, 'button');
@@ -1084,8 +1084,8 @@ test('version details toggle shares the version row and exposes its keyboard-acc
   tree = render();
   const panel = findByClass(tree, 'am-version-details');
   assert.equal(panel.props.id, toggle.props['aria-controls']);
-  assert.ok(textOf(panel).includes('页面版本：v0.4.0'));
-  assert.ok(textOf(panel).includes('服务版本：0.4.0'));
+  assert.ok(textOf(panel).includes('页面版本：v0.4.1'));
+  assert.ok(textOf(panel).includes('服务版本：0.4.1'));
   assert.equal(buttonNamed(tree, '版本详情').props['aria-expanded'], true);
   buttonNamed(tree, '版本详情').props.onClick(event());
   assert.equal(findByClass(render(), 'am-version-details'), undefined);
@@ -1248,6 +1248,29 @@ test('a loaded session explains the restart path instead of only disabling delet
   assert.ok(textOf(guide).includes('Cmd+Q'));
   assert.equal(buttonNamed(guide, '继续删除'), undefined);
   assert.ok(buttonNamed(guide, '记录并在重启后继续'));
+});
+
+test('an activity-blocked session still offers the guide', async () => {
+  const busy = {
+    ...ITEM,
+    running: false,
+    capabilities: {
+      unarchive: true,
+      hide: { code: 'occupied', reason: '会话仍有宿主活动' },
+      purge: { code: 'occupied', reason: '会话仍有宿主活动' },
+    },
+  };
+  const render = await pageRenderer(pageValues({ 1: [busy] }), { fetch: (url) => {
+    if (url.endsWith('/diagnose')) return response({ items: [{ id: busy.id, state: 'activity', loaded: false, running: false, activities: [{ kind: 'job', items: ['同步任务'] }] }] });
+    throw new Error(url);
+  } });
+  const row = listRows(render())[0];
+  assert.ok(textOf(row).includes('宿主占用中'));
+  buttonNamed(row, '处理').props.onClick(event());
+  await tick();
+  const guide = findByClass(render(), 'am-guide-modal');
+  assert.ok(textOf(guide).includes('同步任务'));
+  assert.equal(buttonNamed(guide, '继续删除'), undefined);
 });
 
 test('guide continues to the normal preview only after the lock is free', async () => {

@@ -6,7 +6,7 @@
 
 [中文文档](#dsh-archived-manager) · [English](#english) · [Releases](https://github.com/chen1pengvincent/dsh-archived-manager/releases)
 
-当前版本 **0.4.0**。归档和即时撤销由 DSH 原生侧栏提供。插件管理归档后的检索、恢复、清理和文件定位。
+当前版本 **0.4.1**。归档和即时撤销由 DSH 原生侧栏提供。插件管理归档后的检索、恢复、清理和文件定位。
 
 ## 功能
 
@@ -28,7 +28,7 @@
 2. 输入以下 spec：
 
    ```text
-   github:chen1pengvincent/dsh-archived-manager#v0.4.0
+   github:chen1pengvincent/dsh-archived-manager#v0.4.1
    ```
 
 3. 安装后**完全退出并重新打开 DSH**，再硬刷新页面（macOS：`Cmd+Shift+R`）。
@@ -38,7 +38,7 @@
 
 ```json
 {"action":"remove_bundle","target":"dsh-archived-manager"}
-{"action":"install_bundle","target":"github:chen1pengvincent/dsh-archived-manager#v0.4.0"}
+{"action":"install_bundle","target":"github:chen1pengvincent/dsh-archived-manager#v0.4.1"}
 ```
 
 v0.3.0 起可在会话管理页手动检查稳定版并更新。更新控制页会固定目标版本，在卸载前下载并校验安装包；旧插件卸载后，该页仍可展示安装结果，并在失败时提供重试或恢复入口。安装成功后按提示重新打开页面或重启 DSH。
@@ -119,7 +119,7 @@ DSH 会在会话被加载后一直持有 `session.lock` 写入锁，即使当前
 | 独立生成文件及已有项目文件 | 文件及已有修改原地保留 |
 | 共享附件 | 原地保留。附件采用内容寻址，可能跨会话共享 |
 | 归档记录 | 取消归档、移到最近删除、删除或清理失效记录时按操作更新 |
-| 活动与提醒 | 会话仍有宿主活动或写入占用时，页面会提示原因。通过 DSH 结束相关活动后再清理 |
+| 活动与提醒 | 会话仍有宿主活动或写入占用时，页面会提示原因。停止活动本身不会释放写入锁；按「处理」中的步骤完全退出并重开 DSH 后再清理 |
 | DSH 工作区账本 | 只通过公开 API 操作，不直接手写 `workspace.json` |
 
 移动、恢复和永久删除前，插件会核对目标路径、会话日志格式，以及 DSH 的活动和写入占用。无法核验或目录内有额外内容的条目会保留，页面会显示原因。批量、清空和自动清理使用同一套日志校验规则。预览与提交之间若目标或日志内容发生变化，需要重新核对。
@@ -191,6 +191,11 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 配色使用 DSH 主题令牌并适配深浅主题。可访问性目标、排版和对比度说明见 [docs/accessibility.md](docs/accessibility.md)。
 
 ## 更新记录
+
+### v0.4.1
+
+- 修复活动占用（子代理、任务、定时任务）时只显示「宿主占用中」但没有「处理」入口的问题，现在同样会打开解决步骤。
+- 修复仅有待删文件告警、没有待删条目时无法清除告警的问题。
 
 ### v0.4.0
 
@@ -267,12 +272,12 @@ npm pack
 Open **DSH → Settings → Plugins → Install** and enter:
 
 ```text
-github:chen1pengvincent/dsh-archived-manager#v0.4.0
+github:chen1pengvincent/dsh-archived-manager#v0.4.1
 ```
 
 Fully restart DSH after installation, hard-refresh the Web UI, then open **Settings → Session Manager**. Node.js 24+ is needed only for development and tests.
 
-### Workspace layout in 0.4.0
+### Workspace layout in 0.4.1
 
 Search, sort, the log summary, operation results, and bulk selection stay in place when you switch tabs, refresh, or have no results. The dropdown beside search filters archived sessions or sets retention in Recently Deleted. Version details and update status share an anchored panel. Session details and operation results open over the list.
 

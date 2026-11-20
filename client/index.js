@@ -10,9 +10,10 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	var useEffect = React.useEffect;
 
 	var API = "/archived-manager";
-	var CLIENT_VERSION = "0.4.0";
+	var CLIENT_VERSION = "0.4.1";
 	var pendingWarning = null;
 	var MAX_BATCH = 200;
+	var GUIDE_CODES = ["restart-required", "running", "occupied", "occupancy-unavailable"];
 	var LANG = typeof navigator !== "undefined" && navigator.language ? String(navigator.language).toLowerCase() : "";
 	var ZH = LANG.indexOf("zh") === 0;
 
@@ -1046,13 +1047,16 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function clearPendingRecords() {
-			if (pendingBusy || pending.length === 0) return;
-			var accepted = true;
-			try { accepted = window.confirm(tr("pendingClearConfirm", { n: pending.length })); }
-			catch (error) { accepted = false; }
-			if (!accepted) return;
+			if (pendingBusy) return;
+			if (pending.length > 0) {
+				var accepted = true;
+				try { accepted = window.confirm(tr("pendingClearConfirm", { n: pending.length })); }
+				catch (error) { accepted = false; }
+				if (!accepted) return;
+			}
 			setPendingBusy(true);
 			request("/pending/clear", {}).then(function (data) {
+				pendingWarning = null;
 				setPending(Array.isArray(data.items) ? data.items : []);
 				setToast({ kind: "ok", text: tr("pendingCleared") });
 			}).catch(function (error) {
@@ -1068,8 +1072,8 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			var removedPending = pending.filter(function (entry) { return entry.scope === "removed"; });
 			return h("div", { key: "pending-banner", className: "am-pending-banner", role: "status", "aria-live": "polite" }, [
 				h("div", { key: "text", className: "am-pending-text" }, [
-					h("strong", { key: "title" }, tr("pendingTitle", { n: pending.length })),
-					h("p", { key: "body" }, tr("pendingBody")),
+					pending.length ? h("strong", { key: "title" }, tr("pendingTitle", { n: pending.length })) : null,
+					pending.length ? h("p", { key: "body" }, tr("pendingBody")) : null,
 					pendingWarning ? h("p", { key: "warning", className: "am-warning-text" }, pendingWarning) : null
 				]),
 				h("div", { key: "actions", className: "am-pending-actions" }, [
@@ -1752,7 +1756,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		function archivedRow(item) {
 			var checked = selectedIds.has(item.id);
 			var restart = capability(item, "purge");
-			var restartButton = restart && ["restart-required", "running"].includes(restart.code)
+			var restartButton = restart && GUIDE_CODES.indexOf(restart.code) !== -1
 				? button("guide", tr("restartAction"), function () { openGuide([item]); }, locked)
 				: null;
 			var actions = item.running
@@ -1776,7 +1780,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		function removedRow(entry) {
 			var key = keyOf(entry), checked = removedKeys.has(key);
 			var restart = capability(entry, "discard");
-			var restartButton = restart && ["restart-required", "running"].includes(restart.code)
+			var restartButton = restart && GUIDE_CODES.indexOf(restart.code) !== -1
 				? button("guide", tr("restartAction"), function () { openGuide([entry]); }, locked)
 				: null;
 			var actions = capability(entry, "repair") === true
