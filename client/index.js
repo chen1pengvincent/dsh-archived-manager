@@ -10,7 +10,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	var useEffect = React.useEffect;
 
 	var API = "/archived-manager";
-	var CLIENT_VERSION = "0.4.1";
+	var CLIENT_VERSION = "0.4.2";
 	var pendingWarning = null;
 	var MAX_BATCH = 200;
 	var GUIDE_CODES = ["restart-required", "running", "occupied", "occupancy-unavailable"];
@@ -2365,7 +2365,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			h("div", { key: "head", className: "am-head" }, [
 				h("div", { key: "text", className: "am-head-text" }, [h("div", { key: "title", className: "am-title" }, tr("title")), h("div", { key: "sub", className: "am-sub" }, tr("subtitle"))]),
 				versionPanel(),
-				pending.length ? pendingBanner() : null
+				pending.length || pendingWarning ? pendingBanner() : null
 			]),
 			h("section", { key: "workbench", className: "am-workbench", role: "region", "aria-label": tr("title") }, [
 				h("div", { key: "viewbar", className: "am-viewbar" }, [

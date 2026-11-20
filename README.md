@@ -6,7 +6,7 @@
 
 [中文文档](#dsh-archived-manager) · [English](#english) · [Releases](https://github.com/chen1pengvincent/dsh-archived-manager/releases)
 
-当前版本 **0.4.1**。归档和即时撤销由 DSH 原生侧栏提供。插件管理归档后的检索、恢复、清理和文件定位。
+当前版本 **0.4.2**。归档和即时撤销由 DSH 原生侧栏提供。插件管理归档后的检索、恢复、清理和文件定位。
 
 ## 功能
 
@@ -28,7 +28,7 @@
 2. 输入以下 spec：
 
    ```text
-   github:chen1pengvincent/dsh-archived-manager#v0.4.1
+   github:chen1pengvincent/dsh-archived-manager#v0.4.2
    ```
 
 3. 安装后**完全退出并重新打开 DSH**，再硬刷新页面（macOS：`Cmd+Shift+R`）。
@@ -38,7 +38,7 @@
 
 ```json
 {"action":"remove_bundle","target":"dsh-archived-manager"}
-{"action":"install_bundle","target":"github:chen1pengvincent/dsh-archived-manager#v0.4.1"}
+{"action":"install_bundle","target":"github:chen1pengvincent/dsh-archived-manager#v0.4.2"}
 ```
 
 v0.3.0 起可在会话管理页手动检查稳定版并更新。更新控制页会固定目标版本，在卸载前下载并校验安装包；旧插件卸载后，该页仍可展示安装结果，并在失败时提供重试或恢复入口。安装成功后按提示重新打开页面或重启 DSH。
@@ -192,6 +192,10 @@ v0.3.0 起为安全只识别带版本号的会话格式，导致早期无版本�
 
 ## 更新记录
 
+### v0.4.2
+
+- 仅有待删队列告警、没有具体条目时，顶部告警条现在会渲染，可直接清除。
+
 ### v0.4.1
 
 - 修复活动占用（子代理、任务、定时任务）时只显示「宿主占用中」但没有「处理」入口的问题，现在同样会打开解决步骤。
@@ -272,12 +276,12 @@ npm pack
 Open **DSH → Settings → Plugins → Install** and enter:
 
 ```text
-github:chen1pengvincent/dsh-archived-manager#v0.4.1
+github:chen1pengvincent/dsh-archived-manager#v0.4.2
 ```
 
 Fully restart DSH after installation, hard-refresh the Web UI, then open **Settings → Session Manager**. Node.js 24+ is needed only for development and tests.
 
-### Workspace layout in 0.4.1
+### Workspace layout in 0.4.2
 
 Search, sort, the log summary, operation results, and bulk selection stay in place when you switch tabs, refresh, or have no results. The dropdown beside search filters archived sessions or sets retention in Recently Deleted. Version details and update status share an anchored panel. Session details and operation results open over the list.
 
