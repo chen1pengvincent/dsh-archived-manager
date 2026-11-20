@@ -10,7 +10,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	var useEffect = React.useEffect;
 
 	var API = "/archived-manager";
-	var CLIENT_VERSION = "0.4.2";
+	var CLIENT_VERSION = "0.4.3";
 	var pendingWarning = null;
 	var MAX_BATCH = 200;
 	var GUIDE_CODES = ["restart-required", "running", "occupied", "occupancy-unavailable"];
@@ -1759,12 +1759,18 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			var restartButton = restart && GUIDE_CODES.indexOf(restart.code) !== -1
 				? button("guide", tr("restartAction"), function () { openGuide([item]); }, locked)
 				: null;
+			// An unfinished quarantine entry blocks hide/purge but is repaired in
+			// Recently Deleted; give the row a direct, non-destructive way there.
+			var repairInRemoved = restart && restart.code === "repair-required"
+				? button("goto-removed", tr("viewRemoved"), function () { setTab("removed"); }, locked)
+				: null;
 			var actions = item.running
 				? [h("span", { key: "running-locked", className: "am-help" }, tr("runningLocked")), restartButton].filter(Boolean)
 				: item.missing
-				? actionButton(item, "cleanup", "cleanup", "cleanup")
+				? [actionButton(item, "cleanup", "cleanup", "cleanup"), repairInRemoved].filter(Boolean)
 				: [
 					restartButton,
+					repairInRemoved,
 					actionButton(item, "unarchive", "unarchive", "unarchive", true),
 					actionButton(item, "hide", "hide", "hide", true),
 					actionButton(item, "purge", "purge", "purge", false, true)

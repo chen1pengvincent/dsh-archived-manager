@@ -1070,10 +1070,10 @@ test('list refresh stores quarantine warnings returned alongside known entries',
 });
 
 test('version details toggle shares the version row and exposes its keyboard-accessible disclosure state', async () => {
-  const render = await pageRenderer(pageValues({ 19: { runtimeVersion: '0.4.2', installedVersion: '0.4.2', sourceKind: 'link', busy: false } }));
+  const render = await pageRenderer(pageValues({ 19: { runtimeVersion: '0.4.3', installedVersion: '0.4.3', sourceKind: 'link', busy: false } }));
   let tree = render();
   const line = findByClass(tree, 'am-version-line');
-  assert.ok(textOf(line).includes('v0.4.2'));
+  assert.ok(textOf(line).includes('v0.4.3'));
   const toggle = buttonNamed(line, '版本详情');
   assert.notEqual(toggle, undefined, 'the disclosure button is on the version row');
   assert.equal(toggle.props.type, 'button');
@@ -1084,8 +1084,8 @@ test('version details toggle shares the version row and exposes its keyboard-acc
   tree = render();
   const panel = findByClass(tree, 'am-version-details');
   assert.equal(panel.props.id, toggle.props['aria-controls']);
-  assert.ok(textOf(panel).includes('页面版本：v0.4.2'));
-  assert.ok(textOf(panel).includes('服务版本：0.4.2'));
+  assert.ok(textOf(panel).includes('页面版本：v0.4.3'));
+  assert.ok(textOf(panel).includes('服务版本：0.4.3'));
   assert.equal(buttonNamed(tree, '版本详情').props['aria-expanded'], true);
   buttonNamed(tree, '版本详情').props.onClick(event());
   assert.equal(findByClass(render(), 'am-version-details'), undefined);
@@ -1271,6 +1271,51 @@ test('an activity-blocked session still offers the guide', async () => {
   const guide = findByClass(render(), 'am-guide-modal');
   assert.ok(textOf(guide).includes('同步任务'));
   assert.equal(buttonNamed(guide, '继续删除'), undefined);
+});
+
+test('a loaded unfinished removed session still offers the guide', async () => {
+  const entry = {
+    ...REMOVED,
+    loaded: true,
+    capabilities: {
+      restore: { code: 'restart-required', reason: '加载中' },
+      discard: { code: 'restart-required', reason: '加载中' },
+      repair: { code: 'restart-required', reason: '加载中' },
+    },
+  };
+  const render = await pageRenderer(pageValues({ 0: 'removed', 2: [entry] }));
+  const row = listRows(render())[0];
+  assert.ok(textOf(row).includes('需重启 DSH'));
+  assert.notEqual(buttonNamed(row, '处理'), undefined);
+});
+
+test('an activity-blocked unfinished removed session still offers the guide', async () => {
+  const entry = {
+    ...REMOVED,
+    capabilities: {
+      restore: { code: 'occupied', reason: '会话仍有宿主活动' },
+      discard: { code: 'occupied', reason: '会话仍有宿主活动' },
+      repair: { code: 'occupied', reason: '会话仍有宿主活动' },
+    },
+  };
+  const render = await pageRenderer(pageValues({ 0: 'removed', 2: [entry] }));
+  const row = listRows(render())[0];
+  assert.ok(textOf(row).includes('宿主占用中'));
+  assert.notEqual(buttonNamed(row, '处理'), undefined);
+});
+
+test('an unfinished archived session links to Recently Deleted', async () => {
+  const pending = {
+    ...ITEM,
+    capabilities: {
+      unarchive: true,
+      hide: { code: 'repair-required', reason: '上次操作尚未完成' },
+      purge: { code: 'repair-required', reason: '上次操作尚未完成' },
+    },
+  };
+  const render = await pageRenderer(pageValues({ 1: [pending] }));
+  const row = listRows(render())[0];
+  assert.notEqual(buttonNamed(row, '查看最近删除'), undefined);
 });
 
 test('guide continues to the normal preview only after the lock is free', async () => {

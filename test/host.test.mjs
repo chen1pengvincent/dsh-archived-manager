@@ -479,6 +479,45 @@ test('hide reports moved logs and repairs only the outstanding registry step', a
   assert.equal(reconciled.removed[0].capabilities.restore, true);
 });
 
+test('a loaded unfinished removed entry reports the restart blocker before repair', async (t) => {
+  const home = await makeHome([A]);
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  const options = {};
+  const { ctx } = fakeCtx(home, [A], options);
+  const manager = createManager(ctx);
+  await manager.hide([A]);
+  const [batch] = await fs.readdir(join(home, 'archived-manager', 'trash'));
+  const manifestPath = join(home, 'archived-manager', 'trash', batch, 'manifest.json');
+  const manifest = JSON.parse(await fs.readFile(manifestPath, 'utf8'));
+  const isolated = join(home, 'archived-manager', 'trash', batch, manifest.entries[0].dir);
+  const stat = await fs.stat(isolated);
+  manifest.entries[0].phase = 'deleting';
+  manifest.entries[0].moveFiles = [];
+  manifest.entries[0].logDirectory = { dev: stat.dev, ino: stat.ino };
+  // Simulate a purge that removed the log but stopped before clearing the manifest.
+  await fs.rm(join(isolated, 'session.v4.jsonl.zstd'));
+  await fs.writeFile(manifestPath, JSON.stringify(manifest));
+  options.loaded = true;
+  const loaded = (await manager.listRemoved())[0];
+  assert.equal(loaded.loaded, true);
+  assert.equal(loaded.capabilities.discard.code, 'restart-required');
+  assert.equal(loaded.capabilities.repair.code, 'restart-required');
+  const [blocked] = await manager.repair([{ id: A, batch: loaded.batch }]);
+  assert.equal(blocked.code, 'restart-required');
+  options.loaded = false;
+  ctx.waterfall = async () => [{ kind: 'job', items: [{ id: 'job-1', label: '同步任务' }] }];
+  const busy = (await manager.listRemoved())[0];
+  assert.equal(busy.capabilities.discard.code, 'occupied');
+  assert.equal(busy.capabilities.repair.code, 'occupied');
+  delete ctx.waterfall;
+  const after = (await manager.listRemoved())[0];
+  assert.equal(after.capabilities.discard.code, 'repair-required');
+  assert.equal(after.capabilities.repair, true);
+  const [repaired] = await manager.repair([{ id: A, batch: after.batch }]);
+  assert.equal(repaired.ok, true);
+  assert.deepEqual(await manager.listRemoved(), []);
+});
+
 test('restore reconciles a failed manifest commit without moving the files a second time', async (t) => {
   const home = await makeHome([A]);
   t.after(() => fs.rm(home, { recursive: true, force: true }));
