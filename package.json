@@ -1,7 +1,7 @@
 {
   "name": "dsh-archived-manager",
   "version": "0.4.4",
-  "description": "DSH (DeepSeek Harness) plugin to manage archived sessions: native unarchive, recoverable quarantine, permanent purge, search/filter/sort, and retention.",
+  "description": "DSH (DeepSeek Harness) 会话归档与回收站清理插件：搜索/筛选/排序已归档会话、还原到侧边栏、移入最近删除（回收站）、彻底删除并连带清理关联 .ACP.sqlite 上下文库与附件、检测宿主文件占用并支持重启自动清理。Manage archived sessions with native unarchive, recoverable Recently Deleted trash, permanent purge, companion ACP database/attachment cleanup, file-lock diagnostics, and scheduled retention.",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
@@ -39,9 +39,27 @@
     "cordis",
     "archived-sessions",
     "session-management",
+    "session-manager",
     "session-cleanup",
+    "session-archive",
+    "recently-deleted",
+    "trash",
+    "recycle-bin",
     "quarantine",
-    "desktop"
+    "purge",
+    "disk-cleanup",
+    "retention",
+    "file-lock",
+    "acp-sqlite",
+    "desktop",
+    "会话管理",
+    "归档管理",
+    "已归档会话",
+    "回收站",
+    "最近删除",
+    "彻底删除",
+    "磁盘清理",
+    "文件占用"
   ],
   "dsh": {
     "bundle": {
