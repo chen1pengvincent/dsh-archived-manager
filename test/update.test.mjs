@@ -525,3 +525,29 @@ test('a surviving control page shares the reloaded workbench inventory only for 
   f.row = installed;
   assert.equal((await noEvents.status()).job.installed, true);
 });
+
+test('a live legacy control route cannot have its fresh reconciliation overwritten by the workbench cache', async (t) => {
+  const f = await fixture(t);
+  const prepared = await f.prepare();
+  await f.open(prepared);
+  await f.action(prepared, 'start');
+  await until(() => f.status(prepared), (job) => job.phase === 'installed' && !job.busy);
+
+  const shared = globalThis[Symbol.for('dsh-archived-manager.update-jobs.v1')].get(f.home + '\0' + f.origin);
+  const { dispose, timer } = shared.routes.get(prepared.job.id);
+  shared.routes.set(prepared.job.id, { dispose, timer }); // v0.4.3's retained route shape
+  const listBundles = t.mock.fn(f.options.pluginManager.listBundles);
+  const current = createUpdater({
+    ...f.options, runtimeVersion: f.row.version,
+    pluginManager: { ...f.options.pluginManager, listBundles },
+    onBundlesChanged() {},
+  });
+  assert.equal((await current.status()).job.installed, true);
+  f.row = null;
+  // The legacy handler writes its observation without notifying the new attachment.
+  shared.state.job.observed = { known: true, installed: false, version: null, source: null, enabled: null };
+  const next = await current.status();
+  assert.equal(listBundles.mock.callCount(), 2);
+  assert.equal(next.installedVersion, null);
+  assert.equal(next.job.installed, false);
+});

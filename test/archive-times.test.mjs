@@ -169,8 +169,14 @@ test('a reloaded plugin waits for the old ledger write before recording newer ar
 });
 
 test('damaged ledgers are preserved byte for byte before recording new archives', async (t) => {
-  for (const damage of [Buffer.from([0x7b, 0x01, 0xff]), Buffer.from('{"version":2,"times":[]}')]) {
-    await t.test(damage.length === 3 ? 'malformed JSON' : 'invalid known format', async (t) => {
+  const cases = [
+    ['malformed JSON', Buffer.from([0x7b, 0x01, 0xff])],
+    ['invalid time map', Buffer.from('{"version":2,"initialized":true,"times":[]}')],
+    ['invalid v2 flag', Buffer.from(JSON.stringify({ version: 2, initialized: 'broken', times: { [A]: 12345 } }))],
+    ['missing v2 flag', Buffer.from(JSON.stringify({ version: 2, times: { [A]: 12345 } }))],
+  ];
+  for (const [name, damage] of cases) {
+    await t.test(name, async (t) => {
       let now = 1000;
       t.mock.method(Date, 'now', () => now);
       const { manager, commit } = await fixture(t, [A]);
@@ -186,6 +192,16 @@ test('damaged ledgers are preserved byte for byte before recording new archives'
       now = 5000;
       assert.deepEqual(await manager.syncArchiveTimes(), { [A]: null, [B]: 2000 });
     });
+  }
+});
+
+test('legacy ledgers without a flag and uninitialized v2 ledgers migrate without a corruption backup', async (t) => {
+  const { manager } = await fixture(t, [A]);
+  await manager.syncArchiveTimes();
+  for (const fields of [{}, { version: 1 }, { version: 2, initialized: false }]) {
+    await fs.writeFile(manager.archiveTimesPath, JSON.stringify({ ...fields, times: { [A]: 12345 } }));
+    assert.deepEqual(await manager.syncArchiveTimes(), { [A]: null });
+    assert.deepEqual(await fs.readdir(dirname(manager.archiveTimesPath)), ['archive-times.json']);
   }
 });
 
