@@ -59,6 +59,7 @@ async function loadClient(react, language = 'zh-CN', extras = {}) {
   };
   vm.createContext(sandbox);
   vm.runInContext(code, sandbox);
+  react.document = sandbox.document;
   return captured;
 }
 
@@ -158,6 +159,7 @@ async function pageRenderer(values, extras = {}) {
   };
   render.state = react.state;
   render.effects = react.effects;
+  render.document = react.document;
   return render;
 }
 
@@ -1355,4 +1357,69 @@ test('the pending banner resumes the saved deletion scope', async () => {
   await tick();
   const modal = findByClass(render(), 'am-modal');
   assert.ok(textOf(modal).includes('彻底删除 1 条'));
+});
+
+test('status polling sleeps while hidden, coalesces focus and preserves unchanged state', async () => {
+  const listeners = new Map(), timers = new Map();
+  let requests = 0, finish;
+  const events = {
+    addEventListener: (name, fn) => listeners.set(name, fn),
+    removeEventListener: (name) => listeners.delete(name),
+  };
+  const render = await pageRenderer(pageValues({}), {
+    document: { ...events, visibilityState: 'hidden' }, window: events,
+    setInterval: (fn, ms) => { timers.set(ms, fn); return ms; },
+    clearInterval: (id) => timers.delete(id),
+    fetch: (url) => {
+      if (url.endsWith('/status')) {
+        requests++;
+        return new Promise((resolve) => { finish = () => resolve(response({ busy: false, job: null })); });
+      }
+      if (url.endsWith('/list')) return response({ items: [], removed: [] });
+      return response({});
+    },
+  });
+  render();
+  const cleanups = render.effects.filter(({ deps }) => !deps.length).map(({ fn }) => fn()).filter(Boolean);
+  assert.equal(requests, 0);
+  assert.equal(timers.has(5000), false);
+  render.document.visibilityState = 'visible';
+  listeners.get('visibilitychange')();
+  listeners.get('focus')();
+  timers.get(5000)();
+  assert.equal(requests, 1);
+  finish(); await tick();
+  const first = render.state[19];
+  timers.get(5000)();
+  finish(); await tick();
+  assert.equal(render.state[19], first);
+  render.document.visibilityState = 'hidden';
+  listeners.get('visibilitychange')();
+  assert.equal(timers.has(5000), false);
+  listeners.get('focus')();
+  assert.equal(requests, 2);
+  for (const cleanup of cleanups) cleanup();
+  assert.equal(listeners.size, 0);
+});
+
+test('a warning-only pending banner clears when its snapshot becomes unavailable', async () => {
+  let readable = true;
+  const render = await pageRenderer(pageValues({}), {
+    fetch: (url) => {
+      if (url.endsWith('/list')) return response({ items: [], removed: [] });
+      if (url.endsWith('/pending')) {
+        if (!readable) return Promise.reject(new Error('unavailable'));
+        return response({ items: [], warning: '请核对待删记录' });
+      }
+      return response({ settings: { trashRetentionDays: 0 } });
+    },
+  });
+  for (const available of [true, false]) {
+    readable = available;
+    findByClass(render(), 'am-refresh').props.onClick(event());
+    await tick();
+    const banner = findByClass(render(), 'am-pending-banner');
+    assert.equal(Boolean(banner), available);
+    if (available) assert.ok(textOf(banner).includes('请核对待删记录'));
+  }
 });

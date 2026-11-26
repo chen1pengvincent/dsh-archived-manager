@@ -69,6 +69,46 @@ test('Zstandard session header is an independent frame and complete later event 
   assert.throws(() => decodeLog(Buffer.concat([headerFrame, Buffer.from([0x50, 0x2a, 0x4d, 0x18, 0, 0, 0, 0])]), 'session.v4.jsonl.zstd', A), { code: 'protected-content' });
 });
 
+test('log validation spans frame boundaries, UTF-8 characters, and the cumulative decoded size limit', () => {
+  const header = '\uFEFF' + JSON.stringify({ type: 'session', version: 4, id: A, createdAt: 1, isSeeded: true, delegationDepth: 0 }) + '\n';
+  const title = { seq: 0, time: 1, type: 'session/title', data: { title: '合成标题' } };
+  const seed = { seq: 1, time: 2, type: 'session/end-seed', data: { inherited: true } };
+  const events = Buffer.from(JSON.stringify(title) + '\n' + JSON.stringify(seed) + '\u00a0\n\t\n');
+  const cut = events.indexOf('成') + 1;
+  const encode = (...chunks) => Buffer.concat([header, ...chunks].map((chunk) => zstdCompressSync(chunk)));
+  const split = encode(events.subarray(0, cut), events.subarray(cut, cut + 1), events.subarray(cut + 1));
+  const size = Buffer.byteLength(header) + events.length;
+  assert.deepEqual(decodeLog(split, 'session.v4.jsonl.zstd', A, { maxDecodedBytes: size }).events, [title, seed]);
+  assert.throws(() => decodeLog(split, 'session.v4.jsonl.zstd', A, { maxDecodedBytes: size - 1 }), { code: 'protected-content' });
+  for (const invalid of [
+    Buffer.from(JSON.stringify(title) + '\n'), // seeded header without inherited end-seed
+    Buffer.from(JSON.stringify(title) + '\n\n' + JSON.stringify(seed) + '\n'),
+    Buffer.from(JSON.stringify(title) + '\n\uFEFF' + JSON.stringify(seed) + '\n'),
+    Buffer.from(JSON.stringify(title) + '\n' + JSON.stringify(seed)),
+    Buffer.concat([events.subarray(0, cut), events.subarray(cut + 1)]),
+  ]) {
+    assert.throws(() => decodeLog(encode(invalid), 'session.v4.jsonl.zstd', A), { code: 'protected-content' });
+  }
+});
+
+test('inspection keeps the last valid title and collects file records only on request', async (t) => {
+  const rows = [
+    event('session/title', { title: 'first' }),
+    event('assistant/message', { text: 'synthetic session content' }),
+    event('deliverables/presented', { files: [{ path: '/fixture/output.txt' }] }),
+    event('session/title', { title: 'latest' }),
+    event('session/title', { title: '   ' }),
+  ];
+  const f = await fixture(t, [A], rows);
+  const [summary] = (await inspectSession(f.home, f.dir(), A)).logs;
+  assert.equal(summary.title, 'latest');
+  assert.equal(summary.events, undefined);
+  assert.equal(summary.recordedFiles, undefined);
+  const [details] = (await inspectSession(f.home, f.dir(), A, { includeRecordedFiles: true })).logs;
+  assert.deepEqual(details.recordedFiles.map(({ path }) => path), ['/fixture/output.txt']);
+  assert.equal(details.events, undefined);
+});
+
 test('a single compressed frame containing header and events is preserved by cleanup', async (t) => {
   const f = await fixture(t);
   const malformedContainer = zstdCompressSync([

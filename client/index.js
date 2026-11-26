@@ -11,7 +11,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 
 	var API = "/archived-manager";
 	var CLIENT_VERSION = "0.4.3";
-	var pendingWarning = null;
 	var MAX_BATCH = 200;
 	var GUIDE_CODES = ["restart-required", "running", "occupied", "occupancy-unavailable"];
 	var LANG = typeof navigator !== "undefined" && navigator.language ? String(navigator.language).toLowerCase() : "";
@@ -93,7 +92,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		toastReminders: "，停止 {n} 个提醒",
 		retentionTitle: "最近删除自动清理",
 		retentionNever: "关闭",
-		retentionDays: "{n} 天",
 		retentionConfirmTitle: "保存自动清理设置？",
 		retentionConfirmBody: "移到最近删除满 {days} 天后，已核验的会话日志会自动永久删除。",
 		retentionCheck: "我确认已到期及后续到期的会话日志会被永久删除",
@@ -183,7 +181,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		rangeChanged: "操作范围已变化，本次未执行。请刷新后重新核对。",
 		sizeUnknown: "未确认",
 		sizePartial: "{n} 条日志大小未确认，未计入合计",
-		protectedItem: "已保护",
 		removedWarningsTitle: "{n} 个无法确认的批次已保留",
 		removedWarningsHint: "已知会话数量不包含这些内容。文件仍保留在原处。",
 		removedUnlistedTitle: "没有可显示的最近删除会话",
@@ -230,7 +227,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		guideUnavailable: "无法核对该会话：{reason}",
 		guideNoHolder: "未能识别占用进程",
 		guideMixed: "同时包含已归档和最近删除会话，请在顶部待删提示中分别继续删除。",
-		guideEmpty: "没有需要处理的会话。",
 		pendingTitle: "有 {n} 个会话待彻底删除",
 		pendingBody: "上次操作因 DSH 占用未完成。记录会保留，不会自动删除；完全退出并重开 DSH 后可从这里继续。",
 		pendingArchived: "继续删除 {n} 个已归档会话",
@@ -238,9 +234,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		pendingClear: "清除待删记录",
 		pendingClearConfirm: "清除 {n} 条待删记录？只移除记录，不会删除任何文件。",
 		pendingCleared: "已清除待删记录",
-		pendingClearing: "正在清除…",
 		pendingFailed: "无法清除待删记录：{message}",
-		pendingAdded: "已加入待删记录",
 		viewRemoved: "查看最近删除",
 		partialReason: "部分完成：{reason}",
 		partialMoved: "日志已移到最近删除，请在该列表核对剩余步骤。{reason}",
@@ -331,7 +325,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		toastReminders: ", stopped {n} reminder(s)",
 		retentionTitle: "Recently Deleted retention",
 		retentionNever: "Off",
-		retentionDays: "{n} days",
 		retentionConfirmTitle: "Save automatic cleanup settings?",
 		retentionConfirmBody: "Verified logs in Recently Deleted are permanently removed after {days} days.",
 		retentionCheck: "I confirm that currently expired and future expired session logs will be permanently removed",
@@ -421,7 +414,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		rangeChanged: "The scope changed. Refresh the list and review it again.",
 		sizeUnknown: "Unconfirmed",
 		sizePartial: "Log size unconfirmed for {n} entries; excluded from total",
-		protectedItem: "Protected",
 		removedWarningsTitle: "{n} unverified Recently Deleted batches were kept",
 		removedWarningsHint: "The known session count excludes these contents. Their files remain in place.",
 		removedUnlistedTitle: "No listable recently deleted sessions",
@@ -468,7 +460,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		guideUnavailable: "Could not check this session: {reason}",
 		guideNoHolder: "could not identify the holder",
 		guideMixed: "The selection mixes archived and recently deleted sessions. Continue them separately from the pending banner at the top.",
-		guideEmpty: "Nothing to resolve.",
 		pendingTitle: "{n} session(s) awaiting permanent deletion",
 		pendingBody: "The last attempt was blocked by DSH. The record is kept and nothing is deleted automatically. Fully quit and reopen DSH, then continue here.",
 		pendingArchived: "Continue deleting {n} archived session(s)",
@@ -476,9 +467,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		pendingClear: "Clear pending records",
 		pendingClearConfirm: "Clear {n} pending record(s)? This removes only the records; no files are deleted.",
 		pendingCleared: "Pending records cleared",
-		pendingClearing: "Clearing…",
 		pendingFailed: "Could not clear pending records: {message}",
-		pendingAdded: "Added to pending deletions",
 		viewRemoved: "View Recently Deleted",
 		partialReason: "Partially complete: {reason}",
 		partialMoved: "Logs moved to Recently Deleted. Check the remaining steps there. {reason}",
@@ -839,9 +828,6 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		var updateError = updateErrorState[0], setUpdateError = updateErrorState[1];
 		var removedWarningsState = useState([]);
 		var removedWarnings = removedWarningsState[0], setRemovedWarnings = removedWarningsState[1];
-		/* Keep these three slots after every pre-existing state. The test harness maps
-		   useState calls to a positional array, so inserting them earlier would shift
-		   unrelated controls and corrupt the fixture. */
 		var pendingState = useState([]);
 		var pending = pendingState[0];
 		var setPending = pendingState[1];
@@ -851,10 +837,13 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		var guideState = useState(null);
 		var guide = guideState[0];
 		var setGuide = guideState[1];
+		var pendingWarningState = useState(null);
+		var pendingWarning = pendingWarningState[0], setPendingWarning = pendingWarningState[1];
 		var dialogOpen = confirm !== null || info !== null || guide !== null;
 		var locked = busy || Boolean(update && update.busy) || updatePhase === "preparing" || phase !== "ready";
 		var actionRef = React.useRef(false);
 		var updateRef = React.useRef(false);
+		var statusRequest = React.useRef(null);
 		var returnFocusRef = React.useRef(null);
 		var cancelRef = React.useRef(null);
 		var refreshRef = React.useRef(null);
@@ -892,7 +881,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 				hasSnapshotRef.current = true;
 				setItems(nextItems);
 				setRemoved(nextRemoved);
-				pendingWarning = pendingData && typeof pendingData.warning === "string" ? pendingData.warning : null;
+				setPendingWarning(pendingData && typeof pendingData.warning === "string" ? pendingData.warning : null);
 				setPending(pendingData && Array.isArray(pendingData.items) ? pendingData.items : []);
 				setRemovedWarnings(Array.isArray(data.removedWarnings) ? data.removedWarnings : []);
 				setAttachments(data.attachments && typeof data.attachments === "object"
@@ -1056,7 +1045,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 			}
 			setPendingBusy(true);
 			request("/pending/clear", {}).then(function (data) {
-				pendingWarning = null;
+				setPendingWarning(null);
 				setPending(Array.isArray(data.items) ? data.items : []);
 				setToast({ kind: "ok", text: tr("pendingCleared") });
 			}).catch(function (error) {
@@ -1811,27 +1800,55 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 		}
 
 		function updateStatus() {
-			return request("/update/status").then(function (data) {
-				setUpdate(function (current) { return Object.assign({}, current || {}, data); });
-			}).catch(function () { /* an explicit check reports its own error */ });
+			if (statusRequest.current || updateRef.current) return;
+			var reading = request("/update/status");
+			statusRequest.current = reading;
+			reading.then(function (data) {
+				if (statusRequest.current !== reading) return;
+				setUpdate(function (current) {
+					if (current && Object.keys(data).every(function (key) {
+						return key === "job" ? JSON.stringify(current.job) === JSON.stringify(data.job) : current[key] === data[key];
+					})) return current;
+					return Object.assign({}, current || {}, data);
+				});
+			}).catch(function () { /* an explicit check reports its own error */ }).finally(function () {
+				if (statusRequest.current === reading) statusRequest.current = null;
+			});
 		}
 		useEffect(function () {
-			void updateStatus();
-			function check() { void updateStatus(); }
+			var timer;
+			function check() {
+				if (document.visibilityState !== "hidden") updateStatus();
+			}
+			function onVisibility() {
+				clearInterval(timer);
+				if (document.visibilityState !== "hidden") {
+					check();
+					timer = setInterval(check, 5000);
+				}
+			}
 			window.addEventListener("focus", check);
-			var timer = setInterval(check, 5000);
-			return function () { window.removeEventListener("focus", check); clearInterval(timer); };
+			document.addEventListener("visibilitychange", onVisibility);
+			onVisibility();
+			return function () {
+				statusRequest.current = null;
+				window.removeEventListener("focus", check);
+				document.removeEventListener("visibilitychange", onVisibility);
+				clearInterval(timer);
+			};
 		}, []);
 		function checkUpdate(trigger) {
 			if (updateRef.current || update && update.busy) return;
 			menuTriggerRef.current = trigger;
 			setMenu("version");
+			statusRequest.current = null;
 			updateRef.current = true;
 			setUpdatePhase("checking"); setUpdateError("");
 			request("/update/check", {}).then(function (data) { setUpdate(data); }).catch(function (error) { setUpdateError(tr("updateFailed", { message: error.message || error })); }).finally(function () { updateRef.current = false; setUpdatePhase(""); });
 		}
 		function prepareUpdate() {
 			if (locked || actionRef.current || updateRef.current || !update || !update.release || !update.canUpdate) return;
+			statusRequest.current = null;
 			updateRef.current = true; setUpdatePhase("preparing"); setUpdateError("");
 			request("/update/prepare", { releaseId: update.release.id, version: update.release.version, switchFromLink: update.sourceKind === "link" }).then(function (data) {
 				if (!validControlUrl(data.controlUrl)) throw new Error("Invalid update control URL");

@@ -375,3 +375,112 @@ test('temporary control routes expire when idle but never expire in the middle o
   await new Promise((done) => setTimeout(done, 130));
   assert.equal((await fetch(prepared.controlUrl)).status, 404);
 });
+
+test('passive status shares host inventory until it changes; explicit checks always read it', async (t) => {
+  const f = await fixture(t);
+  let changed;
+  const listBundles = t.mock.fn(f.options.pluginManager.listBundles);
+  const updater = createUpdater({
+    ...f.options,
+    pluginManager: { ...f.options.pluginManager, listBundles },
+    onBundlesChanged: (listener) => { changed = listener; },
+  });
+  await Promise.all(Array.from({ length: 12 }, () => updater.status()));
+  assert.equal(listBundles.mock.callCount(), 1);
+  f.row = null;
+  changed();
+  assert.equal((await updater.status()).sourceKind, 'missing');
+  assert.equal(listBundles.mock.callCount(), 2);
+  await updater.check();
+  assert.equal(listBundles.mock.callCount(), 3);
+});
+
+test('unchanged completed jobs keep their on-disk state through both status endpoints', async (t) => {
+  const f = await fixture(t);
+  const prepared = await f.prepare();
+  await f.open(prepared);
+  await f.action(prepared, 'start');
+  const settled = await until(() => f.status(prepared), (job) => job.phase === 'installed' && !job.busy);
+  const rename = t.mock.method(fs, 'rename');
+  for (let i = 0; i < 3; i++) {
+    assert.equal((await f.updater.status()).job.updatedAt, settled.updatedAt);
+    assert.equal((await f.status(prepared)).updatedAt, settled.updatedAt);
+  }
+  assert.equal(rename.mock.callCount(), 0);
+  f.row = null;
+  const changed = await f.updater.status();
+  assert.equal(changed.job.installed, false);
+  assert.equal(rename.mock.callCount(), 1);
+});
+
+test('an older install snapshot cannot confirm a restart across unload or a newer observation', async (t) => {
+  for (const scenario of ['unload', 'newer control-page read']) await t.test(scenario, async (t) => {
+    const f = await fixture(t, { restartRequired: true });
+    const prepared = await f.prepare();
+    await f.open(prepared);
+    await f.action(prepared, 'start');
+    await until(() => f.status(prepared), (job) => job.phase === 'restart-required' && !job.busy);
+
+    const started = Promise.withResolvers(), resume = Promise.withResolvers();
+    const loaded = createUpdater({
+      ...f.options, runtimeVersion: '0.3.0',
+      pluginManager: { ...f.options.pluginManager, async listBundles() {
+        const rows = await f.options.pluginManager.listBundles();
+        started.resolve();
+        await resume.promise;
+        return rows;
+      } },
+    });
+    const slow = loaded.status();
+    await started.promise;
+    if (scenario === 'unload') {
+      loaded.detach();
+    } else {
+      f.row = null;
+      assert.equal((await f.status(prepared)).installed, false);
+    }
+    resume.resolve();
+    const status = await slow;
+    assert.equal(status.job.phase, 'restart-required');
+    if (scenario === 'unload') assert.equal(status.runtimeVersion, null);
+    else assert.equal(status.installedVersion, null);
+    const state = JSON.parse(await fs.readFile(join(f.home, 'archived-manager', 'update-state.json')));
+    assert.equal(state.job.phase, 'restart-required');
+  });
+});
+
+test('only the current idle attachment releases the process registry on unload', async (t) => {
+  const f = await fixture(t);
+  const registry = globalThis[Symbol.for('dsh-archived-manager.update-jobs.v1')];
+  const key = f.home + '\0' + f.origin;
+  const newer = createUpdater(f.options);
+  f.updater.detach();
+  assert.equal(registry.has(key), true);
+  await newer.status();
+  newer.detach();
+  assert.equal(registry.has(key), false);
+});
+
+test('inventory invalidation during the final observation still persists the install result', async (t) => {
+  const f = await fixture(t, { restartRequired: true });
+  const shared = globalThis[Symbol.for('dsh-archived-manager.update-jobs.v1')].get(f.home + '\0' + f.origin);
+  let changed, interrupted = false;
+  const updater = createUpdater({
+    ...f.options,
+    onBundlesChanged: (listener) => { changed = listener; },
+    pluginManager: { ...f.options.pluginManager, async listBundles() {
+      const rows = await f.options.pluginManager.listBundles();
+      if (shared.running && shared.state.job.phase === 'restart-required') { interrupted = true; changed(); }
+      return rows;
+    } },
+  });
+  const { release } = await updater.check();
+  const prepared = await updater.prepare({ releaseId: release.id, version: release.version });
+  await f.open(prepared);
+  await f.action(prepared, 'start');
+  await shared.running;
+  assert.equal(interrupted, true);
+  const saved = JSON.parse(await fs.readFile(join(f.home, 'archived-manager', 'update-state.json')));
+  assert.equal(saved.job.phase, 'restart-required');
+  assert.equal(saved.receipt.version, release.version);
+});

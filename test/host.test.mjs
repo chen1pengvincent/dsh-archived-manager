@@ -101,15 +101,17 @@ async function timesOf(manager) {
   }
 }
 
-test('list reports titles, last-used time, directory size and a null archive time on first run', async () => {
+test('list reports titles, last-used time, directory size and a null archive time on first run', async (t) => {
   const home = await makeHome([A, B]);
-  const { ctx } = fakeCtx(home, [A, B]);
+  const { ctx, registry } = fakeCtx(home, [A, B]);
+  const workspaces = t.mock.method(registry, 'list');
   const manager = createManager(ctx);
   const report = await manager.list();
   assert.equal(report.items.length, 2);
   const item = report.items.find((entry) => entry.id === A);
   assert.equal(item.title, '标题-1111');
   assert.equal(item.workspace.title, '工作');
+  assert.equal(workspaces.mock.callCount(), 1);
   assert.equal(item.lastUsedAt, LAST_PROMPT);
   assert.equal(item.archivedAt, null);
   assert.equal(item.missing, false);
@@ -387,6 +389,33 @@ test('settings default to off and sweep only entries older than the retention wi
   await assert.rejects(() => manager.saveSettings({ trashRetentionDays: 5 }), (error) => error instanceof ManagerError && error.code === 'invalid');
 });
 
+test('retention and unarchive only inspect unrelated quarantined rows when displaying them', async (t) => {
+  const home = await makeHome([A, B]);
+  t.after(() => fs.rm(home, { recursive: true, force: true }));
+  const { ctx } = fakeCtx(home, [A, B]);
+  const manager = createManager(ctx);
+  assert.equal((await manager.hide([A]))[0].ok, true);
+  const [entry] = await manager.listRemoved();
+  const isolated = join(manager.trashRoot, entry.batch, entry.dir);
+  const readdir = t.mock.method(fs, 'readdir');
+  const activity = t.mock.fn(async () => []);
+  ctx.waterfall = activity;
+  await fs.writeFile(manager.settingsPath, JSON.stringify({ trashRetentionDays: 7 }));
+
+  assert.equal((await manager.sweepTrash()).removed, 0);
+  assert.equal((await manager.unarchive([B]))[0].ok, true);
+  assert.equal(readdir.mock.calls.some(({ arguments: [path] }) => path === isolated), false);
+  assert.equal(activity.mock.callCount(), 0);
+
+  readdir.mock.resetCalls();
+  const report = await manager.list();
+  assert.deepEqual(report.items, []);
+  assert.deepEqual(report.removed.map(({ id }) => id), [A]);
+  assert.equal(readdir.mock.calls.some(({ arguments: [path] }) => path === manager.sessionsRoot), false);
+  assert.equal(readdir.mock.calls.filter(({ arguments: [path] }) => path === isolated).length, 1);
+  assert.ok(activity.mock.callCount() > 0);
+});
+
 test('moving a session does not delete scheduled tasks as a side effect', async () => {
   const home = await makeHome([A]);
   const stopped = [];
@@ -397,16 +426,18 @@ test('moving a session does not delete scheduled tasks as a side effect', async 
   assert.deepEqual(stopped, []);
 });
 
-test('attachmentStats reports the shared attachment store separately', async () => {
+test('concurrent attachment statistics share one scan of the attachment store', async (t) => {
   const home = await makeHome([]);
   const { ctx } = fakeCtx(home, []);
   const manager = createManager(ctx);
   const dir = join(home, 'attachments', 'v1', 'objects', 'ab');
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(join(dir, 'abc'), '0123456789');
-  const stats = await manager.attachmentStats();
-  assert.equal(stats.bytes, 10);
-  assert.equal(stats.files, 1);
+  const readdir = t.mock.method(fs, 'readdir');
+  const stats = await Promise.all(Array.from({ length: 3 }, () => manager.attachmentStats()));
+  assert.deepEqual(stats, Array(3).fill({ bytes: 10, files: 1 }));
+  const root = join(manager.home, 'attachments');
+  assert.equal(readdir.mock.calls.filter(({ arguments: [path] }) => path === root).length, 1);
 });
 
 test('restore validates the manifest directory before touching the filesystem', async () => {
