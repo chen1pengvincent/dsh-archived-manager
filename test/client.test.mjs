@@ -1072,10 +1072,10 @@ test('list refresh stores quarantine warnings returned alongside known entries',
 });
 
 test('version details toggle shares the version row and exposes its keyboard-accessible disclosure state', async () => {
-  const render = await pageRenderer(pageValues({ 19: { runtimeVersion: '0.4.3', installedVersion: '0.4.3', sourceKind: 'link', busy: false } }));
+  const render = await pageRenderer(pageValues({ 19: { runtimeVersion: '0.4.4', installedVersion: '0.4.4', sourceKind: 'link', busy: false } }));
   let tree = render();
   const line = findByClass(tree, 'am-version-line');
-  assert.ok(textOf(line).includes('v0.4.3'));
+  assert.ok(textOf(line).includes('v0.4.4'));
   const toggle = buttonNamed(line, '版本详情');
   assert.notEqual(toggle, undefined, 'the disclosure button is on the version row');
   assert.equal(toggle.props.type, 'button');
@@ -1086,8 +1086,8 @@ test('version details toggle shares the version row and exposes its keyboard-acc
   tree = render();
   const panel = findByClass(tree, 'am-version-details');
   assert.equal(panel.props.id, toggle.props['aria-controls']);
-  assert.ok(textOf(panel).includes('页面版本：v0.4.3'));
-  assert.ok(textOf(panel).includes('服务版本：0.4.3'));
+  assert.ok(textOf(panel).includes('页面版本：v0.4.4'));
+  assert.ok(textOf(panel).includes('服务版本：0.4.4'));
   assert.equal(buttonNamed(tree, '版本详情').props['aria-expanded'], true);
   buttonNamed(tree, '版本详情').props.onClick(event());
   assert.equal(findByClass(render(), 'am-version-details'), undefined);

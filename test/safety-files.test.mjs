@@ -109,6 +109,21 @@ test('inspection keeps the last valid title and collects file records only on re
   assert.equal(details.events, undefined);
 });
 
+test('file details index only the newest generation while validating older logs', async (t) => {
+  const f = await fixture(t, [A], [event('deliverables/presented', { files: [{ path: '/fixture/current.txt' }] })]);
+  const oldPath = join(f.dir(), 'session.v2.jsonl');
+  const header = { type: 'session', version: 2, id: A, createdAt: 1, isSeeded: false, delegationDepth: 0 };
+  const row = { seq: 0, time: 1, type: 'deliverables/presented', data: { files: [{ path: '/fixture/older.txt' }] } };
+  await fs.writeFile(oldPath, [header, row].map(JSON.stringify).join('\n') + '\n');
+  const details = () => inspectSession(f.home, f.dir(), A, { includeRecordedFiles: true });
+  const [older, current] = (await details()).logs;
+  assert.equal(older.header.version, 2);
+  assert.equal(older.recordedFiles, undefined);
+  assert.deepEqual(current.recordedFiles.map(({ path }) => path), ['/fixture/current.txt']);
+  await fs.appendFile(oldPath, 'incomplete row');
+  await assert.rejects(details, { code: 'protected-content' });
+});
+
 test('a single compressed frame containing header and events is preserved by cleanup', async (t) => {
   const f = await fixture(t);
   const malformedContainer = zstdCompressSync([

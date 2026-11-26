@@ -10,7 +10,7 @@ window.__ModuleLoader__.load({ id: "dsh-archived-manager", factory: (require) =>
 	var useEffect = React.useEffect;
 
 	var API = "/archived-manager";
-	var CLIENT_VERSION = "0.4.3";
+	var CLIENT_VERSION = "0.4.4";
 	var MAX_BATCH = 200;
 	var GUIDE_CODES = ["restart-required", "running", "occupied", "occupancy-unavailable"];
 	var LANG = typeof navigator !== "undefined" && navigator.language ? String(navigator.language).toLowerCase() : "";

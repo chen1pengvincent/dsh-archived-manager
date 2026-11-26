@@ -484,3 +484,44 @@ test('inventory invalidation during the final observation still persists the ins
   assert.equal(saved.job.phase, 'restart-required');
   assert.equal(saved.receipt.version, release.version);
 });
+
+test('a surviving control page shares the reloaded workbench inventory only for passive settled reads', async (t) => {
+  const f = await fixture(t);
+  const prepared = await f.prepare();
+  await f.open(prepared);
+  await f.action(prepared, 'start');
+  await until(() => f.status(prepared), (job) => job.phase === 'installed' && !job.busy);
+
+  const listBundles = t.mock.fn(f.options.pluginManager.listBundles);
+  let changed;
+  const current = createUpdater({
+    ...f.options, runtimeVersion: '0.3.0',
+    pluginManager: { ...f.options.pluginManager, listBundles },
+    onBundlesChanged: (listener) => { changed = listener; },
+  });
+  assert.equal((await f.status(prepared)).installed, true);
+  assert.equal((await current.status()).job.installed, true);
+  assert.equal((await f.status(prepared)).installed, true);
+  assert.equal(listBundles.mock.callCount(), 1);
+
+  const installed = f.row;
+  f.row = null;
+  changed();
+  assert.equal((await f.status(prepared)).installed, false);
+  assert.equal(listBundles.mock.callCount(), 2);
+  f.row = installed; // A separate process changed the profile without notifying this host.
+  assert.equal((await f.action(prepared, 'reconcile')).body.job.installed, true);
+  assert.equal((await current.status()).job.installed, true);
+  assert.equal(listBundles.mock.callCount(), 3);
+
+  current.detach();
+  f.row = null;
+  assert.equal((await f.status(prepared)).installed, false);
+  f.row = installed;
+  assert.equal((await f.status(prepared)).installed, true);
+  const noEvents = createUpdater({ ...f.options, runtimeVersion: '0.3.0' });
+  f.row = null;
+  assert.equal((await f.status(prepared)).installed, false);
+  f.row = installed;
+  assert.equal((await noEvents.status()).job.installed, true);
+});
